@@ -13,15 +13,25 @@ import sys
 import urllib.parse
 import json
 from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib3.exceptions import InsecureRequestWarning
 from colorama import Fore, Style, init
-from PAYLOAD import *
+import time  
+import hashlib
+from threading import Lock
+from collections import defaultdict
+import random
+import html
+import socket
+
+#módulos personalizados
+from banner import print_banner
 from redirect_payloads import *
 from Tecnologias import TECNOLOGIAS
 from js_frameworks import JSframeworks
 from cms_fingerprints import CMS_fingerprints
 from analytics_patterns import ANALYTICS_PATTERNS
+from reporte import generar_reporte_html, generar_reporte_excel, generar_reporte_word, generar_reporte_pdf
 
 
 # Inicializar colorama para la salida de colores en terminal
@@ -30,18 +40,77 @@ init(autoreset=True)
 # Suprimir advertencias de SSL
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
+class ResponseCache:
+    """Cache para almacenar respuestas y evitar peticiones duplicadas"""
+    def __init__(self, max_size=1000):
+        self.cache = {}
+        self.max_size = max_size
+        self.lock = Lock()
+    
+    def get_cache_key(self, url, method, data):
+        key_data = f"{url}-{method}-{str(sorted(data.items()) if data else '')}"
+        return hashlib.md5(key_data.encode()).hexdigest()
+    
+    def get(self, url, method, data):
+        with self.lock:
+            key = self.get_cache_key(url, method, data)
+            return self.cache.get(key)
+    
+    def put(self, url, method, data, response):
+        with self.lock:
+            if len(self.cache) >= self.max_size:
+                keys_to_remove = random.sample(list(self.cache.keys()), self.max_size // 4)
+                for key in keys_to_remove:
+                    del self.cache[key]
+            key = self.get_cache_key(url, method, data)
+            if response and hasattr(response, 'status_code'):
+                self.cache[key] = {
+                    'status_code': response.status_code,
+                    'text': response.text,
+                    'headers': dict(response.headers),
+                    'timestamp': time.time()
+                }
+
+class PayloadOptimizer:
+    """Optimizador de payloads para mejorar la eficiencia"""
+    @staticmethod
+    def prioritize_payloads(payloads, scan_mode='medium'):
+        if scan_mode == 'quick':
+            return payloads[:min(10, len(payloads))]
+        elif scan_mode == 'slow':
+            return payloads
+        elif scan_mode == 'fast':
+            return payloads[:min(20, len(payloads))]
+        else:  # medium
+            return payloads[:min(30, len(payloads))]
+    
+    @staticmethod
+    def smart_payload_selection(payloads, technology_info=None):
+        if not technology_info:
+            return payloads
+        prioritized = []
+        standard = []
+        for payload in payloads:
+            if any(tech.lower() in payload.lower() for tech in technology_info.get('databases', [])):
+                prioritized.append(payload)
+            elif any(tech.lower() in payload.lower() for tech in technology_info.get('languages', [])):
+                prioritized.append(payload)
+            else:
+                standard.append(payload)
+        return prioritized + standard
+
 class WebSecurityScanner:
     def __init__(self, url, threads=10, timeout=35, verbose=False):
         self.base_url = url
-        self.threads = threads
+        self.threads = min(threads, 20)
         self.timeout = timeout
         self.verbose = verbose
         self.session = requests.Session()
         self.session.headers = {
-            'User-Agent': 'WebSecurityScanner/1.0 (Educational Purpose Only)',
+            'User-Agent': 'WebSecurityScanner/2.0 (Educational Purpose Only)',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Connection': 'close'
+            'Connection': 'keep-alive'
         }
         self.forms = []
         self.results = {
@@ -52,29 +121,64 @@ class WebSecurityScanner:
             'server_info': {},
             'forms_found': 0,
             'parameters_found': [],
-            'technologies': {}  # Nuevo diccionario para almacenar tecnologías detectadas
+            'technologies': {}
         }
-        # Cargar firmas de tecnologías
+        self.response_cache = ResponseCache()
+        self.payload_optimizer = PayloadOptimizer()
+        self.baseline_responses = {}
+        self.scan_mode = 'medium'
+        self.quick_scan = False
+        self.stats = {
+            'total_requests': 0,
+            'cached_responses': 0,
+            'vulnerabilities_found': 0
+        }
         self.load_technology_signatures()
+        self.load_payloads()  # <-- Añade esta línea
+        self.subdirectories = set()
+        self.subdomains = set()
+        self.load_subdir_and_subdomain_wordlists()  # <-- Añade esta línea
+
+    def print_banner(self):
+        """Muestra el banner de la herramienta"""
+        print_banner()
+
+    def load_payloads(self):
+        """Carga los payloads desde archivos JSON ubicados en la carpeta PAYLOAD"""
+        try:
+            with open('PAYLOAD/payloadsSQL.json', 'r', encoding='utf-8') as f:
+                self.payloadsSQL = json.load(f)
+            with open('PAYLOAD/payloadsXSS.json', 'r', encoding='utf-8') as f:
+                self.payloadsXSS = json.load(f)
+            with open('PAYLOAD/payloadsNoSQL.json', 'r', encoding='utf-8') as f:
+                self.payloadsNoSQL = json.load(f)
+        except Exception as e:
+            print(f"{Fore.RED}[!] Error cargando payloads: {e}")
+            self.payloadsSQL = []
+            self.payloadsXSS = []
+            self.payloadsNoSQL = []
 
     def load_technology_signatures(self):
         """Carga las firmas para la detección de tecnologías"""
-        # Patrones básicos de tecnologías web comunes
         self.tech_signatures = TECNOLOGIAS
+        # Crear meta_signatures basado en CMS_fingerprints
+        self.meta_signatures = {
+            'generator': CMS_fingerprints
+        }
 
-    def print_banner(self):
-        """Muestra un banner de inicio del scanner"""
-        banner = f"""
-{Fore.CYAN}╔═══════════════════════════════════════════════════════════╗
-{Fore.CYAN}║     {Fore.GREEN}WEB SECURITY SCANNER {Fore.YELLOW}v2.1{Fore.CYAN}                             ║
-{Fore.CYAN}║                                                           ║
-{Fore.CYAN}║      {Fore.RED}creado VIDES_2GA_2025{Fore.CYAN}                                ║
-{Fore.CYAN}╚═══════════════════════════════════════════════════════════╝
-{Fore.WHITE}URL objetivo: {Fore.YELLOW}{self.base_url}
-{Style.RESET_ALL}
-"""
-        print(banner)
+    def load_subdir_and_subdomain_wordlists(self):
+        """Carga las wordlists de subdirectorios y subdominios desde archivos JSON"""
+        try:
+            with open('PAYLOAD/subdirectorios.json', 'r', encoding='utf-8') as f:
+                self.wordlist_subdirs = json.load(f)
+            with open('PAYLOAD/subdominios.json', 'r', encoding='utf-8') as f:
+                self.wordlist_subdomains = json.load(f)
+        except Exception as e:
+            print(f"{Fore.RED}[!] Error cargando wordlists de subdirectorios/subdominios: {e}")
+            self.wordlist_subdirs = []
+            self.wordlist_subdomains = []
 
+   
     def run_scan(self):
         """Ejecuta el escaneo completo de seguridad"""
         self.print_banner()
@@ -139,24 +243,26 @@ class WebSecurityScanner:
         html_content = response.text
         headers = response.headers
         
-        # 1. Detección basada en cabeceras HTTP
-        for header_name, header_value in headers.items():
-            # Detectar servidores
-            for server, patterns in self.tech_signatures['servers'].items():
-                for pattern in patterns:
-                    if pattern.lower() in header_value.lower():
-                        if server not in detected_tech['servers']:
-                            detected_tech['servers'].append(server)
-            
-            # Detectar lenguajes
-            for lang, patterns in self.tech_signatures['languages'].items():
-                for pattern in patterns:
-                    if pattern.lower() in header_value.lower():
-                        if lang not in detected_tech['languages']:
-                            detected_tech['languages'].append(lang)
-        
-        # 2. Detección basada en contenido HTML
         try:
+            # 1. Detección basada en cabeceras HTTP
+            for header_name, header_value in headers.items():
+                # Detectar servidores
+                if 'servers' in self.tech_signatures:
+                    for server, patterns in self.tech_signatures['servers'].items():
+                        for pattern in patterns:
+                            if pattern.lower() in header_value.lower():
+                                if server not in detected_tech['servers']:
+                                    detected_tech['servers'].append(server)
+                
+                # Detectar lenguajes
+                if 'languages' in self.tech_signatures:
+                    for lang, patterns in self.tech_signatures['languages'].items():
+                        for pattern in patterns:
+                            if pattern.lower() in header_value.lower():
+                                if lang not in detected_tech['languages']:
+                                    detected_tech['languages'].append(lang)
+            
+            # 2. Detección basada en contenido HTML
             soup = BeautifulSoup(html_content, 'html.parser')
             
             # 2.1 Detección basada en meta tags
@@ -177,28 +283,31 @@ class WebSecurityScanner:
                 script_content = script.string if script.string else ''
                 
                 # Revisar JavaScript frameworks
-                for framework, patterns in self.tech_signatures['js_frameworks'].items():
-                    for pattern in patterns:
-                        if (pattern.lower() in script_src.lower() or 
-                            (script_content and pattern.lower() in script_content.lower())):
-                            if framework not in detected_tech['js_frameworks']:
-                                detected_tech['js_frameworks'].append(framework)
+                if 'js_frameworks' in self.tech_signatures:
+                    for framework, patterns in self.tech_signatures['js_frameworks'].items():
+                        for pattern in patterns:
+                            if (pattern.lower() in script_src.lower() or 
+                                (script_content and pattern.lower() in script_content.lower())):
+                                if framework not in detected_tech['js_frameworks']:
+                                    detected_tech['js_frameworks'].append(framework)
                 
                 # Revisar frontend frameworks
-                for framework, patterns in self.tech_signatures['frontend'].items():
-                    for pattern in patterns:
-                        if (pattern.lower() in script_src.lower() or 
-                            (script_content and pattern.lower() in script_content.lower())):
-                            if framework not in detected_tech['frontend']:
-                                detected_tech['frontend'].append(framework)
+                if 'frontend' in self.tech_signatures:
+                    for framework, patterns in self.tech_signatures['frontend'].items():
+                        for pattern in patterns:
+                            if (pattern.lower() in script_src.lower() or 
+                                (script_content and pattern.lower() in script_content.lower())):
+                                if framework not in detected_tech['frontend']:
+                                    detected_tech['frontend'].append(framework)
                 
                 # Revisar analíticas
-                for analytics, patterns in self.tech_signatures['analytics'].items():
-                    for pattern in patterns:
-                        if (pattern.lower() in script_src.lower() or 
-                            (script_content and pattern.lower() in script_content.lower())):
-                            if analytics not in detected_tech['analytics']:
-                                detected_tech['analytics'].append(analytics)
+                if 'analytics' in self.tech_signatures:
+                    for analytics, patterns in self.tech_signatures['analytics'].items():
+                        for pattern in patterns:
+                            if (pattern.lower() in script_src.lower() or 
+                                (script_content and pattern.lower() in script_content.lower())):
+                                if analytics not in detected_tech['analytics']:
+                                    detected_tech['analytics'].append(analytics)
             
             # 2.3 Detección basada en links y CSS
             links = soup.find_all('link')
@@ -206,26 +315,29 @@ class WebSecurityScanner:
                 href = link.get('href', '')
                 
                 # Revisar CMS
-                for cms, patterns in self.tech_signatures['cms'].items():
-                    for pattern in patterns:
-                        if pattern.lower() in href.lower():
-                            if cms not in detected_tech['cms']:
-                                detected_tech['cms'].append(cms)
+                if 'cms' in self.tech_signatures:
+                    for cms, patterns in self.tech_signatures['cms'].items():
+                        for pattern in patterns:
+                            if pattern.lower() in href.lower():
+                                if cms not in detected_tech['cms']:
+                                    detected_tech['cms'].append(cms)
                 
                 # Revisar frontend
-                for framework, patterns in self.tech_signatures['frontend'].items():
-                    for pattern in patterns:
-                        if pattern.lower() in href.lower():
-                            if framework not in detected_tech['frontend']:
-                                detected_tech['frontend'].append(framework)
+                if 'frontend' in self.tech_signatures:
+                    for framework, patterns in self.tech_signatures['frontend'].items():
+                        for pattern in patterns:
+                            if pattern.lower() in href.lower():
+                                if framework not in detected_tech['frontend']:
+                                    detected_tech['frontend'].append(framework)
             
             # 2.4 Detección en todo el HTML
             for category, tech_dict in self.tech_signatures.items():
-                for tech, patterns in tech_dict.items():
-                    for pattern in patterns:
-                        if pattern.lower() in html_content.lower():
-                            if tech not in detected_tech[category] and category in detected_tech:
-                                detected_tech[category].append(tech)
+                if category in detected_tech:
+                    for tech, patterns in tech_dict.items():
+                        for pattern in patterns:
+                            if pattern.lower() in html_content.lower():
+                                if tech not in detected_tech[category]:
+                                    detected_tech[category].append(tech)
         
         except Exception as e:
             if self.verbose:
@@ -233,7 +345,7 @@ class WebSecurityScanner:
         
         # Guardar tecnologías detectadas en los resultados
         for category, techs in detected_tech.items():
-            if techs:  # Solo guardar categorías con tecnologías detectadas
+            if techs:
                 self.results['technologies'][category] = techs
         
         # Mostrar tecnologías detectadas
@@ -245,337 +357,461 @@ class WebSecurityScanner:
         else:
             print(f"{Fore.YELLOW}[!] No se detectaron tecnologías")
 
+    def discover_subdirectories(self):
+        """Descubre subdirectorios usando fuerza bruta con la wordlist"""
+        base = self.base_url.rstrip('/')
+        found_dirs = set()
+        for path in self.wordlist_subdirs:
+            url = f"{base}/{path.strip().lstrip('/')}/"
+            try:
+                resp = self.session.get(url, verify=False, timeout=self.timeout)
+                if resp.status_code < 400:
+                    found_dirs.add(url)
+                    if self.verbose:
+                        print(f"{Fore.GREEN}[+] Subdirectorio encontrado: {url}")
+            except Exception:
+                continue
+        self.subdirectories.update(found_dirs)
+        self.results['subdirectories'] = list(self.subdirectories)
+
+    def discover_subdomains(self):
+        """Descubre subdominios usando fuerza bruta con la wordlist"""
+        found_subdomains = set()
+        domain = self.base_url.split('/')[2]
+        for prefix in self.wordlist_subdomains:
+            subdomain = f"{prefix.strip()}.{domain}"
+            try:
+                socket.gethostbyname(subdomain)
+                found_subdomains.add(subdomain)
+                if self.verbose:
+                    print(f"{Fore.GREEN}[+] Subdominio encontrado: {subdomain}")
+            except Exception:
+                continue
+        self.subdomains.update(found_subdomains)
+        self.results['subdomains'] = list(self.subdomains)
+
     def crawl_site(self):
-        """Explora el sitio para encontrar formularios y parámetros"""
+        """Explora el sitio para encontrar formularios, parámetros y subdirectorios"""
         try:
-            response = self.session.get(self.base_url, verify=False, timeout=self.timeout)
-            self.extract_forms(response.text, self.base_url)
-            self.extract_links(response.text, self.base_url)
-            self.extract_parameters(self.base_url)
+            visited = set()
+            to_visit = set([self.base_url])
+            max_depth = 2  # Puedes ajustar la profundidad máxima de exploración
+
+            for depth in range(max_depth):
+                current_level = list(to_visit)
+                to_visit = set()
+                for url in current_level:
+                    if url in visited:
+                        continue
+                    visited.add(url)
+                    try:
+                        response = self.session.get(url, verify=False, timeout=self.timeout)
+                        self.extract_forms(response.text, url)
+                        self.extract_links(response.text, url)
+                        self.extract_parameters(url)
+                        # Extraer subdirectorios de los enlaces encontrados
+                        soup = BeautifulSoup(response.text, 'html.parser')
+                        links = soup.find_all('a', href=True)
+                        for link in links:
+                            href = link.get('href', '')
+                            if not href or href.startswith(('#', 'javascript:', 'mailto:', 'tel:')):
+                                continue
+                            # Normalizar enlaces relativos
+                            if not href.startswith(('http://', 'https://')):
+                                if href.startswith('/'):
+                                    base = '/'.join(self.base_url.split('/')[:3])
+                                    full_url = base + href
+                                else:
+                                    full_url = url.rstrip('/') + '/' + href
+                            else:
+                                full_url = href
+                            # Solo procesar enlaces del mismo dominio y que sean subdirectorios
+                            if self.base_url.split('/')[2] in full_url:
+                                if full_url.endswith('/') or full_url.count('/') > 3:
+                                    if full_url not in visited:
+                                        to_visit.add(full_url)
+                                        es_subdirectorio = True
+                                        for vurl in visited:
+                                            if full_url.startswith(vurl.rstrip('/') + '/'):
+                                                es_subdirectorio = False
+                                                break
+                                        if es_subdirectorio:
+                                            self.subdirectories.add(full_url)
+                    except Exception as e:
+                        if self.verbose:
+                            print(f"{Fore.RED}[!] Error durante la exploración de {url}: {e}")
+            self.results['forms_found'] = len(self.forms)
+            # Llama a fuerza bruta de subdirectorios y subdominios al final del crawling
+            self.discover_subdirectories()
+            self.discover_subdomains()
         except Exception as e:
             if self.verbose:
                 print(f"{Fore.RED}[!] Error durante la exploración: {e}")
 
     def extract_forms(self, html_content, url):
         """Extrae formularios del HTML"""
-        form_regex = re.compile(r'<form.*?action=["\']?([^"\'>]*)["\']?.*?method=["\']?([^"\'>]*)["\']?.*?>(.*?)</form>', re.DOTALL | re.IGNORECASE)
-        input_regex = re.compile(r'<input.*?name=["\']?([^"\'>]*)["\']?.*?>', re.DOTALL | re.IGNORECASE)
-        
-        forms = form_regex.findall(html_content)
-        for form in forms:
-            action = form[0]
-            method = form[1].upper() if form[1] else 'GET'
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            forms = soup.find_all('form')
             
-            # Manejar URLs relativas
-            if action and not action.startswith(('http://', 'https://')):
-                if action.startswith('/'):
-                    base = '/'.join(self.base_url.split('/')[:3])
-                    action = base + action
-                else:
-                    action = url.rstrip('/') + '/' + action
-            elif not action:
-                action = url
-            
-            # Encontrar todos los inputs
-            inputs = input_regex.findall(form[2])
-            if inputs:
-                self.forms.append({
-                    'action': action,
-                    'method': method,
-                    'inputs': inputs
-                })
+            for form in forms:
+                action = form.get('action', '')
+                method = form.get('method', 'GET').upper()
                 
-                if self.verbose:
-                    print(f"{Fore.GREEN}[+] Formulario encontrado en {action} (Método: {method})")
-                    print(f"    Parámetros: {', '.join(inputs)}")
-        
-        self.results['forms_found'] = len(self.forms)
+                # Manejar URLs relativas
+                if action and not action.startswith(('http://', 'https://')):
+                    if action.startswith('/'):
+                        base = '/'.join(self.base_url.split('/')[:3])
+                        action = base + action
+                    else:
+                        action = url.rstrip('/') + '/' + action
+                elif not action:
+                    action = url
+                
+                # Encontrar todos los inputs
+                inputs = []
+                input_tags = form.find_all(['input', 'textarea', 'select'])
+                for input_tag in input_tags:
+                    name = input_tag.get('name')
+                    if name and input_tag.get('type') != 'submit':
+                        inputs.append(name)
+                
+                if inputs:
+                    self.forms.append({
+                        'action': action,
+                        'method': method,
+                        'inputs': inputs
+                    })
+                    
+                    if self.verbose:
+                        print(f"{Fore.GREEN}[+] Formulario encontrado en {action} (Método: {method})")
+                        print(f"    Parámetros: {', '.join(inputs)}")
+            
+            self.results['forms_found'] = len(self.forms)
+            
+        except Exception as e:
+            if self.verbose:
+                print(f"{Fore.RED}[!] Error extrayendo formularios: {e}")
 
     def extract_links(self, html_content, base_url):
         """Extrae enlaces del contenido HTML"""
-        link_regex = re.compile(r'href=["\']?([^"\'>]*)["\']?', re.IGNORECASE)
-        links = link_regex.findall(html_content)
-        
-        # Filtrar y normalizar enlaces
-        for link in links:
-            if not link or link.startswith(('#', 'javascript:', 'mailto:', 'tel:')):
-                continue
-                
-            # Normalizar enlaces relativos
-            if not link.startswith(('http://', 'https://')):
-                if link.startswith('/'):
-                    base = '/'.join(self.base_url.split('/')[:3])
-                    link = base + link
-                else:
-                    link = base_url.rstrip('/') + '/' + link
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            links = soup.find_all('a', href=True)
             
-            # Solo procesar enlaces del mismo dominio
-            if self.base_url.split('/')[2] in link:
-                self.extract_parameters(link)
+            for link in links:
+                href = link.get('href', '')
+                if not href or href.startswith(('#', 'javascript:', 'mailto:', 'tel:')):
+                    continue
+                    
+                # Normalizar enlaces relativos
+                if not href.startswith(('http://', 'https://')):
+                    if href.startswith('/'):
+                        base = '/'.join(self.base_url.split('/')[:3])
+                        href = base + href
+                    else:
+                        href = base_url.rstrip('/') + '/' + href
+                
+                # Solo procesar enlaces del mismo dominio
+                if self.base_url.split('/')[2] in href:
+                    self.extract_parameters(href)
+                    
+        except Exception as e:
+            if self.verbose:
+                print(f"{Fore.RED}[!] Error extrayendo enlaces: {e}")
 
     def extract_parameters(self, url):
         """Extrae parámetros de una URL"""
-        if '?' in url:
-            params = url.split('?')[1].split('&')
-            for param in params:
-                if '=' in param:
-                    param_name = param.split('=')[0]
-                    if param_name not in self.results['parameters_found']:
-                        self.results['parameters_found'].append(param_name)
-                        if self.verbose:
-                            print(f"{Fore.GREEN}[+] Parámetro GET encontrado: {param_name} en {url}")
+        try:
+            if '?' in url:
+                params = url.split('?')[1].split('&')
+                for param in params:
+                    if '=' in param:
+                        param_name = param.split('=')[0]
+                        if param_name not in self.results['parameters_found']:
+                            self.results['parameters_found'].append(param_name)
+                            if self.verbose:
+                                print(f"{Fore.GREEN}[+] Parámetro GET encontrado: {param_name} en {url}")
+        except Exception as e:
+            if self.verbose:
+                print(f"{Fore.RED}[!] Error extrayendo parámetros: {e}")
 
-    def test_vulnerabilities(self):
-        """Ejecuta todas las pruebas de vulnerabilidades"""
-        if not self.forms and not self.results['parameters_found']:
-            print(f"{Fore.YELLOW}[!] No se encontraron formularios o parámetros para probar")
-            return
-        
-        print(f"{Fore.BLUE}[*] Probando vulnerabilidades de inyección SQL...")
-        self.test_sql_injection()
-        
-        print(f"{Fore.BLUE}[*] Probando vulnerabilidades XSS...")
-        self.test_xss()
-        
-        print(f"{Fore.BLUE}[*] Probando vulnerabilidades de inyección NoSQL...")
-        self.test_nosql_injection()
-        
-        print(f"{Fore.BLUE}[*] Probando vulnerabilidades de redirección abierta...")
-        self.test_open_redirect()
+    def make_request(self, url, method='GET', data=None, allow_redirects=True):
+        cached_response = self.response_cache.get(url, method, data)
+        if cached_response:
+            self.stats['cached_responses'] += 1
+            class MockResponse:
+                def __init__(self, cached_data):
+                    self.status_code = cached_data['status_code']
+                    self.text = cached_data['text']
+                    self.headers = cached_data['headers']
+            return MockResponse(cached_response)
+        try:
+            self.stats['total_requests'] += 1
+            if method.upper() == 'POST':
+                response = self.session.post(
+                    url, data=data, verify=False, timeout=self.timeout, allow_redirects=allow_redirects
+                )
+            else:
+                response = self.session.get(
+                    url, params=data, verify=False, timeout=self.timeout, allow_redirects=allow_redirects
+                )
+            self.response_cache.put(url, method, data, response)
+            return response
+        except requests.exceptions.Timeout:
+            if self.verbose:
+                print(f"{Fore.YELLOW}[!] Timeout en {url}")
+            return None
+        except requests.exceptions.RequestException as e:
+            if self.verbose:
+                print(f"{Fore.YELLOW}[!] Error en petición a {url}: {e}")
+            return None
 
-    def test_sql_injection(self):
-        """Prueba de vulnerabilidades de inyección SQL"""
-        # Payloads de prueba para inyección SQL
-        payloads = payloadsSQL
-    
-        # Probar en formularios
-        for form in self.forms:
-            for payload in payloads:
-                data = {}
-                for input_name in form['inputs']:
-                    data[input_name] = payload
-                
-                try:
-                    if form['method'] == 'POST':
-                        response = self.session.post(form['action'], data=data, verify=False, timeout=self.timeout)
-                    else:
-                        response = self.session.get(form['action'], params=data, verify=False, timeout=self.timeout)
-                    
-                    # Verificar respuesta para posibles indicadores de éxito en la inyección
-                    if self.check_sql_injection_success(response.text):
-                        self.results['sql_injection'].append({
-                            'url': form['action'],
-                            'method': form['method'],
-                            'payload': payload,
-                            'parameter': 'multiple'
-                        })
-                        print(f"{Fore.RED}[!] Posible inyección SQL encontrada en {form['action']}")
-                        print(f"    Método: {form['method']}, Payload: {payload}")
-                        break
-                        
-                except Exception as e:
-                    if self.verbose:
-                        print(f"{Fore.YELLOW}[!] Error al probar inyección SQL: {e}")
-        
-        # Probar en parámetros GET
-        for param in self.results['parameters_found']:
-            for payload in payloadsSQL:
-                try:
-                    params = {param: payload}
-                    response = self.session.get(self.base_url, params=params, verify=False, timeout=self.timeout)
-                    
-                    if self.check_sql_injection_success(response.text):
-                        self.results['sql_injection'].append({
-                            'url': self.base_url,
-                            'method': 'GET',
-                            'payload': payload,
-                            'parameter': param
-                        })
-                        print(f"{Fore.RED}[!] Posible inyección SQL encontrada en parámetro GET: {param}")
-                        print(f"    URL: {self.base_url}, Payload: {payload}")
-                        break
-                        
-                except Exception as e:
-                    if self.verbose:
-                        print(f"{Fore.YELLOW}[!] Error al probar inyección SQL en parámetro GET: {e}")
+    def get_baseline_response(self, form):
+        form_key = f"{form['action']}-{form['method']}"
+        if form_key not in self.baseline_responses:
+            safe_data = {input_name: "test123" for input_name in form['inputs']}
+            response = self.make_request(form['action'], form['method'], safe_data)
+            if response:
+                self.baseline_responses[form_key] = {
+                    'status_code': response.status_code,
+                    'length': len(response.text),
+                    'text_hash': hashlib.md5(response.text.encode()).hexdigest()
+                }
+        return self.baseline_responses.get(form_key)
 
-    def check_sql_injection_success(self, response_text):
-        """Verifica si la respuesta indica una inyección SQL exitosa"""
-        error_patterns = [
-            "SQL syntax",
-            "mysql_fetch_array",
-            "mysql_fetch",
-            "mysql_num_rows",
-            "mysqli_fetch_array",
-            "mysqli_result",
-            "Warning: mysql",
-            "ORA-",
-            "Oracle error",
-            "Microsoft SQL Server",
-            "PostgreSQL",
-            "SQLite3::",
-            "DB2 SQL error",
-            "Sybase message",
-            "Unclosed quotation mark"
+    def is_vulnerability_response(self, response, baseline, vulnerability_type):
+        if not response or not baseline:
+            return False
+        if response.status_code != baseline['status_code']:
+            return True
+        length_diff = abs(len(response.text) - baseline['length'])
+        if length_diff > 100:
+            return True
+        if vulnerability_type == 'sql':
+            return self.check_sql_injection_success(response.text)
+        elif vulnerability_type == 'xss':
+            return self.check_xss_success(response.text)
+        elif vulnerability_type == 'nosql':
+            return self.check_nosql_injection_success(response.text)
+        return False
+
+    def check_xss_success(self, response_text):
+        xss_patterns = [
+            '<script', 'javascript:', 'onerror=', 'onload=', 'alert(',
+            'confirm(', 'prompt(', 'document.cookie', 'eval('
         ]
-        
-        for pattern in error_patterns:
-            if pattern.lower() in response_text.lower():
+        response_lower = response_text.lower()
+        for pattern in xss_patterns:
+            if pattern in response_lower:
                 return True
         return False
 
-    def test_xss(self):
-        """Prueba de vulnerabilidades XSS"""
-        payloads = payloadsXSS
-        
-        # Probar en formularios
-        for form in self.forms:
-            for payload in payloads:
-                data = {}
-                for input_name in form['inputs']:
-                    data[input_name] = payload
-                
-                try:
-                    if form['method'] == 'POST':
-                        response = self.session.post(form['action'], data=data, verify=False, timeout=self.timeout)
-                    else:
-                        response = self.session.get(form['action'], params=data, verify=False, timeout=self.timeout)
-                    
-                    # Verificar si el payload se refleja en la respuesta
-                    if payload in response.text:
-                        self.results['xss'].append({
-                            'url': form['action'],
-                            'method': form['method'],
-                            'payload': payload,
-                            'parameter': 'multiple'
-                        })
-                        print(f"{Fore.RED}[!] Posible vulnerabilidad XSS encontrada en {form['action']}")
-                        print(f"    Método: {form['method']}, Payload: {payload}")
-                        break
-                        
-                except Exception as e:
-                    if self.verbose:
-                        print(f"{Fore.YELLOW}[!] Error al probar XSS: {e}")
-        
-        # Probar en parámetros GET
-        for param in self.results['parameters_found']:
-            for payload in payloads:
-                try:
-                    params = {param: payload}
-                    response = self.session.get(self.base_url, params=params, verify=False, timeout=self.timeout)
-                    
-                    if payload in response.text:
-                        self.results['xss'].append({
-                            'url': self.base_url,
-                            'method': 'GET',
-                            'payload': payload,
-                            'parameter': param
-                        })
-                        print(f"{Fore.RED}[!] Posible vulnerabilidad XSS encontrada en parámetro GET: {param}")
-                        print(f"    URL: {self.base_url}, Payload: {payload}")
-                        break
-                        
-                except Exception as e:
-                    if self.verbose:
-                        print(f"{Fore.YELLOW}[!] Error al probar XSS en parámetro GET: {e}")
+    def check_sql_injection_success(self, response_text):
+        """Verifica si la respuesta indica una vulnerabilidad de inyección SQL"""
+        sql_errors = [
+            "you have an error in your sql syntax",
+            "warning: mysql",
+            "unclosed quotation mark after the character string",
+            "quoted string not properly terminated",
+            "mysql_fetch",
+            "mysql_num_rows",
+            "pg_query",
+            "syntax error",
+            "ORA-",
+            "SQLite3::",
+            "SQLSTATE",
+            "Microsoft OLE DB Provider for SQL Server",
+            "Incorrect syntax near",
+            "Fatal error",
+            "ODBC SQL Server Driver",
+            "DB2 SQL error",
+            "Sybase message",
+            "MySQL server version for the right syntax",
+            "supplied argument is not a valid MySQL",
+            "java.sql.SQLException"
+        ]
+        response_lower = response_text.lower()
+        for error in sql_errors:
+            if error in response_lower:
+                return True
+        return False
 
-    def test_nosql_injection(self):
-        """Prueba de vulnerabilidades de inyección NoSQL"""
-        payloads = payloadsNoSQL
-        # Probar en formularios
+    def check_nosql_injection_success(self, response_text):
+        """Verifica si la respuesta indica una vulnerabilidad de inyección NoSQL"""
+        nosql_errors = [
+            "MongoDB", "NoSQL", "TypeError", "cannot convert", "bson", "E11000",
+            "ReferenceError", "Uncaught exception", "Cast to ObjectId failed",
+            "SyntaxError", "Unexpected token", "invalid json", "DocumentNotFoundError",
+            "missing value", "Unterminated string", "Unexpected end of JSON input"
+        ]
+        response_lower = response_text.lower()
+        for error in nosql_errors:
+            if error.lower() in response_lower:
+                return True
+        return False
+
+    def get_severity_and_desc(self, vuln_type):
+        if vuln_type == 'sql':
+            return 'alta', 'Inyección SQL detectada, puede permitir acceso no autorizado a la base de datos'
+        elif vuln_type == 'xss':
+            return 'media', 'Vulnerabilidad de Cross-Site Scripting (XSS) detectada'
+        elif vuln_type == 'nosql':
+            return 'alta', 'Inyección NoSQL detectada, puede permitir acceso no autorizado a la base de datos'
+        return 'baja', 'Vulnerabilidad detectada'
+
+    def test_vulnerabilities(self):
+        print(f"{Fore.BLUE}[*] Probando vulnerabilidades de inyección SQL...")
+        sql_found = self.test_sql_injection_optimized()
+        print(f"{Fore.BLUE}[*] Probando vulnerabilidades XSS...")
+        xss_found = self.test_xss_optimized()
+        print(f"{Fore.BLUE}[*] Probando vulnerabilidades de inyección NoSQL...")
+        nosql_found = self.test_nosql_injection_optimized()
+        print(f"{Fore.BLUE}[*] Probando vulnerabilidades de redirección abierta...")
+        redirect_found = self.test_open_redirect()
+        self.stats['vulnerabilities_found'] = sql_found + xss_found + nosql_found + redirect_found
+
+    def test_sql_injection_optimized(self):
+        if not self.forms:
+            return 0
+        vulnerabilities_found = 0
+        payloads = self.payload_optimizer.prioritize_payloads(
+            self.payloadsSQL, self.scan_mode
+        )
+        payloads = self.payload_optimizer.smart_payload_selection(
+            payloads, self.results.get('technologies')
+        )
+        print(f"{Fore.BLUE}[*] Probando {len(payloads)} payloads SQL optimizados...")
         for form in self.forms:
-            for payload in payloads:
-                data = {}
-                for input_name in form['inputs']:
-                    data[input_name] = payload
-                
-                try:
-                    if form['method'] == 'POST':
-                        response = self.session.post(form['action'], data=data, verify=False, timeout=self.timeout)
-                    else:
-                        response = self.session.get(form['action'], params=data, verify=False, timeout=self.timeout)
-                    
-                    # Verificar respuesta para posibles indicadores de éxito
-                    if "mongo" in response.text.lower() or "mongoose" in response.text.lower():
-                        self.results['nosql_injection'].append({
-                            'url': form['action'],
-                            'method': form['method'],
-                            'payload': payload,
-                            'parameter': 'multiple'
-                        })
-                        print(f"{Fore.RED}[!] Posible inyección NoSQL encontrada en {form['action']}")
-                        print(f"    Método: {form['method']}, Payload: {payload}")
+            baseline = self.get_baseline_response(form)
+            if not baseline:
+                continue
+            vulnerabilities_found += self._test_form_with_payloads(
+                form, payloads, 'sql', 'sql_injection'
+            )
+            if vulnerabilities_found > 0 and self.scan_mode == 'fast':
+                break
+        return vulnerabilities_found
+
+    def test_xss_optimized(self):
+        if not self.forms:
+            return 0
+        vulnerabilities_found = 0
+        payloads = self.payload_optimizer.prioritize_payloads(
+            self.payloadsXSS, self.scan_mode
+        )
+        print(f"{Fore.BLUE}[*] Probando {len(payloads)} payloads XSS optimizados...")
+        for form in self.forms:
+            baseline = self.get_baseline_response(form)
+            if not baseline:
+                continue
+            vulnerabilities_found += self._test_form_with_payloads(
+                form, payloads, 'xss', 'xss'
+            )
+            if vulnerabilities_found > 0 and self.scan_mode == 'fast':
+                break
+        return vulnerabilities_found
+
+    def test_nosql_injection_optimized(self):
+        if not self.forms:
+            return 0
+        vulnerabilities_found = 0
+        payloads = self.payload_optimizer.prioritize_payloads(
+            self.payloadsNoSQL, self.scan_mode
+        )
+        print(f"{Fore.BLUE}[*] Probando {len(payloads)} payloads NoSQL optimizados...")
+        for form in self.forms:
+            baseline = self.get_baseline_response(form)
+            if not baseline:
+                continue
+            vulnerabilities_found += self._test_form_with_payloads(
+                form, payloads, 'nosql', 'nosql_injection'
+            )
+            if vulnerabilities_found > 0 and self.scan_mode == 'fast':
+                break
+        return vulnerabilities_found
+
+    def _test_form_with_payloads(self, form, payloads, vuln_type, result_key):
+        baseline = self.get_baseline_response(form)
+        vulnerabilities_found = 0
+        def test_payload(payload):
+            data = {input_name: payload for input_name in form['inputs']}
+            response = self.make_request(form['action'], form['method'], data)
+            if response and self.is_vulnerability_response(response, baseline, vuln_type):
+                return {
+                    'url': form['action'],
+                    'method': form['method'],
+                    'payload': payload,
+                    'parameter': 'multiple'
+                }
+            return None
+        with ThreadPoolExecutor(max_workers=self.threads) as executor:
+            future_to_payload = {
+                executor.submit(test_payload, payload): payload 
+                for payload in payloads
+            }
+            for idx, future in enumerate(as_completed(future_to_payload), 1):
+                result = future.result()
+                payload = future_to_payload[future]
+                percent = int((idx / len(payloads)) * 100)
+                bar = '█' * (percent // 5)
+                if result:
+                    vulnerabilities_found += 1
+                    severity, desc = self.get_severity_and_desc(vuln_type)
+                    self.results[result_key].append({
+                        'url': form['action'],
+                        'method': form['method'],
+                        'payload': payload,
+                        'parameter': 'multiple',
+                        'severity': severity,
+                        'descripcion': desc
+                    })
+                    status = f"{Fore.RED}VULNERABLE"
+                    print(f"{Fore.BLUE}[{percent:3d}%] {bar:<20} {status} - {payload[:50]}{'...' if len(payload) > 50 else ''}")
+                    print(f"{Fore.RED}[!] Vulnerabilidad {vuln_type.upper()} en {form['action']}")
+                    if self.scan_mode == 'fast':
                         break
-                        
-                except Exception as e:
+                else:
+                    status = f"{Fore.GREEN}SEGURO"
                     if self.verbose:
-                        print(f"{Fore.YELLOW}[!] Error al probar inyección NoSQL: {e}")
-        
-        # Probar en parámetros GET
-        for param in self.results['parameters_found']:
-            for payload in payloads:
-                try:
-                    # Los payloads NoSQL pueden requerir un formato especial
-                    if payload.startswith('{') and payload.endswith('}'):
-                        # Intentar con parámetros de estilo MongoDB
-                        params = {param: payload}
-                    else:
-                        # Intentar con sintaxis de operador directo
-                        params = {param + payload.split('=')[0]: payload.split('=')[1]}
-                    
-                    response = self.session.get(self.base_url, params=params, verify=False, timeout=self.timeout)
-                    
-                    if "mongo" in response.text.lower() or "mongoose" in response.text.lower():
-                        self.results['nosql_injection'].append({
-                            'url': self.base_url,
-                            'method': 'GET',
-                            'payload': payload,
-                            'parameter': param
-                        })
-                        print(f"{Fore.RED}[!] Posible inyección NoSQL encontrada en parámetro GET: {param}")
-                        print(f"    URL: {self.base_url}, Payload: {payload}")
-                        break
-                        
-                except Exception as e:
-                    if self.verbose:
-                        print(f"{Fore.YELLOW}[!] Error al probar inyección NoSQL en parámetro GET: {e}")
+                        print(f"{Fore.BLUE}[{percent:3d}%] {bar:<20} {status}")
+        return vulnerabilities_found
 
     def test_open_redirect(self):
         """Prueba de vulnerabilidades de redirección abierta"""
-        redirect_payloads = redirect
-        
-        # Buscar parámetros que puedan controlar redirecciones
-        redirect_params = ['url', 'redirect', 'redirect_to', 'redirecturl', 'return', 'returnurl', 
-                          'return_url', 'returnto', 'goto', 'next', 'target', 'link', 'redir']
-        
-        # Probar redirecciones en parámetros conocidos
-        for param in self.results['parameters_found']:
-            if param.lower() in redirect_params:
-                for payload in redirect_payloads:
-                    try:
-                        encoded_payload = urllib.parse.quote_plus(payload)
-                        params = {param: encoded_payload}
-                        response = self.session.get(self.base_url, params=params, verify=False, timeout=self.timeout, 
-                                                  allow_redirects=False)
-                        
-                        # Verificar si hay redirección a nuestro payload
-                        if response.status_code in [301, 302, 303, 307, 308]:
-                            location = response.headers.get('Location', '')
-                            if payload in location or encoded_payload in location:
-                                self.results['open_redirect'].append({
-                                    'url': self.base_url,
-                                    'parameter': param,
-                                    'payload': payload,
-                                    'redirected_to': location
-                                })
-                                print(f"{Fore.RED}[!] Posible redirección abierta encontrada en parámetro: {param}")
-                                print(f"    URL: {self.base_url}, Payload: {payload}")
-                                print(f"    Redirección a: {location}")
-                                break
-                                
-                    except Exception as e:
-                        if self.verbose:
-                            print(f"{Fore.YELLOW}[!] Error al probar redirección abierta: {e}")
+        found = 0
+        try:
+            redirect_payloads = redirect
+            redirect_params = ['url', 'redirect', 'redirect_to', 'redirecturl', 'return', 'returnurl', 
+                              'return_url', 'returnto', 'goto', 'next', 'target', 'link', 'redir']
+            for param in self.results['parameters_found']:
+                if param.lower() in redirect_params:
+                    for payload in redirect_payloads:
+                        try:
+                            encoded_payload = urllib.parse.quote_plus(payload)
+                            params = {param: encoded_payload}
+                            response = self.session.get(self.base_url, params=params, verify=False, 
+                                                      timeout=self.timeout, allow_redirects=False)
+                            if response.status_code in [301, 302, 303, 307, 308]:
+                                location = response.headers.get('Location', '')
+                                if payload in location or encoded_payload in location:
+                                    self.results['open_redirect'].append({
+                                        'url': self.base_url,
+                                        'parameter': param,
+                                        'payload': payload,
+                                        'redirected_to': location
+                                    })
+                                    print(f"{Fore.RED}[!] Posible redirección abierta encontrada en parámetro: {param}")
+                                    print(f"    URL: {self.base_url}, Payload: {payload}")
+                                    print(f"    Redirección a: {location}")
+                                    found += 1
+                                    break
+                        except Exception as e:
+                            if self.verbose:
+                                print(f"{Fore.YELLOW}[!] Error al probar redirección abierta: {e}")
+        except Exception as e:
+            print(f"{Fore.RED}[!] Error en test_open_redirect: {e}")
+        return found
 
     def detect_tech_from_js(self, url):
         """Detecta tecnologías basadas en archivos JavaScript referenciados"""
@@ -603,7 +839,7 @@ class WebSecurityScanner:
                     
                     # Detectar tecnologías conocidas por nombre de archivo
                     self.detect_tech_from_filename(filename)
-                    
+        
         except Exception as e:
             if self.verbose:
                 print(f"{Fore.YELLOW}[!] Error al analizar archivos JavaScript: {e}")
@@ -679,6 +915,17 @@ class WebSecurityScanner:
         except Exception as e:
             print(f"{Fore.RED}[!] Error al exportar resultados: {e}")
 
+    def generar_tabla_vulns(self, vulns, campos):
+        if not vulns:
+            return '<span class="safe">No se encontraron vulnerabilidades.</span>'
+        html_table = '<table><tr>' + ''.join(f"<th>{campo.capitalize()}</th>" for campo in campos) + "<th>Gravedad</th><th>Descripción</th></tr>"
+        for vuln in vulns:
+            html_table += "<tr>" + "".join(
+                f"<td>{html.escape(str(vuln.get(campo, '')))}</td>" for campo in campos
+            ) + f"<td>{html.escape(str(vuln.get('severity', 'Desconocida')))}</td><td>{html.escape(str(vuln.get('descripcion', '')))}</td></tr>"
+        html_table += "</table>"
+        return html_table
+
     def show_results(self):
         """Muestra un resumen de los resultados del escaneo"""
         print(f"\n{Fore.CYAN}╔═══════════════════════════════════════════════════════════╗")
@@ -748,14 +995,6 @@ class WebSecurityScanner:
         print(f"{Fore.YELLOW}    Se recomienda verificar manualmente cada vulnerabilidad reportada.")
         print(f"{Fore.YELLOW}    Este script es solo para fines educativos y pruebas autorizadas.\n")
         
-        # Opción para exportar resultados
-        print(f"{Fore.CYAN}[*] ¿Desea exportar los resultados a un archivo JSON? (s/n): ", end="")
-        try:
-            choice = input().strip().lower()
-            if choice == 's':
-                self.export_results_json()
-        except:
-            pass
 
 
 def main():
@@ -767,15 +1006,37 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Mostrar información detallada durante el escaneo')
     parser.add_argument('--tech-only', action='store_true', help='Realizar solo la detección de tecnologías')
     parser.add_argument('-o', '--output', help='Nombre del archivo para exportar resultados en formato JSON')
-    
+    parser.add_argument('-j', '--json', action='store_true', help='Exportar resultados en formato JSON')
+    parser.add_argument('-H', '--html', action='store_true', help='Exportar resultados en formato HTML')
+    parser.add_argument('-Sb', '--slow', action='store_true', help='Escaneo bajo (más lento)')
+    parser.add_argument('-Sm', '--medium', action='store_true', help='Escaneo medio')
+    parser.add_argument('-Sa', '--fast', action='store_true', help='Escaneo alto (más rápido)')
+    parser.add_argument('--quick', action='store_true', help='Escaneo rápido (menos payloads)')
+
     args = parser.parse_args()
-    
-    # Validar URL
-    if not args.url.startswith(('http://', 'https://')):
-        args.url = 'http://' + args.url
-    
-    # Iniciar el escaneo
-    scanner = WebSecurityScanner(args.url, args.threads, args.timeout, args.verbose)
+
+    if args.slow:
+        threads = 5
+        timeout = 2
+        scan_mode = 'slow'
+    elif args.medium:
+        threads = 15
+        timeout = 10
+        scan_mode = 'medium'
+    elif args.fast:
+        threads = 30   
+        timeout = 10    
+        scan_mode = 'fast'
+    else:
+        threads = args.threads
+        timeout = args.timeout
+        scan_mode = 'custom'
+
+    quick_scan = args.quick
+
+    scanner = WebSecurityScanner(args.url, threads, timeout, args.verbose)
+    scanner.scan_mode = scan_mode
+    scanner.quick_scan = quick_scan
     
     try:
         if args.tech_only:
@@ -818,9 +1079,14 @@ def main():
             # Ejecutar escaneo completo
             scanner.run_scan()
             
-            # Exportar resultados si se solicitó
-            if args.output:
-                scanner.export_results_json(args.output)
+            # Exportar resultados según los flags
+            if args.json:
+                scanner.export_results_json(args.output if args.output else "scan_results.json")
+            if args.html:
+                generar_reporte_html(scanner.results)
+                generar_reporte_excel(scanner.results)
+                generar_reporte_word(scanner.results)
+                generar_reporte_pdf("scan_results.html")
     
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}[!] Escaneo interrumpido por el usuario")

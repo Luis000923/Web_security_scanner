@@ -1,5 +1,3 @@
-
-
 TECNOLOGIAS = { 
             # Servidores web
             'servers': {
@@ -9,16 +7,37 @@ TECNOLOGIAS = {
                 'LiteSpeed': ['LiteSpeed'],
                 'Tomcat': ['Apache-Coyote', 'Tomcat'],
                 'Node.js': ['Node.js', 'Express', 'nodejsExpress'],
-                'Cloudflare': ['cloudflare', 'cloudflare-nginx']
+                'Cloudflare': ['cloudflare', 'cloudflare-nginx'],
+                'Caddy': ['Caddy'],
+                'OpenResty': ['OpenResty'],
+                'Cherokee': ['Cherokee'],
+                'Zeus': ['Zeus'],
+                'GWS': ['GWS'],
+                'Google Web Server': ['GWS'],
+                'Tengine': ['Tengine'],
+                'Gunicorn': ['gunicorn'],
+                'uWSGI': ['uwsgi'],
+                'Resin': ['Resin'],
+                'LiteSpeed': ['LiteSpeed'],
+                'Jetty': ['Jetty'],
+                'WebLogic': ['WebLogic'],
+                'WebSphere': ['WebSphere'],
+                'SAP NetWeaver': ['SAP NetWeaver'],
+                'Oracle HTTP Server': ['Oracle-HTTPServer']
             },
             # Lenguajes del lado del servidor
             'languages': {
                 'PHP': ['PHP', 'X-Powered-By: PHP', 'PHPSESSID'],
                 'ASP.NET': ['ASP.NET', 'X-AspNet-Version', '__VIEWSTATE'],
                 'Java': ['Java', 'JSP', 'Servlet', 'X-Powered-By: JSP'],
-                'Python': ['Python', 'Django', 'Pyramid', 'Flask', 'wsgi', 'Werkzeug'],
-                'Ruby': ['Ruby', 'Ruby on Rails', 'Sinatra', 'Passenger'],
-                'Perl': ['Perl', 'CGI-Perl']
+                'Python': ['Python', 'Django', 'Pyramid', 'Flask', 'wsgi', 'Werkzeug', 'FastAPI', 'Tornado', 'Bottle'],
+                'Ruby': ['Ruby', 'Ruby on Rails', 'Sinatra', 'Passenger', 'Hanami'],
+                'Perl': ['Perl', 'CGI-Perl', 'Dancer', 'Catalyst'],
+                'Go': ['Go', 'Golang', 'Gin', 'Beego', 'Echo'],
+                'Node.js': ['Node.js', 'Express', 'Koa', 'Sails', 'NestJS'],
+                'Scala': ['Scala', 'Play Framework', 'Akka'],
+                'Elixir': ['Elixir', 'Phoenix'],
+                'Clojure': ['Clojure', 'Ring', 'Compojure']
             },
             # CMS y Frameworks
             'cms': {
@@ -30,7 +49,54 @@ TECNOLOGIAS = {
                 'PrestaShop': ['PrestaShop', 'prestashop.com', '/themes/prestashop/'],
                 'TYPO3': ['TYPO3', 'typo3temp', 'typo3conf'],
                 'Blogger': ['blogger.com', 'blogspot.com'],
-                'Wix': ['wixstatic.com', 'wix.com', 'Wix.com']
+                'Wix': ['wixstatic.com', 'wix.com', 'Wix.com'],
+                'OpenCart': ['OpenCart', 'catalog/view/theme', 'index.php?route='],
+                'osCommerce': ['osCommerce', 'oscommerce.com'],
+                'phpBB': ['phpBB', 'viewtopic.php', 'phpbb.com'],
+                'vBulletin': ['vBulletin', 'vbulletin.com'],
+                'Moodle': ['Moodle', 'moodledata', 'moodle.org'],
+                'DotNetNuke': ['DotNetNuke', 'dnnPlatform'],
+                'Sitefinity': ['Sitefinity'],
+                'Umbraco': ['Umbraco'],
+                'Plone': ['Plone'],
+                'Concrete5': ['Concrete5'],
+                'Craft CMS': ['Craft CMS'],
+                'ExpressionEngine': ['ExpressionEngine'],
+                'SilverStripe': ['SilverStripe'],
+                'Contao': ['Contao'],
+                'Serendipity': ['Serendipity'],
+                'Textpattern': ['Textpattern'],
+                'b2evolution': ['b2evolution'],
+                'Zendesk': ['Zendesk'],
+                'BigCommerce': ['BigCommerce'],
+                'XenForo': ['XenForo'],
+                'Discuz!': ['Discuz!'],
+                'Dedecms': ['Dedecms'],
+                'ECShop': ['ECShop'],
+                'Zen Cart': ['Zen Cart'],
+                'PHP-Nuke': ['PHP-Nuke'],
+                'MediaWiki': ['MediaWiki'],
+                'DokuWiki': ['DokuWiki'],
+                'Tiki Wiki CMS Groupware': ['TikiWiki'],
+                'Liferay': ['Liferay'],
+                'Kentico': ['Kentico'],
+                'Episerver': ['Episerver'],
+                'Sitecore': ['Sitecore'],
+                'BlogEngine.NET': ['BlogEngine.NET'],
+                'Nucleus CMS': ['Nucleus CMS'],
+                'Movable Type': ['Movable Type'],
+                'Subrion': ['Subrion'],
+                'JShop': ['JShop'],
+                'nopCommerce': ['nopCommerce'],
+                'CS-Cart': ['CS-Cart'],
+                'Shopware': ['Shopware'],
+                'SPIP': ['SPIP'],
+                'e107': ['e107'],
+                'Simple Machines Forum': ['Simple Machines Forum'],
+                'MyBB': ['MyBB'],
+                'PunBB': ['PunBB'],
+                'FluxBB': ['FluxBB'],
+                'Vanilla Forums': ['Vanilla Forums']
             },
             # Frameworks y librerías frontend
             'frontend': {
@@ -42,7 +108,16 @@ TECNOLOGIAS = {
                 'Font Awesome': ['font-awesome', 'fontawesome'],
                 'Tailwind CSS': ['tailwind', 'tailwindcss'],
                 'MUI (Material UI)': ['mui', 'material-ui'],
-                'Bulma': ['bulma.css', 'bulma.min.css']
+                'Bulma': ['bulma.css', 'bulma.min.css'],
+                'Foundation': ['foundation.css', 'foundation.min.css'],
+                'Semantic UI': ['semantic-ui', 'semantic.min.css', 'semantic.min.js'],
+                'Materialize': ['materialize.css', 'materialize.min.css'],
+                'Ant Design': ['ant-design', 'antd', 'ant.design'],
+                'PrimeFaces': ['primefaces', 'primefaces.org'],
+                'PrimeVue': ['primevue'],
+                'Vuetify': ['vuetify'],
+                'Quasar': ['quasar'],
+                'Element UI': ['element-ui', 'element.min.css']
             },
             # Bases de datos
             'databases': {
@@ -51,7 +126,15 @@ TECNOLOGIAS = {
                 'Oracle': ['Oracle', 'ORA-'],
                 'SQLite': ['SQLite'],
                 'MongoDB': ['MongoDB', 'mongo'],
-                'Microsoft SQL Server': ['SQL Server', 'MSSQL']
+                'Microsoft SQL Server': ['SQL Server', 'MSSQL'],
+                'Redis': ['Redis'],
+                'Cassandra': ['Cassandra'],
+                'Elasticsearch': ['Elasticsearch'],
+                'CouchDB': ['CouchDB'],
+                'Firebase': ['Firebase'],
+                'DynamoDB': ['DynamoDB'],
+                'Neo4j': ['Neo4j'],
+                'Memcached': ['Memcached']
             },
             # JavaScript frameworks y librerías
             'js_frameworks': {
@@ -62,7 +145,32 @@ TECNOLOGIAS = {
                 'Three.js': ['three.js', 'three.min.js'],
                 'Socket.io': ['socket.io', 'socket.io.js'],
                 'Axios': ['axios.js', 'axios.min.js'],
-                'Redux': ['redux.js', 'redux.min.js']
+                'Redux': ['redux.js', 'redux.min.js'],
+                'Next.js': ['next.js', 'next.min.js'],
+                'Nuxt.js': ['nuxt.js', 'nuxt.min.js'],
+                'Svelte': ['svelte.js', 'svelte.min.js'],
+                'Alpine.js': ['alpine.js', 'alpine.min.js'],
+                'Polymer': ['polymer.js', 'polymer.min.js'],
+                'Knockout.js': ['knockout.js', 'knockout.min.js'],
+                'Preact': ['preact.js', 'preact.min.js'],
+                'Inferno': ['inferno.js', 'inferno.min.js'],
+                'MobX': ['mobx.js', 'mobx.min.js'],
+                'RxJS': ['rxjs.js', 'rxjs.min.js'],
+                'Apollo Client': ['apollo-client.js', 'apollo.min.js'],
+                'Jest': ['jest.js', 'jest.min.js'],
+                'Cypress': ['cypress.js', 'cypress.min.js'],
+                'Mocha': ['mocha.js', 'mocha.min.js'],
+                'Chai': ['chai.js', 'chai.min.js'],
+                'Sinon.js': ['sinon.js', 'sinon.min.js'],
+                'QUnit': ['qunit.js', 'qunit.min.js'],
+                'Babel': ['babel.js', 'babel.min.js'],
+                'Webpack': ['webpack.js', 'webpack.min.js'],
+                'Parcel': ['parcel.js', 'parcel.min.js'],
+                'Rollup': ['rollup.js', 'rollup.min.js'],
+                'Grunt': ['grunt.js', 'grunt.min.js'],
+                'Gulp': ['gulp.js', 'gulp.min.js'],
+                'esbuild': ['esbuild.js', 'esbuild.min.js'],
+                'Vite': ['vite.js', 'vite.min.js']
             },
             # Análisis y marketing
             'analytics': {
@@ -71,7 +179,11 @@ TECNOLOGIAS = {
                 'Facebook Pixel': ['connect.facebook.net', 'fbevents.js', 'fbq('],
                 'Hotjar': ['hotjar.com', 'hotjar.js'],
                 'Matomo': ['matomo.js', 'piwik.js', 'matomo.php'],
-                'Adobe Analytics': ['sc.omtrdc.net', 's_code.js', 'adobe analytics']
+                'Adobe Analytics': ['sc.omtrdc.net', 's_code.js', 'adobe analytics'],
+                'Yandex Metrica': ['mc.yandex.ru', 'metrika.js'],
+                'Mixpanel': ['mixpanel.com', 'mixpanel.js'],
+                'Segment': ['segment.com', 'analytics.segment.com'],
+                'Heap': ['heapanalytics.com', 'heap.js']
             },
             # Miscelánea
             'misc': {
@@ -82,6 +194,16 @@ TECNOLOGIAS = {
                 'PayPal': ['paypal.com', 'paypalobjects.com'],
                 'Varnish Cache': ['X-Varnish', 'Via: varnish'],
                 'Netlify': ['netlify.app', 'netlify.com'],
-                'Vercel': ['vercel.app', 'vercel.com']
+                'Vercel': ['vercel.app', 'vercel.com'],
+                'Algolia': ['algolia.com', 'algoliasearch'],
+                'SendGrid': ['sendgrid.com'],
+                'Mailgun': ['mailgun.com'],
+                'Mailchimp': ['mailchimp.com'],
+                'Twilio': ['twilio.com'],
+                'Pusher': ['pusher.com', 'pusher.js'],
+                'Firebase': ['firebaseio.com', 'firebase.js'],
+                'Heroku': ['herokuapp.com'],
+                'DigitalOcean': ['digitalocean.com'],
+                'Cloudinary': ['cloudinary.com', 'cloudinary.js']
             }
         }
