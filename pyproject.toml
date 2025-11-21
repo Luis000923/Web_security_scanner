@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "web-security-scanner"
+version = "5.0.0"
+description = "Advanced Web Security Scanner with AsyncIO and Plugin System"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Luis", email = "luis@example.com"},
+]
+dependencies = [
+    "aiohttp>=3.8.0",
+    "requests>=2.28.0",
+    "beautifulsoup4>=4.11.0",
+    "colorama>=0.4.0",
+    "pyyaml>=6.0",
+    "urllib3>=1.26.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "black",
+    "mypy",
+]
+
+[project.scripts]
+webscanner = "web_security_scanner.launcher_async:main"

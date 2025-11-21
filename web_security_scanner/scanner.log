@@ -1,0 +1,177 @@
+2025-11-21 03:07:11,377 - WebSecurityScanner - [33mWARNING[0m - Could not load SQL payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:07:11,377 - WebSecurityScanner - [33mWARNING[0m - Could not load XSS payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:07:11,377 - WebSecurityScanner - [33mWARNING[0m - Could not load Command Injection payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:07:11,377 - WebSecurityScanner - [33mWARNING[0m - Could not load Path Traversal payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:07:11,377 - WebSecurityScanner - [32mINFO[0m - Starting scan of https://www.icsfra.org/
+2025-11-21 03:07:11,388 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:07:11,527 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://www.icsfra.org/
+2025-11-21 03:07:25,587 - WebSecurityScanner - [33mWARNING[0m - Could not load SQL payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:07:25,587 - WebSecurityScanner - [33mWARNING[0m - Could not load XSS payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:07:25,587 - WebSecurityScanner - [33mWARNING[0m - Could not load Command Injection payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:07:25,587 - WebSecurityScanner - [33mWARNING[0m - Could not load Path Traversal payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:07:25,601 - WebSecurityScanner - [32mINFO[0m - Starting scan of https://www.icsfra.org/
+2025-11-21 03:07:25,605 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:07:25,938 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://www.icsfra.org/
+2025-11-21 03:12:26,824 - WebSecurityScanner - [33mWARNING[0m - Could not load SQL payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:12:26,824 - WebSecurityScanner - [33mWARNING[0m - Could not load XSS payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:12:26,824 - WebSecurityScanner - [33mWARNING[0m - Could not load Command Injection payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:12:26,824 - WebSecurityScanner - [33mWARNING[0m - Could not load Path Traversal payloads: Invalid \escape: line 24 column 51 (char 873)
+2025-11-21 03:12:26,841 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:12:26,992 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://www.icsfra.org/
+2025-11-21 03:13:09,139 - WebSecurityScanner - [33mWARNING[0m - Could not load SQL payloads: Invalid \escape: line 37 column 40 (char 1379)
+2025-11-21 03:13:09,139 - WebSecurityScanner - [33mWARNING[0m - Could not load XSS payloads: Invalid \escape: line 37 column 40 (char 1379)
+2025-11-21 03:13:09,155 - WebSecurityScanner - [33mWARNING[0m - Could not load Command Injection payloads: Invalid \escape: line 37 column 40 (char 1379)
+2025-11-21 03:13:09,155 - WebSecurityScanner - [33mWARNING[0m - Could not load Path Traversal payloads: Invalid \escape: line 37 column 40 (char 1379)
+2025-11-21 03:13:09,161 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:13:09,272 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://www.icsfra.org/
+2025-11-21 03:13:40,005 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:13:40,005 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:13:40,005 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:13:40,005 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:13:40,005 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:13:40,105 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://www.icsfra.org/
+2025-11-21 03:16:49,558 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:16:49,558 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:16:49,558 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:16:49,558 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:16:49,558 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:16:49,925 - WebSecurityScanner - [32mINFO[0m - Connection successful: 200
+2025-11-21 03:16:49,942 - WebSecurityScanner - [32mINFO[0m - Detecting technologies...
+2025-11-21 03:16:58,308 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:16:58,323 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:16:58,324 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:16:58,324 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:16:58,331 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:16:58,660 - WebSecurityScanner - [32mINFO[0m - Connection successful: 200
+2025-11-21 03:16:58,660 - WebSecurityScanner - [32mINFO[0m - Detecting technologies...
+2025-11-21 03:17:57,954 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:17:57,954 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:17:57,954 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:17:57,954 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:17:57,954 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:17:58,375 - WebSecurityScanner - [32mINFO[0m - Connection successful: 200
+2025-11-21 03:17:58,375 - WebSecurityScanner - [32mINFO[0m - Detecting technologies...
+2025-11-21 03:17:58,375 - WebSecurityScanner - [32mINFO[0m - Technology detection completed. Found 175 technologies
+2025-11-21 03:21:24,799 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:21:24,799 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:21:24,799 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:21:24,799 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:21:24,815 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:21:25,003 - WebSecurityScanner - [31mERROR[0m - Fallo al conectar a http://icsfra.org
+2025-11-21 03:21:31,324 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:21:31,324 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:21:31,324 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:21:31,324 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:21:31,324 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:21:31,677 - WebSecurityScanner - [32mINFO[0m - Conexión exitosa: 200
+2025-11-21 03:21:31,690 - WebSecurityScanner - [32mINFO[0m - Detectando tecnologías...
+2025-11-21 03:21:31,695 - WebSecurityScanner - [32mINFO[0m - Detección de tecnologías completada. Se encontraron 175 tecnologías
+2025-11-21 03:21:53,738 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:21:53,738 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:21:53,738 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:21:53,738 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:21:53,752 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:21:53,841 - WebSecurityScanner - [31mERROR[0m - Fallo al conectar a https://www.icsfra.org/
+2025-11-21 03:22:25,002 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:22:25,002 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:22:25,002 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:22:25,002 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:22:25,021 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:22:26,397 - WebSecurityScanner - [32mINFO[0m - Conexión exitosa: 200
+2025-11-21 03:22:26,399 - WebSecurityScanner - [32mINFO[0m - Detectando tecnologías...
+2025-11-21 03:30:06,825 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:30:06,825 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:30:06,825 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:30:06,825 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:30:06,839 - WebSecurityScanner - [32mINFO[0m - Starting security scan...
+2025-11-21 03:30:06,841 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:30:07,110 - WebSecurityScanner - [31mERROR[0m - Failed to connect to http://icsfra.org
+2025-11-21 03:30:19,508 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:30:19,508 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:30:19,508 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:30:19,508 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:30:19,523 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:30:19,752 - WebSecurityScanner - [31mERROR[0m - Fallo al conectar a http://icsfra.org
+2025-11-21 03:32:22,251 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:32:22,251 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:32:22,251 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:32:22,268 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:32:22,272 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:32:22,401 - WebSecurityScanner - [32mINFO[0m - Conexión exitosa: 200
+2025-11-21 03:32:22,401 - WebSecurityScanner - [32mINFO[0m - Detectando tecnologías...
+2025-11-21 03:34:39,590 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:34:39,590 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:34:39,590 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:34:39,590 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:34:39,606 - WebSecurityScanner - [32mINFO[0m - Starting security scan...
+2025-11-21 03:34:39,608 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:34:39,614 - WebSecurityScanner - [33mWARNING[0m - Request error on attempt 1/3: icsfra.org - Invalid URL 'icsfra.org': No scheme supplied. Perhaps you meant https://icsfra.org?
+2025-11-21 03:34:41,617 - WebSecurityScanner - [33mWARNING[0m - Request error on attempt 2/3: icsfra.org - Invalid URL 'icsfra.org': No scheme supplied. Perhaps you meant https://icsfra.org?
+2025-11-21 03:34:43,619 - WebSecurityScanner - [33mWARNING[0m - Request error on attempt 3/3: icsfra.org - Invalid URL 'icsfra.org': No scheme supplied. Perhaps you meant https://icsfra.org?
+2025-11-21 03:34:43,619 - WebSecurityScanner - [31mERROR[0m - Failed to connect to icsfra.org
+2025-11-21 03:34:57,877 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:34:57,893 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:34:57,893 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:34:57,893 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:34:57,899 - WebSecurityScanner - [32mINFO[0m - Iniciando escaneo de seguridad...
+2025-11-21 03:34:57,901 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:34:57,905 - WebSecurityScanner - [33mWARNING[0m - Request error on attempt 1/3: icsfra.org - Invalid URL 'icsfra.org': No scheme supplied. Perhaps you meant https://icsfra.org?
+2025-11-21 03:34:59,907 - WebSecurityScanner - [33mWARNING[0m - Request error on attempt 2/3: icsfra.org - Invalid URL 'icsfra.org': No scheme supplied. Perhaps you meant https://icsfra.org?
+2025-11-21 03:35:01,911 - WebSecurityScanner - [33mWARNING[0m - Request error on attempt 3/3: icsfra.org - Invalid URL 'icsfra.org': No scheme supplied. Perhaps you meant https://icsfra.org?
+2025-11-21 03:35:01,911 - WebSecurityScanner - [31mERROR[0m - Fallo al conectar a icsfra.org
+2025-11-21 03:35:49,371 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:35:49,371 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:35:49,371 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:35:49,371 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:35:49,383 - WebSecurityScanner - [32mINFO[0m - Iniciando escaneo de seguridad...
+2025-11-21 03:35:49,385 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:35:49,538 - WebSecurityScanner - [31mERROR[0m - Fallo al conectar a https://icsfra.org
+2025-11-21 03:35:53,155 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:35:53,155 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:35:53,155 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:35:53,161 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:35:53,168 - WebSecurityScanner - [32mINFO[0m - Iniciando escaneo de seguridad...
+2025-11-21 03:35:53,172 - WebSecurityScanner - [32mINFO[0m - Probando conexión...
+2025-11-21 03:35:53,372 - WebSecurityScanner - [31mERROR[0m - Fallo al conectar a http://icsfra.org
+2025-11-21 03:37:15,109 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:37:15,125 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:37:15,125 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:37:15,125 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:37:15,132 - WebSecurityScanner - [32mINFO[0m - Starting security scan...
+2025-11-21 03:37:15,135 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:37:15,299 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://icsfra.org
+2025-11-21 03:38:05,278 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:38:05,278 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:38:05,294 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:38:05,294 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:38:05,298 - WebSecurityScanner - [32mINFO[0m - Starting security scan...
+2025-11-21 03:38:05,300 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:38:05,459 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://icsfra.org
+2025-11-21 03:40:25,833 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:40:25,849 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:40:25,849 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:40:25,849 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:40:25,849 - WebSecurityScanner - [32mINFO[0m - Starting security scan...
+2025-11-21 03:40:25,856 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:40:26,022 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://icsfra.org
+2025-11-21 03:41:28,780 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:41:28,780 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:41:28,780 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:41:28,780 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:41:28,795 - WebSecurityScanner - [32mINFO[0m - Starting security scan...
+2025-11-21 03:41:28,797 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:41:28,868 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://www.icsfra.org/protected/?comeFrom=https%3A%2F%2Fwww.icsfra.org%2Frecursos-did%25C3%25A1cticos%2Fregistro-acad%25C3%25A9mico%2F
+2025-11-21 03:42:59,801 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:42:59,817 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:42:59,817 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:42:59,817 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:42:59,817 - WebSecurityScanner - [32mINFO[0m - Starting security scan...
+2025-11-21 03:42:59,825 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:43:00,002 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://icsfra.org
+2025-11-21 03:43:06,816 - WebSecurityScanner - [32mINFO[0m - Loaded 4 SQL payloads from payloads_master.json
+2025-11-21 03:43:06,816 - WebSecurityScanner - [32mINFO[0m - Loaded 5 XSS payloads from payloads_master.json
+2025-11-21 03:43:06,816 - WebSecurityScanner - [32mINFO[0m - Loaded 3 Command Injection payloads from payloads_master.json
+2025-11-21 03:43:06,816 - WebSecurityScanner - [32mINFO[0m - Loaded 2 Path Traversal payloads from payloads_master.json
+2025-11-21 03:43:06,816 - WebSecurityScanner - [32mINFO[0m - Starting security scan...
+2025-11-21 03:43:06,826 - WebSecurityScanner - [32mINFO[0m - Testing connection...
+2025-11-21 03:43:07,965 - WebSecurityScanner - [31mERROR[0m - Failed to connect to https://icsfra.org

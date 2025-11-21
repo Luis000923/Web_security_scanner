@@ -1,0 +1,315 @@
+# Archivo de Traducciones - Web Security Scanner v4.0
+# ====================================================
+# Contiene todas las traducciones en inglés (en) y español (es)
+
+en:
+  # Banner
+  banner:
+    title: "WEB SECURITY SCANNER v4.0 - 2025"
+    subtitle: "Advanced web security scanner for complete detection and analysis"
+    feature1: "Detects vulnerabilities"
+    feature2: "Identifies technologies used"
+    feature3: "Finds subdomains and more..."
+    footer: "Developed by VIDES_2GA_2025"
+
+  # Scanner principal
+  scanner:
+    starting: "Starting security scan..."
+    completed: "Scan completed successfully!"
+    error: "Error during scan: {error}"
+    testing_url: "Testing URL: {url}"
+    analyzing: "Analyzing target..."
+    connection_test: "Testing connection..."
+    connection_target: "Testing connection to {url}..."
+    connection_success: "Connection successful: {status}"
+    connection_failed: "Failed to connect to {url}"
+    forms_found: "Found {count} forms"
+    no_forms: "No forms found, skipping vulnerability tests"
+    testing_vulns: "Testing for vulnerabilities..."
+    testing_module: "Testing {module}..."
+    vuln_found: "Found {count} {type} vulnerabilities"
+    results_title: "SCAN RESULTS"
+    stats_title: "Statistics:"
+    stats_requests: "Total Requests: {count}"
+    stats_cached: "Cached Responses: {count}"
+    stats_failed: "Failed Requests: {count}"
+    stats_hit_rate: "Cache Hit Rate: {rate}"
+    stats_avg_time: "Avg Response Time: {time}s"
+    vulns_found_title: "Vulnerabilities Found: {count}"
+    vuln_detail: "{type}: {count} found (Severity: {severity})"
+    no_vulns: "No vulnerabilities found!"
+    generating_map: "Generating interactive web map..."
+    map_generated: "Web map generated: {path}"
+    open_browser: "Open in browser: {url}"
+    map_error: "Error generating web map: {error}"
+    json_saved: "JSON report saved to: {path}"
+    report_error: "Failed to save report: {error}"
+    scan_interrupted: "Scan interrupted by user"
+    scan_error: "Error: {error}"
+    target_info: "Target: {url}"
+    testers_info: "Enabled Testers: {count}"
+    
+  # Instalación
+  install:
+    welcome: "Welcome to Web Security Scanner v4.0 Installation"
+    language_prompt: "Select your language / Seleccione su idioma"
+    language_selected: "Language set to: English"
+    creating_config: "Creating configuration file..."
+    installing_deps: "Installing dependencies..."
+    success: "Installation completed successfully!"
+    error: "Installation error: {error}"
+    
+  # Vulnerabilidades
+  vulnerabilities:
+    found: "Found {count} potential vulnerabilities"
+    testing: "Testing for {type} vulnerabilities..."
+    detected: "Detected: {name}"
+    sql_injection: "SQL Injection"
+    xss: "Cross-Site Scripting (XSS)"
+    nosql_injection: "NoSQL Injection"
+    ssrf: "Server-Side Request Forgery (SSRF)"
+    command_injection: "Command Injection"
+    path_traversal: "Path Traversal"
+    xxe: "XML External Entity (XXE)"
+    csrf: "Cross-Site Request Forgery (CSRF)"
+    idor: "Insecure Direct Object Reference (IDOR)"
+    open_redirect: "Open Redirect"
+    missing_header: "Missing Security Header"
+    info_disclosure: "Information Disclosure"
+    evidence:
+      sqli_error: "Database error message found in response"
+      missing_header: "Missing {header} header"
+      info_header: "Server revealed technology: {value}"
+      xss_reflected: "Reflected XSS payload found in response"
+      path_traversal: "System file content found in response"
+      open_redirect: "Open redirect to external site detected"
+      command_injection: "Command execution output found in response"
+
+  # Tecnologías
+  technologies:
+    detecting: "Detecting technologies..."
+    found: "Found {count} technologies"
+    completed: "Technology detection completed. Found {count} technologies"
+    completed_short: "Technology detection completed"
+    server: "Server: {name}"
+    framework: "Framework: {name}"
+    cms: "CMS: {name}"
+    waf_detected: "WAF detected: {name}"
+    cdn_detected: "CDN detected: {name}"
+    
+  # Reportes
+  report:
+    generating: "Generating report..."
+    saved: "Report saved to: {path}"
+    summary: "Scan Summary"
+    target: "Target"
+    duration: "Duration"
+    vulnerabilities: "Vulnerabilities Found"
+    technologies: "Technologies Detected"
+    
+  # Configuración
+  config:
+    loading: "Loading configuration from: {path}"
+    profile_applied: "Profile applied: {profile}"
+    invalid_profile: "Invalid profile: {profile}"
+    
+  # Logger
+  logger:
+    debug: "DEBUG"
+    info: "INFO"
+    warning: "WARNING"
+    error: "ERROR"
+    critical: "CRITICAL"
+
+  # GUI
+  gui:
+    title: "Web Security Scanner v4.0 (Async)"
+    target: "Target"
+    start_scan: "Start Scan"
+    open_report: "Open Report"
+    stop_scan: "Stop Scan"
+    ready: "Ready"
+    scanning: "Scanning {url}..."
+    scan_results: "Scan Results"
+    logs: "Logs"
+    columns:
+      vulnerability: "Vulnerability"
+      severity: "Severity"
+      url: "URL"
+      payload: "Payload"
+    status:
+      complete: "Scan Complete"
+      error: "Error: {error}"
+    messages:
+      enter_url: "Please enter a URL"
+      scan_finished: "Scan completed successfully."
+      done: "Done"
+    profiles:
+      label: "Scan Profile"
+      mapping: "Mapping"
+      quick: "Quick Attack"
+      balanced: "Balanced"
+      intense: "Powerful"
+    details:
+      title: "Vulnerability Details"
+      description: "Description"
+      impact: "Impact"
+      remediation: "Remediation"
+      evidence: "Evidence"
+      close: "Close"
+
+es:
+  # Banner
+  banner:
+    title: "WEB SECURITY SCANNER v4.0 - 2025"
+    subtitle: "Escáner avanzado de seguridad web para detección y análisis completos"
+    feature1: "Detecta vulnerabilidades"
+    feature2: "Identifica tecnologías utilizadas"
+    feature3: "Encuentra subdominios y más..."
+    footer: "Desarrollado por VIDES_2GA_2025"
+
+  # Scanner principal
+  scanner:
+    starting: "Iniciando escaneo de seguridad..."
+    completed: "¡Escaneo completado exitosamente!"
+    error: "Error durante el escaneo: {error}"
+    testing_url: "Probando URL: {url}"
+    analyzing: "Analizando objetivo..."
+    connection_test: "Probando conexión..."
+    connection_target: "Probando conexión a {url}..."
+    connection_success: "Conexión exitosa: {status}"
+    connection_failed: "Fallo al conectar a {url}"
+    forms_found: "Se encontraron {count} formularios"
+    no_forms: "No se encontraron formularios, saltando pruebas de vulnerabilidad"
+    testing_vulns: "Probando vulnerabilidades..."
+    testing_module: "Probando {module}..."
+    vuln_found: "Se encontraron {count} vulnerabilidades de {type}"
+    results_title: "RESULTADOS DEL ESCANEO"
+    stats_title: "Estadísticas:"
+    stats_requests: "Peticiones Totales: {count}"
+    stats_cached: "Respuestas en Caché: {count}"
+    stats_failed: "Peticiones Fallidas: {count}"
+    stats_hit_rate: "Tasa de Aciertos de Caché: {rate}"
+    stats_avg_time: "Tiempo Promedio de Respuesta: {time}s"
+    vulns_found_title: "Vulnerabilidades Encontradas: {count}"
+    vuln_detail: "{type}: {count} encontradas (Severidad: {severity})"
+    no_vulns: "¡No se encontraron vulnerabilidades!"
+    generating_map: "Generando mapa web interactivo..."
+    map_generated: "Mapa web generado: {path}"
+    open_browser: "Abrir en navegador: {url}"
+    map_error: "Error generando mapa web: {error}"
+    json_saved: "Reporte JSON guardado en: {path}"
+    report_error: "Fallo al guardar reporte: {error}"
+    scan_interrupted: "Escaneo interrumpido por el usuario"
+    scan_error: "Error: {error}"
+    target_info: "Objetivo: {url}"
+    testers_info: "Probadores Habilitados: {count}"
+    
+  # Instalación
+  install:
+    welcome: "Bienvenido a la Instalación de Web Security Scanner v4.0"
+    language_prompt: "Select your language / Seleccione su idioma"
+    language_selected: "Idioma establecido: Español"
+    creating_config: "Creando archivo de configuración..."
+    installing_deps: "Instalando dependencias..."
+    success: "¡Instalación completada exitosamente!"
+    error: "Error de instalación: {error}"
+    
+  # Vulnerabilidades
+  vulnerabilities:
+    found: "Se encontraron {count} vulnerabilidades potenciales"
+    testing: "Probando vulnerabilidades de tipo {type}..."
+    detected: "Detectado: {name}"
+    sql_injection: "Inyección SQL"
+    xss: "Cross-Site Scripting (XSS)"
+    nosql_injection: "Inyección NoSQL"
+    ssrf: "Falsificación de Petición del Lado del Servidor (SSRF)"
+    command_injection: "Inyección de Comandos"
+    path_traversal: "Traversal de Rutas"
+    xxe: "Entidad Externa XML (XXE)"
+    csrf: "Falsificación de Petición en Sitios Cruzados (CSRF)"
+    idor: "Referencia Directa a Objetos Insegura (IDOR)"
+    open_redirect: "Redirección Abierta"
+    missing_header: "Cabecera de Seguridad Faltante"
+    info_disclosure: "Divulgación de Información"
+    evidence:
+      sqli_error: "Mensaje de error de base de datos encontrado en la respuesta"
+      missing_header: "Falta la cabecera {header}"
+      info_header: "El servidor reveló tecnología: {value}"
+      xss_reflected: "Payload XSS reflejado encontrado en la respuesta"
+      path_traversal: "Contenido de archivo del sistema encontrado en la respuesta"
+      open_redirect: "Redirección abierta a sitio externo detectada"
+      command_injection: "Salida de ejecución de comandos encontrada en la respuesta"
+
+  # Tecnologías
+  technologies:
+    detecting: "Detectando tecnologías..."
+    found: "Se encontraron {count} tecnologías"
+    completed: "Detección de tecnologías completada. Se encontraron {count} tecnologías"
+    completed_short: "Detección de tecnologías completada"
+    server: "Servidor: {name}"
+    framework: "Framework: {name}"
+    cms: "CMS: {name}"
+    waf_detected: "WAF detectado: {name}"
+    cdn_detected: "CDN detectado: {name}"
+    
+  # Reportes
+  report:
+    generating: "Generando reporte..."
+    saved: "Reporte guardado en: {path}"
+    summary: "Resumen del Escaneo"
+    target: "Objetivo"
+    duration: "Duración"
+    vulnerabilities: "Vulnerabilidades Encontradas"
+    technologies: "Tecnologías Detectadas"
+    
+  # Configuración
+  config:
+    loading: "Cargando configuración desde: {path}"
+    profile_applied: "Perfil aplicado: {profile}"
+    invalid_profile: "Perfil inválido: {profile}"
+    
+  # Logger
+  logger:
+    debug: "DEPURACIÓN"
+    info: "INFO"
+    warning: "ADVERTENCIA"
+    error: "ERROR"
+    critical: "CRÍTICO"
+
+  # GUI
+  gui:
+    title: "Escáner de Seguridad Web v4.0 (Async)"
+    target: "Objetivo"
+    start_scan: "Iniciar Escaneo"
+    open_report: "Abrir Reporte"
+    stop_scan: "Detener Escaneo"
+    ready: "Listo"
+    scanning: "Escaneando {url}..."
+    scan_results: "Resultados del Escaneo"
+    logs: "Registros"
+    columns:
+      vulnerability: "Vulnerabilidad"
+      severity: "Severidad"
+      url: "URL"
+      payload: "Payload"
+    status:
+      complete: "Escaneo Completado"
+      error: "Error: {error}"
+    messages:
+      enter_url: "Por favor ingrese una URL"
+      scan_finished: "Escaneo completado exitosamente."
+      done: "Hecho"
+    profiles:
+      label: "Perfil de Escaneo"
+      mapping: "Mapeo"
+      quick: "Ataque Rápido"
+      balanced: "Equilibrado"
+      intense: "Potente"
+    details:
+      title: "Detalles de Vulnerabilidad"
+      description: "Descripción"
+      impact: "Impacto"
+      remediation: "Remediación"
+      evidence: "Evidencia"
+      close: "Cerrar"
