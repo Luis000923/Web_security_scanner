@@ -1,11 +1,11 @@
-# Archivo de Traducciones - Web Security Scanner v4.0
+# Archivo de Traducciones - Web Security Scanner v5.0.0
 # ====================================================
 # Contiene todas las traducciones en inglés (en) y español (es)
 
 en:
   # Banner
   banner:
-    title: "WEB SECURITY SCANNER v4.0 - 2025"
+    title: "WEB SECURITY SCANNER v5.0.0"
     subtitle: "Advanced web security scanner for complete detection and analysis"
     feature1: "Detects vulnerabilities"
     feature2: "Identifies technologies used"
@@ -45,13 +45,14 @@ en:
     json_saved: "JSON report saved to: {path}"
     report_error: "Failed to save report: {error}"
     scan_interrupted: "Scan interrupted by user"
+    scan_cancelled: "Scan cancelled by the user."
     scan_error: "Error: {error}"
     target_info: "Target: {url}"
     testers_info: "Enabled Testers: {count}"
     
   # Instalación
   install:
-    welcome: "Welcome to Web Security Scanner v4.0 Installation"
+    welcome: "Welcome to Web Security Scanner v5.0.0 Installation"
     language_prompt: "Select your language / Seleccione su idioma"
     language_selected: "Language set to: English"
     creating_config: "Creating configuration file..."
@@ -79,11 +80,13 @@ en:
     evidence:
       sqli_error: "Database error message found in response"
       missing_header: "Missing {header} header"
+      weak_header: "{header} present but weak/invalid: {value}"
       info_header: "Server revealed technology: {value}"
       xss_reflected: "Reflected XSS payload found in response"
       path_traversal: "System file content found in response"
       open_redirect: "Open redirect to external site detected"
       command_injection: "Command execution output found in response"
+      xxe: "External file content leaked via XML entity"
 
   # Tecnologías
   technologies:
@@ -123,7 +126,7 @@ en:
 
   # GUI
   gui:
-    title: "Web Security Scanner v4.0 (Async)"
+    title: "Web Security Scanner v5.0.0 (Async)"
     target: "Target"
     start_scan: "Start Scan"
     open_report: "Open Report"
@@ -161,7 +164,7 @@ en:
 es:
   # Banner
   banner:
-    title: "WEB SECURITY SCANNER v4.0 - 2025"
+    title: "WEB SECURITY SCANNER v5.0.0"
     subtitle: "Escáner avanzado de seguridad web para detección y análisis completos"
     feature1: "Detecta vulnerabilidades"
     feature2: "Identifica tecnologías utilizadas"
@@ -201,13 +204,14 @@ es:
     json_saved: "Reporte JSON guardado en: {path}"
     report_error: "Fallo al guardar reporte: {error}"
     scan_interrupted: "Escaneo interrumpido por el usuario"
+    scan_cancelled: "Escaneo cancelado por el usuario."
     scan_error: "Error: {error}"
     target_info: "Objetivo: {url}"
     testers_info: "Probadores Habilitados: {count}"
     
   # Instalación
   install:
-    welcome: "Bienvenido a la Instalación de Web Security Scanner v4.0"
+    welcome: "Bienvenido a la Instalación de Web Security Scanner v5.0.0"
     language_prompt: "Select your language / Seleccione su idioma"
     language_selected: "Idioma establecido: Español"
     creating_config: "Creando archivo de configuración..."
@@ -235,11 +239,13 @@ es:
     evidence:
       sqli_error: "Mensaje de error de base de datos encontrado en la respuesta"
       missing_header: "Falta la cabecera {header}"
+      weak_header: "{header} presente pero débil/no válida: {value}"
       info_header: "El servidor reveló tecnología: {value}"
       xss_reflected: "Payload XSS reflejado encontrado en la respuesta"
       path_traversal: "Contenido de archivo del sistema encontrado en la respuesta"
       open_redirect: "Redirección abierta a sitio externo detectada"
       command_injection: "Salida de ejecución de comandos encontrada en la respuesta"
+      xxe: "Contenido de archivo externo filtrado vía entidad XML"
 
   # Tecnologías
   technologies:
@@ -279,7 +285,7 @@ es:
 
   # GUI
   gui:
-    title: "Escáner de Seguridad Web v4.0 (Async)"
+    title: "Escáner de Seguridad Web v5.0.0 (Async)"
     target: "Objetivo"
     start_scan: "Iniciar Escaneo"
     open_report: "Abrir Reporte"

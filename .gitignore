@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# uv / venv
+.venv/
+
+# Scanner runtime output
+web_security_scanner/scanner.log
+scanner.log
+logs/
+reports/
+config.yaml
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,11 +1,25 @@
 """
-Core module for Web Security Scanner
-Contains base classes and utilities
+Core module for Web Security Scanner.
+
+Contains the async scanner core (connection pooling, token-bucket rate
+limiting, response caching, User-Agent rotation, SSRF-safe redirects) and the
+bounded worker-pool helper.
 """
 
-from .scanner_core import ScannerCore
-from .config import Config
-from .logger import setup_logger
-from .i18n import I18n, get_i18n, t
+from .scanner_core_async import (
+    AsyncResponseCache,
+    AsyncScannerCore,
+    ScanConfig,
+    SSRFRedirectError,
+    TokenBucket,
+    worker_pool,
+)
 
-__all__ = ['ScannerCore', 'Config', 'setup_logger', 'I18n', 'get_i18n', 't']
+__all__ = [
+    'AsyncScannerCore',
+    'AsyncResponseCache',
+    'ScanConfig',
+    'SSRFRedirectError',
+    'TokenBucket',
+    'worker_pool',
+]

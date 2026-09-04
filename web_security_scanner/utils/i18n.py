@@ -43,8 +43,12 @@ class I18n:
             return key
             
         if isinstance(value, str):
-            return value.format(**kwargs)
-            
+            try:
+                return value.format(**kwargs)
+            except (KeyError, IndexError):
+                # Missing/mismatched format kwargs: return the raw template
+                return value
+
         return str(value)
 
 # Global instance

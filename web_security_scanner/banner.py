@@ -1,5 +1,5 @@
 from colorama import Fore, Style
-from utils.i18n import i18n
+from .utils.i18n import i18n
 
 def print_banner():
     width = 76

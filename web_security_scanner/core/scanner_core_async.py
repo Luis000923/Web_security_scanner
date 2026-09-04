@@ -1,53 +1,204 @@
-import aiohttp
 import asyncio
-import time
 import hashlib
+import ipaddress
 import logging
-from typing import Optional, Dict, Any, Union
+import random
+import socket
+import time
+import urllib.parse
 from dataclasses import dataclass, field
-from threading import Lock
+from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
+
+import aiohttp
+
+# Small pool of legitimate, current desktop User-Agents. One is picked at
+# random per request (basic fingerprint rotation) unless the caller pinned a
+# specific UA through ScanConfig.user_agent.
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:133.0) Gecko/20100101 Firefox/133.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) Version/18.1 Safari/605.1.15",
+]
+
+REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+
+# Hard ceiling on how many *decompressed* response bytes we buffer in memory per
+# request. Protects against infinite chunked streams and gzip/deflate bombs: the
+# stream is read incrementally and abandoned once this many bytes accumulate.
+MAX_RESPONSE_SIZE = 5 * 1024 * 1024        # 5 MiB
+_READ_CHUNK = 64 * 1024                     # 64 KiB per iter_chunked step
+
+# ipaddress predicates that mark an address as "not a public destination".
+_BLOCKED_IP_PREDICATES = (
+    "is_private", "is_loopback", "is_link_local",
+    "is_reserved", "is_multicast", "is_unspecified",
+)
+
+
+class SSRFRedirectError(Exception):
+    """
+    Raised when a redirect (or the address it resolves to) points at a
+    private, loopback, link-local or otherwise non-public range.
+
+    The request is aborted instead of letting the HTTP client chase an
+    internal endpoint (e.g. the cloud metadata service at 169.254.169.254).
+    """
+
 
 @dataclass
 class ScanConfig:
     max_concurrency: int = 50
     timeout: int = 10
-    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    # None -> rotate a modern UA per request; a string pins that UA.
+    user_agent: Optional[str] = None
     proxy: Optional[str] = None
-    rate_limit: float = 0.0  # seconds between requests
+    rate_limit: float = 0.0          # min seconds between requests (0 = unlimited)
+    rate_burst: int = 1             # token-bucket capacity (allowed burst size)
+    verify_ssl: bool = True
     headers: Dict[str, str] = field(default_factory=dict)
+    rotate_user_agent: bool = True
+    max_redirects: int = 10
+    # Granular socket timeouts (seconds). ``timeout`` above stays the overall
+    # deadline; these two cap the slow-drip failure modes a tarpit relies on:
+    #   sock_connect -> time allowed to establish the TCP/TLS connection
+    #   sock_read    -> max gap between two received chunks of the body
+    sock_connect_timeout: float = 5.0
+    sock_read_timeout: float = 5.0
+    # Max decompressed body bytes buffered per response (OOM / zip-bomb guard).
+    max_response_size: int = MAX_RESPONSE_SIZE
+    # SSRF guard: when False, redirects whose target resolves to a non-public
+    # IP are aborted with SSRFRedirectError.
+    allow_private_redirects: bool = False
+
+
+class TokenBucket:
+    """
+    Async token bucket rate limiter.
+
+    Tokens refill continuously at ``rate`` per second up to ``capacity``.
+    ``acquire`` computes the wait under a short-lived lock but **sleeps
+    outside** it, so waiting for a token never occupies a concurrency slot and
+    several callers can have requests in flight at a pace consistent with the
+    configured rate (instead of the old lock-during-sleep that forced
+    concurrency down to 1).
+    """
+
+    def __init__(self, rate: float, capacity: float = 1.0):
+        self._rate = max(rate, 1e-6)
+        self._capacity = max(float(capacity), 1.0)
+        self._tokens = self._capacity
+        self._updated = time.monotonic()
+        self._lock = asyncio.Lock()
+
+    async def acquire(self, amount: float = 1.0) -> None:
+        amount = min(amount, self._capacity)
+        while True:
+            async with self._lock:
+                now = time.monotonic()
+                self._tokens = min(
+                    self._capacity,
+                    self._tokens + (now - self._updated) * self._rate,
+                )
+                self._updated = now
+                if self._tokens >= amount:
+                    self._tokens -= amount
+                    return
+                wait = (amount - self._tokens) / self._rate
+            await asyncio.sleep(wait)
+
+
+async def worker_pool(
+    work_items: Iterable[Any],
+    worker: Callable[[Any], Awaitable[None]],
+    *,
+    concurrency: int,
+    queue_factor: int = 2,
+) -> None:
+    """
+    Consume ``work_items`` through a fixed pool of ``concurrency`` workers.
+
+    ``work_items`` is iterated lazily via ``iter()``; a bounded queue
+    (``concurrency * queue_factor`` slots) applies real backpressure. An
+    iterator that would yield 50k payloads therefore never materialises 50k
+    pending coroutines — at most ``concurrency + queue`` items are live at once.
+
+    On cancellation (or if a worker raises) every worker and the feeder are
+    cancelled and awaited before returning, so no orphan tasks leak.
+    """
+    concurrency = max(1, concurrency)
+    queue: asyncio.Queue = asyncio.Queue(maxsize=concurrency * max(1, queue_factor))
+    _STOP = object()
+    iterator = iter(work_items)
+
+    async def feed() -> None:
+        for item in iterator:
+            await queue.put(item)          # blocks when full -> backpressure
+        for _ in range(concurrency):
+            await queue.put(_STOP)
+
+    async def run() -> None:
+        while True:
+            item = await queue.get()
+            try:
+                if item is _STOP:
+                    return
+                await worker(item)
+            finally:
+                queue.task_done()
+
+    tasks = [asyncio.create_task(run()) for _ in range(concurrency)]
+    feeder = asyncio.create_task(feed())
+    try:
+        await asyncio.gather(feeder, *tasks)
+    except BaseException:
+        for task in (feeder, *tasks):
+            task.cancel()
+        await asyncio.gather(feeder, *tasks, return_exceptions=True)
+        raise
+
 
 class AsyncResponseCache:
-    """Thread-safe and Async-friendly response cache."""
-    
+    """
+    Response cache for the single-event-loop scanner.
+
+    Access is confined to the asyncio loop (get/put are synchronous and never
+    await), so no lock is needed — coroutines don't preempt each other between
+    statements.
+    """
+
     def __init__(self, max_size: int = 1000, ttl: int = 3600):
         self.cache = {}
         self.max_size = max_size
         self.ttl = ttl
-        self.lock = Lock() # Still useful if accessed from mixed contexts
         self.access_times = {}
-    
+
     def _generate_key(self, url: str, method: str, data: Any) -> str:
         key_data = f"{url}-{method}-{str(data)}"
         return hashlib.md5(key_data.encode()).hexdigest()
-    
+
     def get(self, url: str, method: str, data: Any = None) -> Optional[Dict]:
-        with self.lock:
-            key = self._generate_key(url, method, data)
-            if key in self.cache:
-                if time.time() - self.access_times.get(key, 0) < self.ttl:
-                    return self.cache[key]
-                else:
-                    self._remove(key)
-            return None
-    
+        key = self._generate_key(url, method, data)
+        if key in self.cache:
+            if time.time() - self.access_times.get(key, 0) < self.ttl:
+                return self.cache[key]
+            else:
+                self._remove(key)
+        return None
+
     def put(self, url: str, method: str, data: Any, response_data: Dict):
-        with self.lock:
-            if len(self.cache) >= self.max_size:
-                self._evict_old_entries()
-            
-            key = self._generate_key(url, method, data)
-            self.cache[key] = response_data
-            self.access_times[key] = time.time()
+        if len(self.cache) >= self.max_size:
+            self._evict_old_entries()
+
+        key = self._generate_key(url, method, data)
+        self.cache[key] = response_data
+        self.access_times[key] = time.time()
 
     def _remove(self, key):
         if key in self.cache:
@@ -63,80 +214,255 @@ class AsyncResponseCache:
         for key, _ in sorted_keys[:to_remove]:
             self._remove(key)
 
+
 class AsyncScannerCore:
     """
     Core scanner functionality using asyncio and aiohttp.
-    Handles connection pooling, rate limiting, and caching.
+
+    Handles connection pooling, token-bucket rate limiting, response caching,
+    fingerprint (User-Agent) rotation, and SSRF-safe redirect following.
     """
+
     def __init__(self, config: ScanConfig):
         self.config = config
         self.session: Optional[aiohttp.ClientSession] = None
         self.cache = AsyncResponseCache()
+        # Bounds requests actually in flight.
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
-        self._last_request_time = 0
+        # Global request pacing, decoupled from the concurrency slot.
+        self._rate_bucket: Optional[TokenBucket] = None
+        if config.rate_limit and config.rate_limit > 0:
+            self._rate_bucket = TokenBucket(
+                rate=1.0 / config.rate_limit, capacity=config.rate_burst
+            )
         self._logger = logging.getLogger(__name__)
+        # host -> {ip, ...}; avoids re-resolving on every redirect check.
+        self._resolve_cache: Dict[str, set] = {}
 
     async def start(self):
         """Initialize the aiohttp session."""
         if not self.session:
-            connector = aiohttp.TCPConnector(limit=self.config.max_concurrency, ssl=False)
-            headers = {"User-Agent": self.config.user_agent}
-            headers.update(self.config.headers)
+            connector = aiohttp.TCPConnector(
+                limit=self.config.max_concurrency,
+                ssl=self.config.verify_ssl,
+            )
+            headers = dict(self.config.headers)
+            if self.config.user_agent:
+                headers.setdefault("User-Agent", self.config.user_agent)
             self.session = aiohttp.ClientSession(connector=connector, headers=headers)
 
     async def close(self):
-        """Close the aiohttp session."""
-        if self.session:
-            await self.session.close()
-            self.session = None
+        """Close the aiohttp session (idempotent)."""
+        session, self.session = self.session, None
+        if session is not None and not session.closed:
+            await session.close()
+            # Let underlying transports (esp. TLS) finish closing.
+            await asyncio.sleep(0)
+
+    # ---- worker pool passthrough ---------------------------------------
+
+    async def run_worker_pool(self, work_items, worker, *, concurrency, queue_factor=2):
+        """Instance-level alias for :func:`worker_pool` (bounded fan-out)."""
+        await worker_pool(
+            work_items, worker, concurrency=concurrency, queue_factor=queue_factor
+        )
+
+    # ---- fingerprinting ----------------------------------------------
+
+    def _request_headers(self, extra: Optional[Dict[str, str]]) -> Dict[str, str]:
+        headers: Dict[str, str] = {}
+        if self.config.rotate_user_agent and not self.config.user_agent:
+            headers["User-Agent"] = random.choice(USER_AGENTS)
+        if extra:
+            headers.update(extra)
+        return headers
+
+    # ---- SSRF guard -------------------------------------------------
+
+    @staticmethod
+    def _ip_is_blocked(ip_text: str) -> bool:
+        try:
+            ip = ipaddress.ip_address(ip_text)
+        except ValueError:
+            return True  # unparseable -> treat as unsafe
+        return any(getattr(ip, pred, False) for pred in _BLOCKED_IP_PREDICATES)
+
+    async def _resolve_host(self, host: str) -> set:
+        if host in self._resolve_cache:
+            return self._resolve_cache[host]
+        loop = asyncio.get_running_loop()
+        try:
+            infos = await loop.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+        except socket.gaierror as e:
+            raise SSRFRedirectError(f"Cannot resolve redirect host {host!r}: {e}") from e
+        ips = {info[4][0] for info in infos}
+        self._resolve_cache[host] = ips
+        return ips
+
+    async def _assert_public_url(self, url: str) -> None:
+        """Raise SSRFRedirectError if ``url``'s host is / resolves to non-public."""
+        host = urllib.parse.urlparse(url).hostname
+        if not host:
+            raise SSRFRedirectError(f"Redirect target has no host: {url!r}")
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            pass  # a name -> resolve below
+        else:
+            if self._ip_is_blocked(host):
+                raise SSRFRedirectError(
+                    f"Redirect to non-public address blocked: {url!r}"
+                )
+            return
+        for ip in await self._resolve_host(host):
+            if self._ip_is_blocked(ip):
+                raise SSRFRedirectError(
+                    f"Redirect to {url!r} resolves to blocked address {ip}"
+                )
+
+    # ---- safe body reading -----------------------------------------
+
+    async def _safe_read(self, response: "aiohttp.ClientResponse") -> tuple:
+        """
+        Read a response body defensively.
+
+        The body is consumed in ``_READ_CHUNK`` steps from the *decoded*
+        (already decompressed by aiohttp) stream. As soon as the accumulated
+        size would exceed ``config.max_response_size`` the read stops, the
+        connection is force-closed so the server can't keep feeding us, and the
+        partial body is returned with ``truncated=True``.
+
+        Returns ``(text, truncated, raw_len)``.
+        """
+        limit = self.config.max_response_size
+        chunks = []
+        total = 0
+        truncated = False
+        async for chunk in response.content.iter_chunked(_READ_CHUNK):
+            if total + len(chunk) > limit:
+                chunks.append(chunk[: limit - total])
+                total = limit
+                truncated = True
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+
+        if truncated:
+            # Abandon the rest of the stream and drop the socket instead of
+            # draining a potentially infinite body.
+            response.close()
+
+        body = b"".join(chunks)
+        try:
+            encoding = response.get_encoding()
+        except (RuntimeError, LookupError):
+            encoding = "utf-8"
+        text = body.decode(encoding or "utf-8", errors="ignore")
+        return text, truncated, total
+
+    # ---- request -----------------------------------------------------
 
     async def request(self, method: str, url: str, **kwargs) -> Dict[str, Any]:
         """
-        Execute an HTTP request with caching and rate limiting.
-        Returns a dictionary with status, text, headers, etc.
+        Execute an HTTP request with caching, rate limiting, UA rotation and
+        SSRF-safe redirect following.
+
+        Returns a dict: {status_code, text, headers, url, elapsed[, error]}.
+        Raises :class:`SSRFRedirectError` if a redirect points somewhere
+        internal. Propagates :class:`asyncio.CancelledError` untouched.
         """
         if not self.session:
             await self.start()
 
-        # Check cache
-        data = kwargs.get('data') or kwargs.get('json')
+        data = kwargs.get("data") or kwargs.get("json")
         cached = self.cache.get(url, method, data)
         if cached:
             return cached
 
-        # Rate limiting
-        async with self._semaphore:
-            if self.config.rate_limit > 0:
-                now = time.time()
-                elapsed = now - self._last_request_time
-                if elapsed < self.config.rate_limit:
-                    await asyncio.sleep(self.config.rate_limit - elapsed)
-                self._last_request_time = time.time()
+        follow_redirects = kwargs.pop("allow_redirects", True)
+        caller_headers = kwargs.pop("headers", None)
 
-            try:
-                timeout = aiohttp.ClientTimeout(total=self.config.timeout)
-                async with self.session.request(method, url, timeout=timeout, proxy=self.config.proxy, **kwargs) as response:
-                    # Read content immediately to release connection
-                    text = await response.text(errors='ignore')
-                    result = {
-                        'status_code': response.status,
-                        'text': text,
-                        'headers': dict(response.headers),
-                        'url': str(response.url),
-                        'elapsed': 0 # TODO: Calculate elapsed
-                    }
-                    
-                    # Cache successful GET requests
-                    if method.upper() == 'GET' and response.status == 200:
-                        self.cache.put(url, method, data, result)
-                    
-                    return result
-            except Exception as e:
-                self._logger.debug(f"Request failed: {url} - {e}")
-                return {
-                    'status_code': 0,
-                    'text': '',
-                    'headers': {},
-                    'url': url,
-                    'error': str(e)
-                }
+        # Rate gate BEFORE taking a concurrency slot: waiting for a token must
+        # not hold a semaphore permit (that serialised everything before).
+        if self._rate_bucket is not None:
+            await self._rate_bucket.acquire()
+
+        try:
+            async with self._semaphore:
+                result = await self._request_following(
+                    method, url, follow_redirects, caller_headers, kwargs
+                )
+        except asyncio.CancelledError:
+            raise
+        except SSRFRedirectError:
+            raise
+        except Exception as e:
+            self._logger.debug(f"Request failed: {url} - {e}")
+            return {
+                "status_code": 0, "text": "", "headers": {},
+                "url": url, "elapsed": 0.0, "truncated": False, "error": str(e),
+            }
+
+        if method.upper() == "GET" and result.get("status_code") == 200:
+            self.cache.put(url, method, data, result)
+        return result
+
+    async def _request_following(
+        self, method: str, url: str, follow_redirects: bool,
+        caller_headers: Optional[Dict[str, str]], kwargs: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Issue the request, manually following redirects with SSRF checks."""
+        timeout = aiohttp.ClientTimeout(
+            total=self.config.timeout,
+            sock_connect=self.config.sock_connect_timeout,
+            sock_read=self.config.sock_read_timeout,
+        )
+        current_method = method
+        current_url = url
+        redirects = 0
+        started = time.monotonic()
+
+        while True:
+            headers = self._request_headers(caller_headers)
+            async with self.session.request(
+                current_method, current_url,
+                timeout=timeout, proxy=self.config.proxy,
+                allow_redirects=False, headers=headers, **kwargs,
+            ) as response:
+                status = response.status
+                resp_headers = dict(response.headers)
+                final_url = str(response.url)
+                location = response.headers.get("Location")
+                # Redirects: skip reading the (usually empty) body entirely.
+                if (follow_redirects and status in REDIRECT_STATUSES
+                        and location and redirects < self.config.max_redirects):
+                    text, truncated = "", False
+                    response.close()
+                else:
+                    text, truncated, _ = await self._safe_read(response)
+
+            if (follow_redirects and status in REDIRECT_STATUSES
+                    and location and redirects < self.config.max_redirects):
+                next_url = urllib.parse.urljoin(current_url, location)
+                if not self.config.allow_private_redirects:
+                    await self._assert_public_url(next_url)
+                redirects += 1
+                # 303 always -> GET; 301/302 -> GET for non-idempotent methods
+                # (matches how browsers and requests behave).
+                if status == 303 or (
+                    status in (301, 302) and current_method not in ("GET", "HEAD")
+                ):
+                    current_method = "GET"
+                    kwargs.pop("data", None)
+                    kwargs.pop("json", None)
+                current_url = next_url
+                continue
+
+            return {
+                "status_code": status,
+                "text": text,
+                "headers": resp_headers,
+                "url": final_url,
+                "elapsed": time.monotonic() - started,
+                "truncated": truncated,
+            }

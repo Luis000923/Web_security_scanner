@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Any, Awaitable, Union
+from typing import Callable, Dict, List, Any
 from enum import Enum, auto
 import asyncio
 import logging
@@ -6,6 +6,7 @@ import logging
 class ScanEventType(Enum):
     SCAN_START = auto()
     PROGRESS_UPDATE = auto()
+    URL_SCANNED = auto()
     VULNERABILITY_FOUND = auto()
     SCAN_COMPLETE = auto()
     ERROR = auto()
@@ -35,24 +36,6 @@ class ScanEventEmitter:
                 try:
                     if asyncio.iscoroutinefunction(callback):
                         await callback(**kwargs)
-                    else:
-                        callback(**kwargs)
-                except Exception as e:
-                    self._logger.error(f"Error in event listener for {event_type}: {e}")
-
-    def emit_sync(self, event_type: ScanEventType, **kwargs):
-        """Emit an event synchronously (fire and forget for async listeners)."""
-        if event_type in self._listeners:
-            for callback in self._listeners[event_type]:
-                try:
-                    if asyncio.iscoroutinefunction(callback):
-                        # Schedule async callback in the running loop if possible
-                        try:
-                            loop = asyncio.get_running_loop()
-                            loop.create_task(callback(**kwargs))
-                        except RuntimeError:
-                            # No running loop
-                            pass 
                     else:
                         callback(**kwargs)
                 except Exception as e:

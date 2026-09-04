@@ -42,10 +42,10 @@ class TesterRegistry:
                 
             try:
                 module = importlib.import_module(f".vulnerability_testers.{name}", package="web_security_scanner.modules")
-                
-                for name, obj in inspect.getmembers(module):
-                    if (inspect.isclass(obj) and 
-                        issubclass(obj, VulnerabilityTester) and 
+
+                for member_name, obj in inspect.getmembers(module):
+                    if (inspect.isclass(obj) and
+                        issubclass(obj, VulnerabilityTester) and
                         obj is not VulnerabilityTester):
                         cls.register(obj)
             except Exception as e:

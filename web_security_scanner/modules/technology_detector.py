@@ -3,33 +3,23 @@ Technology Detection Module
 Advanced fingerprinting of web technologies, CMS, frameworks, and tools
 """
 
+import logging
 import re
-from typing import Dict, List, Set
+from typing import Dict, List
 from bs4 import BeautifulSoup
 from collections import defaultdict
 
-try:
-    from ..Tecnologias import TECNOLOGIAS
-    from ..cms_fingerprints import CMS_fingerprints
-    from ..js_frameworks import JSframeworks
-    from ..analytics_patterns import ANALYTICS_PATTERNS
-except ImportError:
-    from Tecnologias import TECNOLOGIAS
-    from cms_fingerprints import CMS_fingerprints
-    from js_frameworks import JSframeworks
-    from analytics_patterns import ANALYTICS_PATTERNS
-
-
-try:
-    from ..utils.i18n import i18n
-except ImportError:
-    from utils.i18n import i18n
+from ..Tecnologias import TECNOLOGIAS
+from ..cms_fingerprints import CMS_fingerprints
+from ..js_frameworks import JSframeworks
+from ..analytics_patterns import ANALYTICS_PATTERNS
+from ..utils.i18n import i18n
 
 class TechnologyDetector:
     """Advanced technology detection and fingerprinting"""
     
-    def __init__(self, logger):
-        self.logger = logger
+    def __init__(self, logger=None):
+        self.logger = logger or logging.getLogger("TechnologyDetector")
         self.tech_signatures = TECNOLOGIAS
         self.cms_signatures = CMS_fingerprints
         self.js_signatures = JSframeworks
@@ -37,29 +27,43 @@ class TechnologyDetector:
         
         self.detected = defaultdict(set)
         self.confidence_scores = {}
-    
-    def detect_all(self, response, html_content: str = None) -> Dict[str, List[str]]:
+
+    @staticmethod
+    def _matches(pattern: str, text: str) -> bool:
         """
-        Perform comprehensive technology detection
-        
+        Substring match, but word-boundary-anchored for short alphanumeric
+        tokens (<= 4 chars like ``d3``, ``vue``, ``ga``). Without this a 2-4
+        char signature matches random substrings ("Java" -> "ava") and produces
+        dozens of false positives.
+        """
+        p = pattern.lower()
+        if not p:
+            return False
+        low = text.lower()
+        if len(p) <= 4 and p.isalnum():
+            return re.search(r'(?<![a-z0-9])' + re.escape(p) + r'(?![a-z0-9])', low) is not None
+        return p in low
+
+    def detect_all(self, headers: dict, html_content: str) -> Dict[str, List[str]]:
+        """
+        Perform comprehensive technology detection.
+
         Args:
-            response: HTTP response object
-            html_content: HTML content (optional, will extract from response if not provided)
-            
+            headers: Response headers dict (from the async scanner core).
+            html_content: HTML body of the response.
+
         Returns:
-            Dictionary with detected technologies by category
+            Dictionary with detected technologies by category.
         """
-        if html_content is None:
-            html_content = response.text
-        
-        headers = response.headers
-        
+        headers = headers or {}
+        html_content = html_content or ""
+
         # Run all detection methods
         self._detect_from_headers(headers)
         self._detect_from_html(html_content)
         self._detect_from_scripts(html_content)
         self._detect_from_meta_tags(html_content)
-        self._detect_from_cookies(response.cookies)
+        self._detect_from_cookies(headers)
         self._detect_cms(html_content, headers)
         self._detect_js_frameworks(html_content)
         self._detect_analytics(html_content)
@@ -80,20 +84,20 @@ class TechnologyDetector:
     def _detect_from_headers(self, headers: dict):
         """Detect technologies from HTTP headers"""
         for header_name, header_value in headers.items():
-            header_lower = header_value.lower()
-            
+            header_value = str(header_value)
+
             # Detect servers
             if header_name.lower() in ['server', 'x-powered-by']:
                 for tech, patterns in self.tech_signatures.get('servers', {}).items():
                     for pattern in patterns:
-                        if pattern.lower() in header_lower:
+                        if self._matches(pattern, header_value):
                             self.detected['servers'].add(tech)
                             self._update_confidence(tech, 'high')
-            
+
             # Detect languages
             for lang, patterns in self.tech_signatures.get('languages', {}).items():
                 for pattern in patterns:
-                    if pattern.lower() in header_lower:
+                    if self._matches(pattern, header_value):
                         self.detected['languages'].add(lang)
                         self._update_confidence(lang, 'high')
     
@@ -105,7 +109,7 @@ class TechnologyDetector:
             if category not in ['servers', 'languages']:  # Already handled by headers
                 for tech, patterns in tech_dict.items():
                     for pattern in patterns:
-                        if pattern.lower() in html_lower:
+                        if self._matches(pattern, html_lower):
                             self.detected[category].add(tech)
                             self._update_confidence(tech, 'medium')
     
@@ -130,20 +134,18 @@ class TechnologyDetector:
             self.logger.warning(f"Error detecting technologies from scripts: {e}")
     
     def _analyze_script_url(self, src: str):
-        """Analyze script URL for technology detection"""
-        src_lower = src.lower()
-        
-        # Detect JS frameworks
-        for framework, patterns in self.js_signatures.items():
-            for pattern in patterns:
-                if pattern.lower() in src_lower:
-                    self.detected['js_frameworks'].add(framework)
-                    self._update_confidence(framework, 'high')
-        
-        # Detect frontend frameworks
+        """Analyze a script src URL for technology detection."""
+        # js_signatures is {pattern: DisplayName}. Match against the script URL
+        # only (not the whole body) to avoid short-token false positives.
+        for pattern, name in self.js_signatures.items():
+            if self._matches(pattern, src):
+                self.detected['js_frameworks'].add(name)
+                self._update_confidence(name, 'high')
+
+        # Frontend frameworks (TECNOLOGIAS has {name: [patterns]} shape here).
         for framework, patterns in self.tech_signatures.get('frontend', {}).items():
             for pattern in patterns:
-                if pattern.lower() in src_lower:
+                if self._matches(pattern, src):
                     self.detected['frontend'].add(framework)
                     self._update_confidence(framework, 'high')
     
@@ -164,7 +166,7 @@ class TechnologyDetector:
         
         for tech, tech_patterns in patterns.items():
             for pattern in tech_patterns:
-                if pattern in content_lower:
+                if self._matches(pattern, content_lower):
                     self.detected['js_frameworks'].add(tech)
                     self._update_confidence(tech, 'medium')
     
@@ -175,14 +177,14 @@ class TechnologyDetector:
             meta_tags = soup.find_all('meta')
             
             for meta in meta_tags:
-                # Generator meta tag (CMS detection)
+                # Generator meta tag (CMS detection). cms_signatures is
+                # {pattern: DisplayName}.
                 if meta.get('name') == 'generator':
-                    content = meta.get('content', '').lower()
-                    for cms, patterns in self.cms_signatures.items():
-                        for pattern in patterns:
-                            if pattern.lower() in content:
-                                self.detected['cms'].add(cms)
-                                self._update_confidence(cms, 'high')
+                    content = meta.get('content', '')
+                    for pattern, name in self.cms_signatures.items():
+                        if self._matches(pattern, content):
+                            self.detected['cms'].add(name)
+                            self._update_confidence(name, 'high')
                 
                 # Other meta tags
                 for attr in ['content', 'property', 'name']:
@@ -197,44 +199,42 @@ class TechnologyDetector:
         except Exception as e:
             self.logger.warning(f"Error detecting from meta tags: {e}")
     
-    def _detect_from_cookies(self, cookies):
-        """Detect technologies from cookies"""
-        for cookie in cookies:
-            cookie_name = cookie.name.lower()
-            
-            if 'phpsessid' in cookie_name:
-                self.detected['languages'].add('PHP')
-            elif 'asp.net' in cookie_name or 'aspx' in cookie_name:
-                self.detected['languages'].add('ASP.NET')
-            elif 'jsessionid' in cookie_name:
-                self.detected['languages'].add('Java')
-            elif 'cfid' in cookie_name or 'cftoken' in cookie_name:
-                self.detected['languages'].add('ColdFusion')
+    def _detect_from_cookies(self, headers: dict):
+        """Detect technologies from the Set-Cookie response header."""
+        set_cookie = ""
+        for h_name, h_val in headers.items():
+            if h_name.lower() == 'set-cookie':
+                set_cookie = str(h_val).lower()
+                break
+        if not set_cookie:
+            return
+
+        if 'phpsessid' in set_cookie:
+            self.detected['languages'].add('PHP')
+        if 'asp.net' in set_cookie or 'aspx' in set_cookie:
+            self.detected['languages'].add('ASP.NET')
+        if 'jsessionid' in set_cookie:
+            self.detected['languages'].add('Java')
+        if 'cfid' in set_cookie or 'cftoken' in set_cookie:
+            self.detected['languages'].add('ColdFusion')
     
     def _detect_cms(self, html_content: str, headers: dict):
-        """Enhanced CMS detection"""
-        html_lower = html_content.lower()
-        
-        for cms, patterns in self.cms_signatures.items():
-            match_count = 0
-            for pattern in patterns:
-                if pattern.lower() in html_lower:
-                    match_count += 1
-            
-            if match_count > 0:
-                self.detected['cms'].add(cms)
-                confidence = 'high' if match_count >= 2 else 'medium'
-                self._update_confidence(cms, confidence)
-    
+        """CMS detection over body content. cms_signatures is {pattern: name}."""
+        for pattern, name in self.cms_signatures.items():
+            if self._matches(pattern, html_content):
+                self.detected['cms'].add(name)
+                self._update_confidence(name, 'medium')
+
     def _detect_js_frameworks(self, html_content: str):
-        """Detect JavaScript frameworks"""
-        html_lower = html_content.lower()
-        
-        for framework, patterns in self.js_signatures.items():
-            for pattern in patterns:
-                if pattern.lower() in html_lower:
-                    self.detected['js_frameworks'].add(framework)
-                    self._update_confidence(framework, 'medium')
+        """
+        JS framework detection over body content. js_signatures is
+        {pattern: name}; word-boundary matching (_matches) prevents short
+        tokens like 'd3'/'vue' from matching random substrings.
+        """
+        for pattern, name in self.js_signatures.items():
+            if self._matches(pattern, html_content):
+                self.detected['js_frameworks'].add(name)
+                self._update_confidence(name, 'medium')
     
     def _detect_analytics(self, html_content: str):
         """Detect analytics and tracking tools"""
@@ -242,7 +242,7 @@ class TechnologyDetector:
         
         for tool, patterns in self.analytics_signatures.items():
             for pattern in patterns:
-                if pattern.lower() in html_lower:
+                if self._matches(pattern, html_lower):
                     self.detected['analytics'].add(tool)
                     self._update_confidence(tool, 'high')
     

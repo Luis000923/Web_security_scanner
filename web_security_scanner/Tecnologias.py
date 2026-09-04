@@ -18,7 +18,6 @@ TECNOLOGIAS = {
                 'Gunicorn': ['gunicorn'],
                 'uWSGI': ['uwsgi'],
                 'Resin': ['Resin'],
-                'LiteSpeed': ['LiteSpeed'],
                 'Jetty': ['Jetty'],
                 'WebLogic': ['WebLogic'],
                 'WebSphere': ['WebSphere'],

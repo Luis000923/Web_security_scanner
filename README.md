@@ -1,40 +1,51 @@
-# 🔒 Web Security Scanner v4.0 (Async)
+#  Web Security Scanner v5.0.0 (Async)
 
-###AVIDO LA PARTE DE GUI SIGUE EN DESARROLLO ESTA EN FASE BETA###
+Escáner de seguridad web totalmente asíncrono (`asyncio` + `aiohttp`) con
+sistema de plugins para testers de vulnerabilidades. Solo para pruebas de
+seguridad autorizadas y fines educativos.
 
-## 🚀 Nueva Arquitectura Asíncrona
+##  Arquitectura v5.0
 
-Esta versión introduce cambios significativos en la arquitectura del escáner para mejorar el rendimiento, la modularidad y la extensibilidad.
+- **Core Asíncrono** (`core/scanner_core_async.py`): connection pooling, rate
+  limiting global y caché de respuestas sobre un único event loop.
+- **Orquestador** (`web_security_scanner_async.py`): descubre y ejecuta los
+  testers, aplica perfiles y genera el mapa web.
+- **Sistema de Eventos** (`events/`): desacopla la lógica de escaneo de la
+  salida (la CLI se suscribe a los eventos).
+- **Plugins** (`modules/vulnerability_testers/`): 12 testers async derivados de
+  `base_tester_async.py`, auto-registrados vía `modules/registry.py`.
+- **i18n** (`utils/i18n.py`): soporte de idiomas (`en`, `es`).
 
-### ✨ Novedades en v4.0
-- **Core Asíncrono**: Migración a `asyncio` y `aiohttp` para un rendimiento superior.
-- **Sistema de Eventos**: Desacoplamiento total entre la lógica de escaneo y la interfaz de usuario.
-- **Plugins**: Nuevo sistema de plugins para añadir testers de vulnerabilidades fácilmente.
-- **Estructura de Paquete**: Organización moderna del código fuente.
+> La GUI síncrona, el core síncrono, `launcher_async.py` y el resto de
+> artefactos de la v4.0 se eliminaron en esta versión.
 
-## 📂 Estructura del Proyecto
+##  Instalación
 
-- `web_security_scanner/`: Código fuente del paquete (Core, GUI, Módulos).
-- `Documentacion/`: Documentación completa de versiones anteriores y guías de uso.
-- `installer.py`: Script de instalación de dependencias.
+```bash
+pip install -e .
+```
 
-## 🛠️ Instalación
+##  Uso
 
-1. Ejecuta el instalador para configurar las dependencias:
-   ```bash
-   python installer.py
-   ```
+El único entry point es la CLI (`webscanner`, o `python -m web_security_scanner.cli`):
 
-2. Inicia la aplicación (Nueva versión asíncrona):
-   ```bash
-   python web_security_scanner/launcher_async.py
-   ```
+```bash
+webscanner scan https://example.com --profile balanced
+webscanner scan https://example.com -p intense --threads 50 -f json,html
+webscanner scan --help
+```
+
+Perfiles disponibles: `quick`, `balanced`, `intense`, `mapping`.
+
+##  Tests
+
+```bash
+pytest tests/test_testers.py
+```
 
 ## 📚 Documentación
 
-Para ver la documentación detallada de uso, arquitectura y versiones anteriores, consulta la carpeta [Documentacion/](Documentacion/).
+Ver [Documentacion/](Documentacion/) para guías de uso y arquitectura.
 
 ---
 **Nota**: Este proyecto es para fines educativos y pruebas de seguridad autorizadas.
-
-# Se que no preguntaste pero llego como 4 meses trabajando en esta version y queria compartirla con ustedes :) Espero que les guste y cualquier feedback es bienvenido!
