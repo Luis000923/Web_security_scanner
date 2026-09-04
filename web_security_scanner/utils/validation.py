@@ -82,6 +82,6 @@ def validate_target_url(raw: str) -> str:
         ipaddress.ip_address(host)
     except ValueError:
         if not _HOSTNAME_RE.match(host):
-            raise InvalidTargetError(f"Invalid host: {host!r}")
+            raise InvalidTargetError(f"Invalid host: {host!r}") from None
 
     return url

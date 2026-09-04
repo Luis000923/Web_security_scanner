@@ -9,11 +9,11 @@ clobber each other (fixes the old fixed-filename-in-cwd collision bug).
 """
 
 import asyncio
-import json
 import html
+import json
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 
 from .utils.validation import mask_secrets
 
@@ -33,7 +33,7 @@ def _e(value: Any) -> str:
 _MASKED_FIELDS = ("evidence", "request", "response", "headers", "raw", "details")
 
 
-def _mask_vuln(vuln: Dict[str, Any]) -> Dict[str, Any]:
+def _mask_vuln(vuln: dict[str, Any]) -> dict[str, Any]:
     """Return a shallow copy of ``vuln`` with secrets redacted from its text."""
     cleaned = dict(vuln)
     for key in _MASKED_FIELDS:
@@ -52,7 +52,7 @@ def _timestamp() -> str:
 CONFIDENCE_ORDER = {"confirmed": 0, "high": 1, "medium": 2, "low": 3}
 
 
-def _confidence_of(v: Dict[str, Any]) -> str:
+def _confidence_of(v: dict[str, Any]) -> str:
     """Read a vulnerability's confidence, tolerating old reports without it."""
     raw = v.get("confidence")
     if not raw:
@@ -61,7 +61,7 @@ def _confidence_of(v: Dict[str, Any]) -> str:
     return val if val in ("LOW", "MEDIUM", "HIGH", "CONFIRMED") else "N/A"
 
 
-def _sorted_vulns(vulns: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _sorted_vulns(vulns: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(
         vulns,
         key=lambda v: (
@@ -71,7 +71,7 @@ def _sorted_vulns(vulns: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     )
 
 
-def generate_json_report(scan_data: Dict[str, Any], output_dir: str = "reports") -> str:
+def generate_json_report(scan_data: dict[str, Any], output_dir: str = "reports") -> str:
     """Write a JSON report and return its path."""
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -93,7 +93,7 @@ def generate_json_report(scan_data: Dict[str, Any], output_dir: str = "reports")
     return str(path)
 
 
-def generate_html_report(scan_data: Dict[str, Any], output_dir: str = "reports") -> str:
+def generate_html_report(scan_data: dict[str, Any], output_dir: str = "reports") -> str:
     """Write an HTML report and return its path."""
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -190,9 +190,9 @@ def generate_html_report(scan_data: Dict[str, Any], output_dir: str = "reports")
     return str(path)
 
 
-def generate_reports(scan_data: Dict[str, Any], formats: List[str], output_dir: str = "reports") -> Dict[str, str]:
+def generate_reports(scan_data: dict[str, Any], formats: list[str], output_dir: str = "reports") -> dict[str, str]:
     """Generate the requested report formats; returns {format: path}."""
-    paths: Dict[str, str] = {}
+    paths: dict[str, str] = {}
     if "json" in formats:
         paths["json"] = generate_json_report(scan_data, output_dir)
     if "html" in formats:
@@ -200,8 +200,8 @@ def generate_reports(scan_data: Dict[str, Any], formats: List[str], output_dir: 
     return paths
 
 
-async def generate_reports_async(scan_data: Dict[str, Any], formats: List[str],
-                                 output_dir: str = "reports") -> Dict[str, str]:
+async def generate_reports_async(scan_data: dict[str, Any], formats: list[str],
+                                 output_dir: str = "reports") -> dict[str, str]:
     """
     Non-blocking version of :func:`generate_reports`.
 

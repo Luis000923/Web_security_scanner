@@ -5,26 +5,28 @@ Advanced fingerprinting of web technologies, CMS, frameworks, and tools
 
 import logging
 import re
-from typing import Dict, List
-from bs4 import BeautifulSoup
 from collections import defaultdict
+from typing import Any
 
-from ..Tecnologias import TECNOLOGIAS
+from bs4 import BeautifulSoup
+
+from ..analytics_patterns import ANALYTICS_PATTERNS
 from ..cms_fingerprints import CMS_fingerprints
 from ..js_frameworks import JSframeworks
-from ..analytics_patterns import ANALYTICS_PATTERNS
+from ..Tecnologias import TECNOLOGIAS
 from ..utils.i18n import i18n
+
 
 class TechnologyDetector:
     """Advanced technology detection and fingerprinting"""
-    
+
     def __init__(self, logger=None):
         self.logger = logger or logging.getLogger("TechnologyDetector")
         self.tech_signatures = TECNOLOGIAS
         self.cms_signatures = CMS_fingerprints
         self.js_signatures = JSframeworks
         self.analytics_signatures = ANALYTICS_PATTERNS
-        
+
         self.detected = defaultdict(set)
         self.confidence_scores = {}
 
@@ -44,7 +46,7 @@ class TechnologyDetector:
             return re.search(r'(?<![a-z0-9])' + re.escape(p) + r'(?![a-z0-9])', low) is not None
         return p in low
 
-    def detect_all(self, headers: dict, html_content: str) -> Dict[str, List[str]]:
+    def detect_all(self, headers: dict, html_content: str) -> dict[str, list[str]]:
         """
         Perform comprehensive technology detection.
 
@@ -69,18 +71,18 @@ class TechnologyDetector:
         self._detect_analytics(html_content)
         self._detect_security_headers(headers)
         self._detect_cdn(headers, html_content)
-        
+
         # Convert sets to sorted lists
         result = {
-            category: sorted(list(techs)) 
-            for category, techs in self.detected.items() 
+            category: sorted(list(techs))
+            for category, techs in self.detected.items()
             if techs
         }
-        
+
         self.logger.info(i18n.get('technologies.completed', count=sum(len(v) for v in result.values())))
-        
+
         return result
-    
+
     def _detect_from_headers(self, headers: dict):
         """Detect technologies from HTTP headers"""
         for header_name, header_value in headers.items():
@@ -100,11 +102,11 @@ class TechnologyDetector:
                     if self._matches(pattern, header_value):
                         self.detected['languages'].add(lang)
                         self._update_confidence(lang, 'high')
-    
+
     def _detect_from_html(self, html_content: str):
         """Detect technologies from HTML content patterns"""
         html_lower = html_content.lower()
-        
+
         for category, tech_dict in self.tech_signatures.items():
             if category not in ['servers', 'languages']:  # Already handled by headers
                 for tech, patterns in tech_dict.items():
@@ -112,27 +114,27 @@ class TechnologyDetector:
                         if self._matches(pattern, html_lower):
                             self.detected[category].add(tech)
                             self._update_confidence(tech, 'medium')
-    
+
     def _detect_from_scripts(self, html_content: str):
         """Detect technologies from script tags"""
         try:
             soup = BeautifulSoup(html_content, 'html.parser')
             scripts = soup.find_all('script')
-            
+
             for script in scripts:
                 # Check src attribute
-                src = script.get('src', '')
+                src = str(script.get('src') or '')
                 if src:
                     self._analyze_script_url(src)
-                
+
                 # Check inline script content
                 script_content = script.string if script.string else ''
                 if script_content:
                     self._analyze_script_content(script_content)
-                    
+
         except Exception as e:
             self.logger.warning(f"Error detecting technologies from scripts: {e}")
-    
+
     def _analyze_script_url(self, src: str):
         """Analyze a script src URL for technology detection."""
         # js_signatures is {pattern: DisplayName}. Match against the script URL
@@ -148,11 +150,11 @@ class TechnologyDetector:
                 if self._matches(pattern, src):
                     self.detected['frontend'].add(framework)
                     self._update_confidence(framework, 'high')
-    
+
     def _analyze_script_content(self, content: str):
         """Analyze inline script content"""
         content_lower = content.lower()
-        
+
         # Look for common framework patterns
         patterns = {
             'React': ['react', 'reactdom', '__react'],
@@ -163,42 +165,42 @@ class TechnologyDetector:
             'Backbone.js': ['backbone'],
             'Ember.js': ['ember']
         }
-        
+
         for tech, tech_patterns in patterns.items():
             for pattern in tech_patterns:
                 if self._matches(pattern, content_lower):
                     self.detected['js_frameworks'].add(tech)
                     self._update_confidence(tech, 'medium')
-    
+
     def _detect_from_meta_tags(self, html_content: str):
         """Detect technologies from meta tags"""
         try:
             soup = BeautifulSoup(html_content, 'html.parser')
             meta_tags = soup.find_all('meta')
-            
+
             for meta in meta_tags:
                 # Generator meta tag (CMS detection). cms_signatures is
                 # {pattern: DisplayName}.
                 if meta.get('name') == 'generator':
-                    content = meta.get('content', '')
+                    content = str(meta.get('content') or '')
                     for pattern, name in self.cms_signatures.items():
                         if self._matches(pattern, content):
                             self.detected['cms'].add(name)
                             self._update_confidence(name, 'high')
-                
+
                 # Other meta tags
                 for attr in ['content', 'property', 'name']:
-                    value = meta.get(attr, '').lower()
+                    value = str(meta.get(attr) or '').lower()
                     if 'wordpress' in value:
                         self.detected['cms'].add('WordPress')
                     elif 'drupal' in value:
                         self.detected['cms'].add('Drupal')
                     elif 'joomla' in value:
                         self.detected['cms'].add('Joomla')
-                        
+
         except Exception as e:
             self.logger.warning(f"Error detecting from meta tags: {e}")
-    
+
     def _detect_from_cookies(self, headers: dict):
         """Detect technologies from the Set-Cookie response header."""
         set_cookie = ""
@@ -217,7 +219,7 @@ class TechnologyDetector:
             self.detected['languages'].add('Java')
         if 'cfid' in set_cookie or 'cftoken' in set_cookie:
             self.detected['languages'].add('ColdFusion')
-    
+
     def _detect_cms(self, html_content: str, headers: dict):
         """CMS detection over body content. cms_signatures is {pattern: name}."""
         for pattern, name in self.cms_signatures.items():
@@ -235,17 +237,17 @@ class TechnologyDetector:
             if self._matches(pattern, html_content):
                 self.detected['js_frameworks'].add(name)
                 self._update_confidence(name, 'medium')
-    
+
     def _detect_analytics(self, html_content: str):
         """Detect analytics and tracking tools"""
         html_lower = html_content.lower()
-        
+
         for tool, patterns in self.analytics_signatures.items():
             for pattern in patterns:
                 if self._matches(pattern, html_lower):
                     self.detected['analytics'].add(tool)
                     self._update_confidence(tool, 'high')
-    
+
     def _detect_security_headers(self, headers: dict):
         """Detect security headers and WAF"""
         security_headers = {
@@ -256,18 +258,18 @@ class TechnologyDetector:
             'Content-Security-Policy': 'CSP',
             'X-Powered-By': None  # Check for absence
         }
-        
+
         detected_security = []
-        
+
         for header, name in security_headers.items():
             if name and header in headers:
                 detected_security.append(name)
             elif header == 'X-Powered-By' and header not in headers:
                 detected_security.append('X-Powered-By Hidden')
-        
+
         if detected_security:
             self.detected['security_headers'] = set(detected_security)
-        
+
         # WAF Detection
         waf_indicators = {
             'cloudflare': ['cf-ray', 'cloudflare'],
@@ -278,14 +280,14 @@ class TechnologyDetector:
             'f5 big-ip': ['bigipserver', 'f5'],
             'sucuri': ['sucuri', 'x-sucuri']
         }
-        
+
         for waf, indicators in waf_indicators.items():
             for indicator in indicators:
                 for header_name, header_value in headers.items():
                     if indicator.lower() in header_name.lower() or indicator.lower() in str(header_value).lower():
                         self.detected['waf'].add(waf.upper())
                         self._update_confidence(waf, 'high')
-    
+
     def _detect_cdn(self, headers: dict, html_content: str):
         """Detect CDN usage"""
         cdn_patterns = {
@@ -301,7 +303,7 @@ class TechnologyDetector:
             'unpkg': ['unpkg.com'],
             'cdnjs': ['cdnjs.cloudflare.com']
         }
-        
+
         for cdn, patterns in cdn_patterns.items():
             for pattern in patterns:
                 # Check headers
@@ -310,12 +312,12 @@ class TechnologyDetector:
                         self.detected['cdn'].add(cdn)
                         self._update_confidence(cdn, 'high')
                         break
-                
+
                 # Check HTML content
                 if pattern.lower() in html_content.lower():
                     self.detected['cdn'].add(cdn)
                     self._update_confidence(cdn, 'medium')
-    
+
     def _update_confidence(self, tech: str, level: str):
         """Update confidence score for detected technology"""
         confidence_values = {
@@ -323,27 +325,27 @@ class TechnologyDetector:
             'medium': 2,
             'high': 3
         }
-        
+
         current = self.confidence_scores.get(tech, 0)
         new_value = confidence_values.get(level, 0)
-        
+
         self.confidence_scores[tech] = max(current, new_value)
-    
+
     def get_confidence_level(self, tech: str) -> str:
         """Get confidence level for a technology"""
         score = self.confidence_scores.get(tech, 0)
-        
+
         if score >= 3:
             return 'high'
         elif score >= 2:
             return 'medium'
         else:
             return 'low'
-    
-    def get_detailed_report(self) -> Dict:
+
+    def get_detailed_report(self) -> dict:
         """Get detailed report with confidence levels"""
-        report = {}
-        
+        report: dict[str, Any] = {}
+
         for category, techs in self.detected.items():
             report[category] = []
             for tech in sorted(techs):
@@ -351,5 +353,5 @@ class TechnologyDetector:
                     'name': tech,
                     'confidence': self.get_confidence_level(tech)
                 })
-        
+
         return report

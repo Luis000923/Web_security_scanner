@@ -1,14 +1,16 @@
 from colorama import Fore, Style
+
 from .utils.i18n import i18n
+
 
 def print_banner():
     width = 76
-    
+
     title = i18n.get('banner.title')
     subtitle = i18n.get('banner.subtitle')
-    feat1 = "• " + i18n.get('banner.feature1')
-    feat2 = "• " + i18n.get('banner.feature2')
-    feat3 = "• " + i18n.get('banner.feature3')
+    feat1 = "- " + i18n.get('banner.feature1')
+    feat2 = "- " + i18n.get('banner.feature2')
+    feat3 = "- " + i18n.get('banner.feature3')
     footer = i18n.get('banner.footer')
 
     def center(text, w, color=Fore.CYAN):
@@ -19,7 +21,8 @@ def print_banner():
 
     def left_align(text, w, indent=3, color=Fore.WHITE):
         padding = w - len(text) - indent
-        if padding < 0: padding = 0
+        if padding < 0:
+            padding = 0
         return f"{Fore.CYAN}║{' ' * indent}{color}{text}{Fore.CYAN}{' ' * padding}║"
 
     banner = (

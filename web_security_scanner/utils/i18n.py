@@ -1,13 +1,14 @@
-import yaml
 import os
-from typing import Dict, Any
+
+import yaml
+
 
 class I18n:
     _instance = None
-    
+
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(I18n, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.translations = {}
             cls._instance.current_lang = 'en'
         return cls._instance
@@ -16,8 +17,8 @@ class I18n:
         """Load translations from a YAML file."""
         if not os.path.exists(filepath):
             return
-            
-        with open(filepath, 'r', encoding='utf-8') as f:
+
+        with open(filepath, encoding='utf-8') as f:
             self.translations = yaml.safe_load(f)
 
     def set_language(self, lang: str):
@@ -32,16 +33,16 @@ class I18n:
         """
         keys = key.split('.')
         value = self.translations.get(self.current_lang, {})
-        
+
         for k in keys:
             if isinstance(value, dict):
                 value = value.get(k)
             else:
                 return key
-        
+
         if value is None:
             return key
-            
+
         if isinstance(value, str):
             try:
                 return value.format(**kwargs)

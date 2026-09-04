@@ -12,14 +12,15 @@ import logging
 import sys
 from pathlib import Path
 
-from colorama import Fore, Style, init as colorama_init
+from colorama import Fore, Style
+from colorama import init as colorama_init
 
 from .banner import print_banner
-from .utils.i18n import i18n
-from .utils.validation import validate_target_url, InvalidTargetError
-from .web_security_scanner_async import WebSecurityScanner
 from .events.event_emitter import ScanEventType
 from .reports import generate_reports_async
+from .utils.i18n import i18n
+from .utils.validation import InvalidTargetError, validate_target_url
+from .web_security_scanner_async import WebSecurityScanner
 
 PROFILES = ["quick", "balanced", "intense", "mapping"]
 LANGUAGES_FILE = Path(__file__).parent / "languages.yaml"

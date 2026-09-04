@@ -229,7 +229,7 @@ Este directorio contiene una colección completa de payloads para realizar prueb
 
 ## Uso Responsable
 
-⚠️ **ADVERTENCIA**: Estos payloads están diseñados únicamente para:
+ **ADVERTENCIA**: Estos payloads están diseñados únicamente para:
 - Pruebas de seguridad autorizadas
 - Programas de Bug Bounty legítimos
 - Auditorías de seguridad con permiso explícito

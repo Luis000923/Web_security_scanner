@@ -1,12 +1,12 @@
-import sys
 import urllib.parse
 from pathlib import Path
 
 import pytest
 
+from web_security_scanner.events.event_emitter import ScanEventEmitter, ScanEventType
+
 # Ensure i18n is loaded once for all tests.
 from web_security_scanner.utils.i18n import i18n
-from web_security_scanner.events.event_emitter import ScanEventEmitter, ScanEventType
 
 _LANG = Path(__file__).parent.parent / "web_security_scanner" / "languages.yaml"
 i18n.load_languages(str(_LANG))

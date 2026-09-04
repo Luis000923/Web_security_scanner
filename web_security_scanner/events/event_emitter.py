@@ -1,7 +1,9 @@
-from typing import Callable, Dict, List, Any
-from enum import Enum, auto
 import asyncio
 import logging
+from collections.abc import Callable
+from enum import Enum, auto
+from typing import Any
+
 
 class ScanEventType(Enum):
     SCAN_START = auto()
@@ -18,7 +20,7 @@ class ScanEventEmitter:
     Decouples the scanning logic from the UI/CLI.
     """
     def __init__(self):
-        self._listeners: Dict[ScanEventType, List[Callable[..., Any]]] = {
+        self._listeners: dict[ScanEventType, list[Callable[..., Any]]] = {
             event_type: [] for event_type in ScanEventType
         }
         self._logger = logging.getLogger(__name__)

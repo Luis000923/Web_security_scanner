@@ -26,6 +26,16 @@ dev = [
     "pytest-asyncio",
     "black",
     "mypy",
+    "ruff",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "black",
+    "mypy",
+    "ruff",
 ]
 
 [project.scripts]
@@ -37,4 +47,22 @@ include = ["web_security_scanner*"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["tests"]
+pythonpath = [".", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["Documentacion", "web_security_scanner/reports"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501", "B008"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["web_security_scanner"]
+ignore_missing_imports = true
+follow_imports = "silent"
+warn_unused_ignores = false
+warn_redundant_casts = true
+no_implicit_optional = true

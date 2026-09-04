@@ -1,4 +1,4 @@
-TECNOLOGIAS = { 
+TECNOLOGIAS = {
             # Servidores web
             'servers': {
                 'Apache': ['Apache', 'httpd'],

@@ -18,7 +18,6 @@ from web_security_scanner.core.scanner_core_async import (
     worker_pool,
 )
 
-
 # --- fake aiohttp session -------------------------------------------------
 
 class FakeResponse:

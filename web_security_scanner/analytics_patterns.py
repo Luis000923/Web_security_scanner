@@ -1,8 +1,8 @@
 ANALYTICS_PATTERNS = {
             'Google Analytics': [
-                'google-analytics.com', 
-                'analytics.js', 
-                'ga.js', 
+                'google-analytics.com',
+                'analytics.js',
+                'ga.js',
                 'gtag',
                 'UA-[0-9]'
             ],

@@ -6,8 +6,9 @@ import random
 import socket
 import time
 import urllib.parse
+from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
+from typing import Any
 
 import aiohttp
 
@@ -57,12 +58,12 @@ class ScanConfig:
     max_concurrency: int = 50
     timeout: int = 10
     # None -> rotate a modern UA per request; a string pins that UA.
-    user_agent: Optional[str] = None
-    proxy: Optional[str] = None
+    user_agent: str | None = None
+    proxy: str | None = None
     rate_limit: float = 0.0          # min seconds between requests (0 = unlimited)
     rate_burst: int = 1             # token-bucket capacity (allowed burst size)
     verify_ssl: bool = True
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
     rotate_user_agent: bool = True
     max_redirects: int = 10
     # Granular socket timeouts (seconds). ``timeout`` above stays the overall
@@ -174,16 +175,16 @@ class AsyncResponseCache:
     """
 
     def __init__(self, max_size: int = 1000, ttl: int = 3600):
-        self.cache = {}
+        self.cache: dict[str, Any] = {}
         self.max_size = max_size
         self.ttl = ttl
-        self.access_times = {}
+        self.access_times: dict[str, float] = {}
 
     def _generate_key(self, url: str, method: str, data: Any) -> str:
         key_data = f"{url}-{method}-{str(data)}"
         return hashlib.md5(key_data.encode()).hexdigest()
 
-    def get(self, url: str, method: str, data: Any = None) -> Optional[Dict]:
+    def get(self, url: str, method: str, data: Any = None) -> dict | None:
         key = self._generate_key(url, method, data)
         if key in self.cache:
             if time.time() - self.access_times.get(key, 0) < self.ttl:
@@ -192,7 +193,7 @@ class AsyncResponseCache:
                 self._remove(key)
         return None
 
-    def put(self, url: str, method: str, data: Any, response_data: Dict):
+    def put(self, url: str, method: str, data: Any, response_data: dict):
         if len(self.cache) >= self.max_size:
             self._evict_old_entries()
 
@@ -225,19 +226,19 @@ class AsyncScannerCore:
 
     def __init__(self, config: ScanConfig):
         self.config = config
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
         self.cache = AsyncResponseCache()
         # Bounds requests actually in flight.
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
         # Global request pacing, decoupled from the concurrency slot.
-        self._rate_bucket: Optional[TokenBucket] = None
+        self._rate_bucket: TokenBucket | None = None
         if config.rate_limit and config.rate_limit > 0:
             self._rate_bucket = TokenBucket(
                 rate=1.0 / config.rate_limit, capacity=config.rate_burst
             )
         self._logger = logging.getLogger(__name__)
         # host -> {ip, ...}; avoids re-resolving on every redirect check.
-        self._resolve_cache: Dict[str, set] = {}
+        self._resolve_cache: dict[str, set] = {}
 
     async def start(self):
         """Initialize the aiohttp session."""
@@ -269,8 +270,8 @@ class AsyncScannerCore:
 
     # ---- fingerprinting ----------------------------------------------
 
-    def _request_headers(self, extra: Optional[Dict[str, str]]) -> Dict[str, str]:
-        headers: Dict[str, str] = {}
+    def _request_headers(self, extra: dict[str, str] | None) -> dict[str, str]:
+        headers: dict[str, str] = {}
         if self.config.rotate_user_agent and not self.config.user_agent:
             headers["User-Agent"] = random.choice(USER_AGENTS)
         if extra:
@@ -362,7 +363,7 @@ class AsyncScannerCore:
 
     # ---- request -----------------------------------------------------
 
-    async def request(self, method: str, url: str, **kwargs) -> Dict[str, Any]:
+    async def request(self, method: str, url: str, **kwargs) -> dict[str, Any]:
         """
         Execute an HTTP request with caching, rate limiting, UA rotation and
         SSRF-safe redirect following.
@@ -409,8 +410,8 @@ class AsyncScannerCore:
 
     async def _request_following(
         self, method: str, url: str, follow_redirects: bool,
-        caller_headers: Optional[Dict[str, str]], kwargs: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        caller_headers: dict[str, str] | None, kwargs: dict[str, Any],
+    ) -> dict[str, Any]:
         """Issue the request, manually following redirects with SSRF checks."""
         timeout = aiohttp.ClientTimeout(
             total=self.config.timeout,
@@ -421,6 +422,7 @@ class AsyncScannerCore:
         current_url = url
         redirects = 0
         started = time.monotonic()
+        assert self.session is not None  # started by AsyncScannerCore.start()
 
         while True:
             headers = self._request_headers(caller_headers)

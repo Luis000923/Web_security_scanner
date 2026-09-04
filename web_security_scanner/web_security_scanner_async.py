@@ -1,20 +1,22 @@
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional
-from .events.event_emitter import ScanEventEmitter, ScanEventType
+from typing import Any
+
 from .core.scanner_core_async import AsyncScannerCore, ScanConfig, SSRFRedirectError
+from .events.event_emitter import ScanEventEmitter, ScanEventType
 from .modules.registry import TesterRegistry
-from .utils.i18n import i18n
+from .modules.technology_detector import TechnologyDetector
 from .modules.vulnerability_testers.base_tester_async import VulnerabilityTester
 from .modules.web_mapper_async import WebMapperAsync
-from .modules.technology_detector import TechnologyDetector
+from .utils.i18n import i18n
+
 
 class WebSecurityScanner:
     """
     Main Scanner Class (Async).
     Orchestrates the scanning process, manages dependencies, and handles events.
     """
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.event_emitter = ScanEventEmitter()
 
@@ -22,13 +24,13 @@ class WebSecurityScanner:
         core_config = ScanConfig(**self.config.get('core', {}))
         self.core = AsyncScannerCore(core_config)
 
-        self.testers: List[VulnerabilityTester] = []
+        self.testers: list[VulnerabilityTester] = []
         self.mapper = WebMapperAsync(self.core)
         # Let the crawler emit URL_SCANNED progress events through the same bus.
         self.mapper.event_emitter = self.event_emitter
         self._logger = logging.getLogger(__name__)
         # Accumulated findings for the current scan
-        self.vulnerabilities: List[Dict[str, Any]] = []
+        self.vulnerabilities: list[dict[str, Any]] = []
 
         # Subscribe mapper to vulnerabilities
         self.event_emitter.on(ScanEventType.VULNERABILITY_FOUND, self._on_vulnerability_found)
@@ -47,7 +49,7 @@ class WebSecurityScanner:
         # Discover testers
         TesterRegistry.discover_testers()
         tester_classes = TesterRegistry.get_testers()
-        
+
         self.testers = []
         for cls in tester_classes:
             try:
@@ -58,8 +60,8 @@ class WebSecurityScanner:
                 self._logger.error(f"Failed to initialize tester {cls.__name__}: {e}")
 
     async def run_scan(self, target_url: str, profile: str = "balanced",
-                       generate_map: bool = True, max_duration: float = None,
-                       max_depth: int = None, max_urls: int = None) -> Dict[str, Any]:
+                       generate_map: bool = True, max_duration: float | None = None,
+                       max_depth: int | None = None, max_urls: int | None = None) -> dict[str, Any]:
         """
         Run the full scan against the target URL.
 
@@ -145,7 +147,7 @@ class WebSecurityScanner:
             "map_report": map_report,
         }
 
-    async def _detect_technologies(self, target_url: str) -> Dict[str, list]:
+    async def _detect_technologies(self, target_url: str) -> dict[str, list]:
         """
         Fingerprint the target's landing page (server, CMS, JS frameworks,
         analytics, WAF/CDN). Detection is CPU-bound (regex + HTML parsing) so it
@@ -197,14 +199,14 @@ class WebSecurityScanner:
     def _should_run_tester(self, tester: VulnerabilityTester, profile: str) -> bool:
         """Determine if a tester should run based on the profile."""
         cls_name = tester.__class__.__name__
-        
+
         if profile == 'mapping':
             # Only passive or very light checks
             return cls_name in ['HeaderSecurityTester']
         elif profile == 'quick':
             # Fast, high-impact checks
             return cls_name in ['HeaderSecurityTester', 'XSSTester', 'SQLInjectionTester']
-        
+
         # Balanced and Intense run everything
         return True
 
@@ -216,8 +218,8 @@ class WebSecurityScanner:
     # leaks).
     MAX_TESTER_CONCURRENCY = 8
 
-    async def _run_testers(self, testers: List[VulnerabilityTester],
-                           target_url: str, max_duration: Optional[float]):
+    async def _run_testers(self, testers: list[VulnerabilityTester],
+                           target_url: str, max_duration: float | None):
         """Run testers through a bounded worker pool, honoring max_duration."""
         async def _worker(tester: VulnerabilityTester):
             await self._run_tester_safe(tester, target_url)

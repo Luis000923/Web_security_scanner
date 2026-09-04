@@ -13,7 +13,6 @@ from pathlib import Path
 from web_security_scanner.reports import generate_html_report, generate_json_report
 from web_security_scanner.utils.validation import mask_secrets
 
-
 XSS_PAYLOAD = "<script>alert(1)</script>"
 
 SCAN_DATA = {

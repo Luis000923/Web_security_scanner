@@ -1,28 +1,29 @@
 import importlib
-import pkgutil
 import inspect
 import logging
 import os
-from typing import List, Type
+import pkgutil
+
 from .vulnerability_testers.base_tester_async import VulnerabilityTester
+
 
 class TesterRegistry:
     """
     Registry for vulnerability testers.
     Handles discovery and registration of tester plugins.
     """
-    _testers: List[Type[VulnerabilityTester]] = []
+    _testers: list[type[VulnerabilityTester]] = []
     _logger = logging.getLogger("TesterRegistry")
 
     @classmethod
-    def register(cls, tester_class: Type[VulnerabilityTester]):
+    def register(cls, tester_class: type[VulnerabilityTester]):
         """Register a tester class."""
         if tester_class not in cls._testers:
             cls._testers.append(tester_class)
             cls._logger.debug(f"Registered tester: {tester_class.__name__}")
 
     @classmethod
-    def get_testers(cls) -> List[Type[VulnerabilityTester]]:
+    def get_testers(cls) -> list[type[VulnerabilityTester]]:
         """Get all registered tester classes."""
         return cls._testers
 
@@ -33,17 +34,17 @@ class TesterRegistry:
         """
         # Import the package containing testers
         from . import vulnerability_testers
-        
+
         package_path = os.path.dirname(vulnerability_testers.__file__)
-        
+
         for _, name, _ in pkgutil.iter_modules([package_path]):
             if name.startswith('base_tester'):
                 continue
-                
+
             try:
                 module = importlib.import_module(f".vulnerability_testers.{name}", package="web_security_scanner.modules")
 
-                for member_name, obj in inspect.getmembers(module):
+                for _name, obj in inspect.getmembers(module):
                     if (inspect.isclass(obj) and
                         issubclass(obj, VulnerabilityTester) and
                         obj is not VulnerabilityTester):

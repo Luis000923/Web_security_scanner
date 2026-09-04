@@ -2,8 +2,8 @@
 
 import pytest
 
-from web_security_scanner.modules.web_mapper_async import WebMapperAsync
 from tests.conftest import MockScanner
+from web_security_scanner.modules.web_mapper_async import WebMapperAsync
 
 
 def _trap_responder(method, url, kwargs):

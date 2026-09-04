@@ -7,21 +7,33 @@ that motivated the sync->async consolidation. These guard against a future
 """
 
 import html
+
 import pytest
+from conftest import collect_log_messages, collect_vulns, param_value
 
-from conftest import param_value, collect_vulns, collect_log_messages
-
-from web_security_scanner.utils.i18n import i18n
-
-from web_security_scanner.modules.vulnerability_testers.sql_injection_async import SQLInjectionTester
-from web_security_scanner.modules.vulnerability_testers.xss_tester_async import XSSTester
-from web_security_scanner.modules.vulnerability_testers.command_injection_async import CommandInjectionTester
-from web_security_scanner.modules.vulnerability_testers.path_traversal_async import PathTraversalTester
-from web_security_scanner.modules.vulnerability_testers.open_redirect_async import OpenRedirectTester, MARKER
-from web_security_scanner.modules.vulnerability_testers.ssrf_tester_async import SSRFTester
-from web_security_scanner.modules.vulnerability_testers.nosql_injection_async import NoSQLInjectionTester
+from web_security_scanner.modules.vulnerability_testers.command_injection_async import (
+    CommandInjectionTester,
+)
+from web_security_scanner.modules.vulnerability_testers.header_security_async import (
+    HeaderSecurityTester,
+)
 from web_security_scanner.modules.vulnerability_testers.idor_tester_async import IDORTester
-from web_security_scanner.modules.vulnerability_testers.header_security_async import HeaderSecurityTester
+from web_security_scanner.modules.vulnerability_testers.nosql_injection_async import (
+    NoSQLInjectionTester,
+)
+from web_security_scanner.modules.vulnerability_testers.open_redirect_async import (
+    MARKER,
+    OpenRedirectTester,
+)
+from web_security_scanner.modules.vulnerability_testers.path_traversal_async import (
+    PathTraversalTester,
+)
+from web_security_scanner.modules.vulnerability_testers.sql_injection_async import (
+    SQLInjectionTester,
+)
+from web_security_scanner.modules.vulnerability_testers.ssrf_tester_async import SSRFTester
+from web_security_scanner.modules.vulnerability_testers.xss_tester_async import XSSTester
+from web_security_scanner.utils.i18n import i18n
 
 # asyncio_mode = "auto" (pyproject) auto-detects coroutine tests, so no global
 # pytest.mark.asyncio is needed — and applying it would wrongly mark the sync

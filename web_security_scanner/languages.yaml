@@ -10,7 +10,7 @@ en:
     feature1: "Detects vulnerabilities"
     feature2: "Identifies technologies used"
     feature3: "Finds subdomains and more..."
-    footer: "Developed by VIDES_2GA_2025"
+    footer: "Developed by VIDESS_2026"
 
   # Scanner principal
   scanner:
@@ -169,7 +169,7 @@ es:
     feature1: "Detecta vulnerabilidades"
     feature2: "Identifica tecnologías utilizadas"
     feature3: "Encuentra subdominios y más..."
-    footer: "Desarrollado por VIDES_2GA_2025"
+    footer: "Desarrollado por VIDES_2026"
 
   # Scanner principal
   scanner:

@@ -2,10 +2,11 @@ import asyncio
 import html
 import logging
 import re
-from urllib.parse import urlparse, urljoin, urlunparse, parse_qsl, urlencode
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
+
 from bs4 import BeautifulSoup
 
 from ..events.event_emitter import ScanEventType
@@ -38,7 +39,7 @@ class WebMapperAsync:
                  max_depth: int = 3, crawl_delay: float = 0.1):
         self.scanner = scanner_core  # AsyncScannerCore
         # Optional: set by WebSecurityScanner so the crawler can report progress.
-        self.event_emitter = None
+        self.event_emitter: Any = None
         self.logger = logger or logging.getLogger("WebMapperAsync")
         self.max_urls = max_urls
         self.max_depth = max_depth
@@ -46,13 +47,13 @@ class WebMapperAsync:
         # Set when a hard limit (max_urls / signature cap) aborts the crawl early
         # so callers can report "partial map".
         self.limit_reached = False
-        self._signature_counts: Dict[Any, int] = {}
-        self.base_domain = None
-        self.visited_urls = set()
-        self.discovered_subdomains = set()
-        self.technologies = {}
-        self.vulnerabilities = []
-        self.site_structure = {
+        self._signature_counts: dict[Any, int] = {}
+        self.base_domain: str = ""
+        self.visited_urls: set[str] = set()
+        self.discovered_subdomains: set[str] = set()
+        self.technologies: dict[str, Any] = {}
+        self.vulnerabilities: list[Any] = []
+        self.site_structure: dict[str, Any] = {
             'domains': {},
             'subdomains': {},
             'directories': {},
@@ -105,8 +106,8 @@ class WebMapperAsync:
         keys = tuple(sorted(k for k, _ in parse_qsl(parsed.query, keep_blank_values=True)))
         return (parsed.path.rstrip('/'), keys)
 
-    async def map_website(self, base_url: str, max_depth: int = None,
-                          max_urls: int = None) -> Dict[str, Any]:
+    async def map_website(self, base_url: str, max_depth: int | None = None,
+                          max_urls: int | None = None) -> dict[str, Any]:
         """Map a full website (async)."""
         if max_depth is not None:
             self.max_depth = max_depth
@@ -249,7 +250,7 @@ class WebMapperAsync:
             found_urls = set()
             for link in soup.find_all('a', href=True):
                 try:
-                    absolute_url_clean = self._normalize_url(urljoin(url_clean, link['href']))
+                    absolute_url_clean = self._normalize_url(urljoin(url_clean, str(link['href'])))
                 except ValueError:
                     continue
                 parsed_link = urlparse(absolute_url_clean)
@@ -271,8 +272,8 @@ class WebMapperAsync:
             for form in soup.find_all('form'):
                 self.site_structure['forms'].append({
                     'url': url_clean,
-                    'action': form.get('action', ''),
-                    'method': form.get('method', 'GET').upper(),
+                    'action': str(form.get('action') or ''),
+                    'method': str(form.get('method') or 'GET').upper(),
                     'inputs': len(form.find_all('input'))
                 })
 
@@ -311,7 +312,7 @@ class WebMapperAsync:
                     'confidence': 'medium', 'evidence': 'Joomla-like structure'
                 })
 
-    def _generate_statistics(self) -> Dict[str, Any]:
+    def _generate_statistics(self) -> dict[str, Any]:
         return {
             'total_urls': len(self.visited_urls),
             'total_subdomains': len(self.discovered_subdomains),
@@ -323,13 +324,13 @@ class WebMapperAsync:
             'total_vulnerabilities': len(self.vulnerabilities),
         }
 
-    def generate_map(self, map_data: Dict[str, Any], output_path: str = None) -> str:
+    def generate_map(self, map_data: dict[str, Any], output_path: str | None = None) -> str:
         """Generate an interactive-ish HTML map and return its path."""
         if not output_path:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             output_dir = Path('reports')
             output_dir.mkdir(exist_ok=True)
-            output_path = output_dir / f'web_map_{timestamp}.html'
+            output_path = str(output_dir / f'web_map_{timestamp}.html')
 
         self.logger.info(f"Generating HTML map: {output_path}")
         html_content = self._generate_html(map_data)
@@ -338,7 +339,7 @@ class WebMapperAsync:
         self.logger.info(f"HTML map generated: {output_path}")
         return str(output_path)
 
-    async def generate_map_async(self, map_data: Dict[str, Any], output_path: str = None) -> str:
+    async def generate_map_async(self, map_data: dict[str, Any], output_path: str | None = None) -> str:
         """
         Non-blocking wrapper around :meth:`generate_map`.
 
@@ -347,7 +348,7 @@ class WebMapperAsync:
         """
         return await asyncio.to_thread(self.generate_map, map_data, output_path)
 
-    def _generate_html(self, data: Dict[str, Any]) -> str:
+    def _generate_html(self, data: dict[str, Any]) -> str:
         def e(value: Any) -> str:
             # Escape (with quoting) every crawled value so a hostile page can't
             # smuggle working markup/JS into the map report a human opens.

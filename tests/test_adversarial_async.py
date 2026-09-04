@@ -12,9 +12,9 @@ import pytest
 from aiohttp import web
 
 from web_security_scanner.core.scanner_core_async import (
+    MAX_RESPONSE_SIZE,
     AsyncScannerCore,
     ScanConfig,
-    MAX_RESPONSE_SIZE,
 )
 
 

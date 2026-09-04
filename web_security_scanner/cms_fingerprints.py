@@ -51,7 +51,6 @@ CMS_fingerprints = {
     'jshop': 'JShop',
     'nopcommerce': 'nopCommerce',
     'cs-cart': 'CS-Cart',
-    'prestashop': 'PrestaShop',
     'shopware': 'Shopware',
     'spip': 'SPIP',
     'e107': 'e107',
