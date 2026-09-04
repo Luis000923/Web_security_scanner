@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "web-security-scanner"
-version = "5.0.0"
+version = "5.1.0"
 description = "Advanced Web Security Scanner with AsyncIO and Plugin System"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -27,6 +27,7 @@ dev = [
     "black",
     "mypy",
     "ruff",
+    "jsonschema>=4.20",
 ]
 
 [dependency-groups]
@@ -36,6 +37,7 @@ dev = [
     "black",
     "mypy",
     "ruff",
+    "jsonschema>=4.20",
 ]
 
 [project.scripts]
@@ -43,6 +45,10 @@ webscanner = "web_security_scanner.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["web_security_scanner*"]
+
+[tool.setuptools.package-data]
+"web_security_scanner.PAYLOAD" = ["*.json"]
+"web_security_scanner.wordlists" = ["*.json"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

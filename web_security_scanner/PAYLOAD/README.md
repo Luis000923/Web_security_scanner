@@ -1,315 +1,101 @@
-# Documentación de Payloads para Pruebas de Seguridad Web
+# Payloads (web-security-scanner v5.1)
 
-Este directorio contiene una colección completa de payloads para realizar pruebas de seguridad web y detectar vulnerabilidades comunes.
+## Fuente única: `payloads_v5.json` (+ `schema.json`)
 
-## Archivos de Payloads Disponibles
+Todos los testers consumen sus vectores exclusivamente a través de
+`web_security_scanner.core.payload_loader.PayloadLoader`, que lee el archivo
+curado y único `payloads_v5.json` y lo valida contra `schema.json`
+(JSON Schema draft 2020-12).
 
-### 1. payloadsSQL.json
-**Inyección SQL (SQL Injection)**
-- Payloads para detectar vulnerabilidades de inyección SQL
-- Incluye técnicas de bypass de autenticación
-- UNION-based SQL injection
-- Blind SQL injection (booleana y basada en tiempo)
-- Error-based SQL injection
-- Extracción de información de bases de datos
-- Comandos específicos para MySQL, PostgreSQL, MS SQL Server, Oracle
-- Técnicas de evasión y ofuscación
+### Estructura
 
-**Casos de uso:**
-- Formularios de login
-- Parámetros de URL
-- Campos de búsqueda
-- APIs que interactúan con bases de datos
-
-### 2. payloadsXSS.json
-**Cross-Site Scripting (XSS)**
-- XSS reflejado (Reflected XSS)
-- XSS almacenado (Stored XSS)
-- XSS basado en DOM
-- Bypass de filtros XSS
-- Técnicas de ofuscación
-- Payloads para robo de cookies
-- Exfiltración de datos
-- Ataques de redirección
-
-**Casos de uso:**
-- Campos de entrada de usuario
-- Comentarios y foros
-- Mensajes y chats
-- Perfiles de usuario
-- Parámetros de URL
-
-### 3. payloadsNoSQL.json
-**Inyección NoSQL (NoSQL Injection)**
-- Payloads para MongoDB
-- Operadores de consulta NoSQL
-- Bypass de autenticación
-- Extracción de datos
-- Blind NoSQL injection
-- JavaScript injection en MongoDB
-- Operadores como $ne, $gt, $regex, $where
-
-**Casos de uso:**
-- APIs REST con MongoDB
-- Autenticación de usuarios
-- Búsquedas y filtros
-- Aplicaciones Node.js con MongoDB
-
-### 4. payloadsLDAP.json
-**Inyección LDAP (LDAP Injection)**
-- Bypass de autenticación LDAP
-- Filtros LDAP maliciosos
-- Extracción de información de directorios
-- Técnicas de enumeración
-
-**Casos de uso:**
-- Sistemas de autenticación corporativa
-- Directorios Active Directory
-- Servicios de directorio LDAP
-
-### 5. payloadsCommandInjection.json
-**Inyección de Comandos (Command Injection)**
-- Ejecución de comandos del sistema
-- Comandos para Linux/Unix
-- Comandos para Windows
-- Técnicas de concatenación (;, |, &, &&, ||)
-- Command substitution ($(), ``)
-- Reverse shells
-- Exfiltración de archivos sensibles
-
-**Casos de uso:**
-- Funciones de ping/traceroute
-- Conversión de archivos
-- Procesamiento de imágenes
-- Cualquier función que ejecute comandos del sistema
-
-### 6. payloadsPathTraversal.json
-**Path Traversal / Directory Traversal**
-- Navegación de directorios
-- Acceso a archivos sensibles
-- Técnicas de encoding
-- Bypass de filtros de path
-- Wrappers de PHP
-- Acceso a /etc/passwd, win.ini, etc.
-
-**Casos de uso:**
-- Descarga de archivos
-- Visualización de documentos
-- Carga de plantillas
-- Inclusión de archivos
-
-### 7. payloadsXXE.json
-**XML External Entity (XXE)**
-- Lectura de archivos locales
-- SSRF mediante XXE
-- Exfiltración de datos
-- Denial of Service (Billion Laughs Attack)
-- XXE Out-of-Band
-- XXE Blind
-
-**Casos de uso:**
-- APIs que aceptan XML
-- Importación de archivos XML
-- Parsers SOAP
-- Configuraciones XML
-
-### 8. payloadsSSRF.json
-**Server-Side Request Forgery (SSRF)**
-- Acceso a servicios internos
-- Metadata de cloud (AWS, GCP, Azure)
-- Bypass de firewalls
-- Port scanning interno
-- Protocolos file://, dict://, gopher://
-- Técnicas de bypass de validación
-
-**Casos de uso:**
-- Importación de URLs
-- Webhooks
-- Descarga de recursos externos
-- APIs de preview/thumbnail
-
-### 9. payloadsSSTI.json
-**Server-Side Template Injection (SSTI)**
-- Jinja2 (Python/Flask)
-- Twig (PHP/Symfony)
-- Freemarker (Java)
-- Velocity (Java)
-- Smarty (PHP)
-- ERB (Ruby)
-- Ejecución remota de código
-- Lectura de archivos
-
-**Casos de uso:**
-- Sistemas de plantillas
-- Generación dinámica de contenido
-- Emails automáticos
-- Reportes PDF
-
-### 10. payloadsCRLF.json
-**CRLF Injection**
-- HTTP Response Splitting
-- Inyección de headers HTTP
-- Modificación de cookies
-- Bypass de seguridad
-- Inyección de contenido
-
-**Casos de uso:**
-- Redirects personalizados
-- Headers personalizados
-- Logging de información
-- Sistemas de redirección
-
-### 11. payloadsOpenRedirect.json
-**Open Redirect**
-- Redirecciones no validadas
-- Bypass de validación de URLs
-- Técnicas de ofuscación de URLs
-- Phishing mediante redirección
-- Bypass de whitelists
-
-**Casos de uso:**
-- Funciones de logout
-- Redirects después de login
-- Parámetros "next" o "return"
-- URLs de callback
-
-### 12. payloadsAuthBypass.json
-**Bypass de Autenticación**
-- Credenciales por defecto
-- Contraseñas comunes
-- Usuarios administrativos
-- Combinaciones username/password
-
-**Casos de uso:**
-- Brute force testing
-- Pruebas de credenciales débiles
-- Enumeración de usuarios
-- Fuzzing de autenticación
-
-### 13. payloadsFuzzing.json
-**Fuzzing General**
-- Payloads mixtos
-- Detección de múltiples vulnerabilidades
-- Inputs maliciosos variados
-- Caracteres especiales
-- Secuencias de escape
-
-**Casos de uso:**
-- Testing automatizado
-- Escaneo de vulnerabilidades
-- Pruebas de regresión
-- Descubrimiento de vulnerabilidades
-
-### 14. payloadsLog4Shell.json
-**Log4Shell (CVE-2021-44228)**
-- Explotación de Log4j
-- JNDI Injection
-- Técnicas de bypass de WAF
-- Variaciones de payload
-- Exfiltración mediante DNS
-
-**Casos de uso:**
-- Aplicaciones Java
-- Servicios que usan Log4j
-- Headers HTTP
-- Campos de logging
-
-### 15. subdominios.json y subdirectorios.json
-**Enumeración y Descubrimiento**
-- Subdominios comunes
-- Directorios comunes
-- Archivos sensibles
-- Endpoints de administración
-
-**Casos de uso:**
-- Reconocimiento de infraestructura
-- Descubrimiento de activos
-- Enumeración de servicios
-- Mapeo de aplicaciones web
-
-## Uso Responsable
-
- **ADVERTENCIA**: Estos payloads están diseñados únicamente para:
-- Pruebas de seguridad autorizadas
-- Programas de Bug Bounty legítimos
-- Auditorías de seguridad con permiso explícito
-- Entornos de prueba propios
-
-**NO utilizar estos payloads para:**
-- Ataques no autorizados
-- Acceso no autorizado a sistemas
-- Daños a infraestructuras
-- Actividades ilegales
-
-## Mejores Prácticas
-
-1. **Obtén autorización por escrito** antes de realizar cualquier prueba
-2. **Documenta todos los hallazgos** de manera profesional
-3. **Reporta vulnerabilidades de forma responsable**
-4. **No causes daños** a los sistemas bajo prueba
-5. **Respeta los alcances** definidos en el contrato de pruebas
-6. **Mantén la confidencialidad** de los datos sensibles encontrados
-
-## Actualización y Mantenimiento
-
-Estos payloads deben actualizarse regularmente para incluir:
-- Nuevas técnicas de ataque
-- Bypass de protecciones modernas
-- Vulnerabilidades emergentes
-- Mejoras en las técnicas existentes
-
-## Integración con Herramientas
-
-Estos archivos JSON pueden integrarse con:
-- Burp Suite (Intruder)
-- OWASP ZAP
-- SQLMap
-- XSStrike
-- Nuclei
-- Scripts personalizados
-- Frameworks de seguridad
-
-## Estructura de Archivos
-
-Todos los archivos siguen el formato JSON:
 ```json
-[
-    "payload1",
-    "payload2",
-    "payload3"
-]
+{
+  "version": "5.1.0",
+  "schema": "./schema.json",
+  "canary_token": "WSSc4n4ry7788",
+  "marker_host": "evil-webscanner-test.invalid",
+  "categories": {
+    "<vulnerability_type>": [
+      {
+        "id": "sqli.time.mysql.sleep",
+        "vector": "' AND SLEEP(5)-- -",
+        "description": "…",
+        "context": "time_based_blind",
+        "cwe": "CWE-89",
+        "owasp": "A03:2021",
+        "canary": false,
+        "confidence": "LOW | MEDIUM | HIGH | CONFIRMED",
+        "severity": "Info | Low | Medium | High | Critical",
+        "time_based": true,
+        "min_intrusion_level": "safe | low | medium | high",
+        "destructive": false,
+        "waf_bypass": false,
+        "oob": false,
+        "engines": ["mysql", "mariadb"],
+        "expected_evidence": ["…"],
+        "references": ["https://…"],
+        "tags": ["technique:time-based"]
+      }
+    ]
+  }
+}
 ```
 
-Esto facilita su importación y uso programático.
+Campos obligatorios: `id` (punteado, único global), `vector`, `context`,
+`confidence`, `severity`. El resto son opcionales con defaults seguros.
 
-## Contribuciones
+- `canary`: `true` incrusta el token compartido `WSSc4n4ry7788`; también admite
+  una cadena marcador explícita (p. ej. el host `evil-webscanner-test.invalid`
+  de Open Redirect / SSRF-OOB / Log4Shell).
+- `min_intrusion_level`: `safe` = sonda pura; `high` = ejecutaría código / leería
+  ficheros / es ruidosa. El loader puede filtrar con `max_intrusion=`.
+- `waf_bypass` / `engines`: filtrables vía `get_payloads(..., waf_bypass=True,
+  engine="jinja2")`.
+- `destructive`: excluido salvo `--allow-destructive`. Sin reverse shells, sin
+  `rm -rf`, sin fork bombs; los únicos vectores destructivos son DDL marcadas.
+- `oob`: requiere un colaborador out-of-band (no incluido). Los testers
+  correspondientes son inertes sin `config['oob_domain']`.
 
-Para contribuir con nuevos payloads:
-1. Verifica que sean efectivos y relevantes
-2. Documenta su propósito y caso de uso
-3. Evita duplicados
-4. Mantén el formato JSON consistente
+### Categorías (14)
 
-## Referencias
+`sql_injection`, `xss`, `path_traversal`, `command_injection`, `open_redirect`,
+`ssrf`, `nosql_injection`, `xxe`, `idor`, **`ssti`**, **`crlf`**,
+**`log4shell`**, **`ldap`**, **`deserialization`**.
 
-- OWASP Top 10
-- OWASP Testing Guide
-- PortSwigger Web Security Academy
-- HackerOne Disclosed Reports
-- CVE Database
-- MITRE ATT&CK Framework
+CSRF y Header Security no usan vectores de inyección (análisis estructural).
 
-## Contacto y Soporte
+### Origen de las firmas
 
-Para dudas sobre el uso de estos payloads o reportar problemas:
-- Revisa la documentación de tu empresa
-- Consulta con el equipo de seguridad
-- Sigue las políticas de seguridad establecidas
+- **Curado** (metadatos completos y precisos): núcleo 2026 escrito a mano —
+  bypasses WAF (Cloudflare/AWS/Imperva/ModSecurity), cadenas `php://filter`,
+  IMDS de nube (AWS/GCP/Azure/Oracle/Alibaba), polyglots XSS/mXSS, SSTI por
+  motor, obfuscaciones JNDI. Fuentes en `references[]` de cada entrada.
+- **`source:legacy`** (`confidence: LOW`, contexto/tags por heurística):
+  firmas plegadas desde los antiguos `payloads*.json` planos durante la
+  migración a v5.1. Esos ficheros de entrada ya se eliminaron del repo; su
+  historial vive en git y cada firma importada conserva el tag `source:legacy`.
 
----
+### API
 
-**Última actualización:** Noviembre 2025
+```python
+from web_security_scanner.core.payload_loader import get_payload_loader
 
-**Versión:** 2.0
+loader = get_payload_loader()
+payloads = await loader.get_payloads("sql_injection", context="time_based_blind")
+vectors  = await loader.get_vectors("xss", min_confidence="MEDIUM", waf_bypass=True)
+ssti     = await loader.get_payloads("ssti", engine="jinja2", max_intrusion="low")
+```
 
-**Autor:** Equipo de Seguridad
+El parseo ocurre una sola vez (cache inmutable en memoria); la primera lectura
+de disco se hace en un hilo worker (`asyncio.to_thread`). Los testers reciben
+los vectores intercalados por `context` para que un `max_payloads` bajo siga
+cubriendo todas las técnicas.
+
+## Contenido del directorio
+
+Solo tres ficheros: `payloads_v5.json` (datos), `schema.json` (validación) y
+este `README.md`. Los antiguos `payloads*.json` / `payloads_master.json` se
+eliminaron en v5.1 (ya consolidados aquí); las wordlists
+`subdominios.json` / `subdirectorios.json` se movieron a
+`web_security_scanner/wordlists/` (`subdomains.json` / `directories.json`).

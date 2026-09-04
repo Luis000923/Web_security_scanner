@@ -173,11 +173,16 @@ class WebMapperAsync:
             self.logger.debug("dnspython not available; skipping DNS brute-force")
             return
 
-        common = [
+        _BUILTIN = [
             'www', 'mail', 'ftp', 'webmail', 'admin', 'api', 'dev', 'staging',
             'test', 'portal', 'vpn', 'blog', 'shop', 'cdn', 'app', 'm',
             'secure', 'ns1', 'ns2', 'smtp', 'pop', 'imap', 'git', 'db',
         ]
+        try:
+            from ..wordlists import load_wordlist
+            common = load_wordlist('subdomains', limit=60) or _BUILTIN
+        except Exception:
+            common = _BUILTIN
         base = self.base_domain.split(':')[0]
         # Strip an existing leading label so we brute-force the registrable base
         root = base[4:] if base.startswith('www.') else base
@@ -277,7 +282,10 @@ class WebMapperAsync:
                     'inputs': len(form.find_all('input'))
                 })
 
-            for found_url in found_urls:
+            # Deterministic frontier order: a set iterates by hash, which makes
+            # the crawl (and the signature-cap accounting) depend on
+            # PYTHONHASHSEED and cross-test state. Sorting keeps runs reproducible.
+            for found_url in sorted(found_urls):
                 if len(self.visited_urls) >= self.max_urls:
                     self.limit_reached = True
                     break

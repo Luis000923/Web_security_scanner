@@ -67,9 +67,13 @@ async def test_signature_cap_blocks_query_param_trap(monkeypatch):
 
     await mapper.map_website("http://trap.test/1", max_depth=2)
 
-    # ?id=N variants of the same path are capped, not crawled 50-wide per node.
-    id_variants = [u for u in mapper.visited_urls if "id=" in u]
-    assert len(id_variants) <= WebMapperAsync.MAX_URLS_PER_SIGNATURE
+    # ?id=N variants are capped *per path signature*, not crawled 50-wide per
+    # node. (Distinct paths — /1, /1/2 — each get their own capped budget.)
+    from collections import Counter
+    from urllib.parse import urlparse
+    per_path = Counter(urlparse(u).path for u in mapper.visited_urls if "id=" in u)
+    assert per_path, "trap should have produced ?id= variants"
+    assert max(per_path.values()) <= WebMapperAsync.MAX_URLS_PER_SIGNATURE
 
 
 def test_normalize_url_strips_fragment_and_junk():

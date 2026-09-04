@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-security-scanner/PAYLOAD/schema.json",
+  "title": "web-security-scanner payload signature file (v5.1)",
+  "type": "object",
+  "required": ["version", "canary_token", "categories"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "description": { "type": "string" },
+    "schema": { "type": "string" },
+    "canary_token": { "type": "string", "minLength": 6 },
+    "categories": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/payload" }
+      }
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": ["id", "vector", "context", "confidence", "severity"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$"
+        },
+        "vector": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "context": { "type": "string", "minLength": 1 },
+        "cwe": { "type": "string", "pattern": "^CWE-\\d+$" },
+        "owasp": { "type": "string", "pattern": "^A\\d{2}:20\\d{2}$" },
+        "canary": { "type": ["boolean", "string"] },
+        "confidence": { "enum": ["LOW", "MEDIUM", "HIGH", "CONFIRMED"] },
+        "severity": { "enum": ["Info", "Low", "Medium", "High", "Critical"] },
+        "time_based": { "type": "boolean" },
+        "min_intrusion_level": { "enum": ["safe", "low", "medium", "high"] },
+        "destructive": { "type": "boolean" },
+        "waf_bypass": { "type": "boolean" },
+        "oob": { "type": "boolean" },
+        "engines": { "type": "array", "items": { "type": "string" } },
+        "expected_evidence": { "type": "array", "items": { "type": "string" } },
+        "references": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^https?://" }
+        },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

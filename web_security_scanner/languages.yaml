@@ -1,11 +1,11 @@
-# Archivo de Traducciones - Web Security Scanner v5.0.0
+# Archivo de Traducciones - Web Security Scanner v5.1.0
 # ====================================================
 # Contiene todas las traducciones en inglés (en) y español (es)
 
 en:
   # Banner
   banner:
-    title: "WEB SECURITY SCANNER v5.0.0"
+    title: "WEB SECURITY SCANNER v5.1.0"
     subtitle: "Advanced web security scanner for complete detection and analysis"
     feature1: "Detects vulnerabilities"
     feature2: "Identifies technologies used"
@@ -52,7 +52,7 @@ en:
     
   # Instalación
   install:
-    welcome: "Welcome to Web Security Scanner v5.0.0 Installation"
+    welcome: "Welcome to Web Security Scanner v5.1.0 Installation"
     language_prompt: "Select your language / Seleccione su idioma"
     language_selected: "Language set to: English"
     creating_config: "Creating configuration file..."
@@ -75,6 +75,11 @@ en:
     csrf: "Cross-Site Request Forgery (CSRF)"
     idor: "Insecure Direct Object Reference (IDOR)"
     open_redirect: "Open Redirect"
+    ssti: "Server-Side Template Injection (SSTI)"
+    crlf: "CRLF Injection / HTTP Response Splitting"
+    log4shell: "JNDI / Log4Shell Injection"
+    ldap_injection: "LDAP Injection"
+    deserialization: "Insecure Deserialization"
     missing_header: "Missing Security Header"
     info_disclosure: "Information Disclosure"
     evidence:
@@ -87,6 +92,11 @@ en:
       open_redirect: "Open redirect to external site detected"
       command_injection: "Command execution output found in response"
       xxe: "External file content leaked via XML entity"
+      ssti: "Template expression was evaluated server-side ({engine})"
+      crlf: "Injected header reflected in the HTTP response"
+      log4shell: "JNDI lookup payload delivered (out-of-band confirmation required)"
+      ldap_injection: "LDAP filter error or filter-logic change triggered by payload"
+      deserialization: "Deserialization error signature triggered by a probe object"
 
   # Tecnologías
   technologies:
@@ -126,7 +136,7 @@ en:
 
   # GUI
   gui:
-    title: "Web Security Scanner v5.0.0 (Async)"
+    title: "Web Security Scanner v5.1.0 (Async)"
     target: "Target"
     start_scan: "Start Scan"
     open_report: "Open Report"
@@ -164,7 +174,7 @@ en:
 es:
   # Banner
   banner:
-    title: "WEB SECURITY SCANNER v5.0.0"
+    title: "WEB SECURITY SCANNER v5.1.0"
     subtitle: "Escáner avanzado de seguridad web para detección y análisis completos"
     feature1: "Detecta vulnerabilidades"
     feature2: "Identifica tecnologías utilizadas"
@@ -211,7 +221,7 @@ es:
     
   # Instalación
   install:
-    welcome: "Bienvenido a la Instalación de Web Security Scanner v5.0.0"
+    welcome: "Bienvenido a la Instalación de Web Security Scanner v5.1.0"
     language_prompt: "Select your language / Seleccione su idioma"
     language_selected: "Idioma establecido: Español"
     creating_config: "Creando archivo de configuración..."
@@ -234,6 +244,11 @@ es:
     csrf: "Falsificación de Petición en Sitios Cruzados (CSRF)"
     idor: "Referencia Directa a Objetos Insegura (IDOR)"
     open_redirect: "Redirección Abierta"
+    ssti: "Inyección de Plantillas del Lado del Servidor (SSTI)"
+    crlf: "Inyección CRLF / División de Respuesta HTTP"
+    log4shell: "Inyección JNDI / Log4Shell"
+    ldap_injection: "Inyección LDAP"
+    deserialization: "Deserialización Insegura"
     missing_header: "Cabecera de Seguridad Faltante"
     info_disclosure: "Divulgación de Información"
     evidence:
@@ -246,6 +261,11 @@ es:
       open_redirect: "Redirección abierta a sitio externo detectada"
       command_injection: "Salida de ejecución de comandos encontrada en la respuesta"
       xxe: "Contenido de archivo externo filtrado vía entidad XML"
+      ssti: "La expresión de plantilla fue evaluada en el servidor ({engine})"
+      crlf: "Cabecera inyectada reflejada en la respuesta HTTP"
+      log4shell: "Payload de búsqueda JNDI entregado (requiere confirmación out-of-band)"
+      ldap_injection: "Error de filtro LDAP o cambio de lógica del filtro provocado por el payload"
+      deserialization: "Firma de error de deserialización provocada por un objeto de sondeo"
 
   # Tecnologías
   technologies:
@@ -285,7 +305,7 @@ es:
 
   # GUI
   gui:
-    title: "Escáner de Seguridad Web v5.0.0 (Async)"
+    title: "Escáner de Seguridad Web v5.1.0 (Async)"
     target: "Objetivo"
     start_scan: "Iniciar Escaneo"
     open_report: "Abrir Reporte"

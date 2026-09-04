@@ -207,7 +207,11 @@ class WebSecurityScanner:
             # Fast, high-impact checks
             return cls_name in ['HeaderSecurityTester', 'XSSTester', 'SQLInjectionTester']
 
-        # Balanced and Intense run everything
+        # Noisy / out-of-band testers: only in the 'intense' profile.
+        if cls_name in ('Log4ShellTester', 'DeserializationTester'):
+            return profile == 'intense'
+
+        # Balanced and Intense run everything else
         return True
 
     # How many testers may run concurrently. Each tester issues its own
