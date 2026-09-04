@@ -1,6 +1,7 @@
 import asyncio
 import html
 import logging
+import random
 import re
 from datetime import datetime
 from pathlib import Path
@@ -10,15 +11,27 @@ from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 from bs4 import BeautifulSoup
 
 from ..events.event_emitter import ScanEventType
+from .recon import (
+    AsyncRobotsPolicy,
+    ScopeEngine,
+    extract_js_endpoints,
+    parse_sitemap,
+)
 
 
 class WebMapperAsync:
     """
-    Async website structure mapper.
+    Async website structure mapper (Phase 1 recon core).
 
     Self-contained (no sync base class). Crawls the target with a bounded
     number of total pages, an inter-request delay, and depth limiting to
     avoid hammering / DoS-ing the target.
+
+    Integrates the ``route-mapper`` recon capabilities: ``sitemap.xml``
+    seeding, lexical JavaScript endpoint mining, ``robots.txt`` ``Crawl-delay``
+    compliance, request jitter, and the three-layer anti-SSRF
+    :class:`~web_security_scanner.modules.recon.ScopeEngine` applied to every
+    discovered URL.
     """
 
     # Query params that are pure noise for structural mapping (tracking / cache
@@ -36,7 +49,11 @@ class WebMapperAsync:
     MAX_URLS_PER_SIGNATURE = 8
 
     def __init__(self, scanner_core, logger=None, max_urls: int = 1000,
-                 max_depth: int = 3, crawl_delay: float = 0.1):
+                 max_depth: int = 3, crawl_delay: float = 0.1, *,
+                 jitter: float = 0.0, parse_js: bool = True,
+                 use_sitemap: bool = False, respect_robots: bool = True,
+                 include_subdomains: bool = True,
+                 max_links_per_page: int = 1000):
         self.scanner = scanner_core  # AsyncScannerCore
         # Optional: set by WebSecurityScanner so the crawler can report progress.
         self.event_emitter: Any = None
@@ -44,13 +61,28 @@ class WebMapperAsync:
         self.max_urls = max_urls
         self.max_depth = max_depth
         self.crawl_delay = crawl_delay
+        # route-mapper recon knobs
+        self.jitter = max(0.0, jitter)
+        self.parse_js = parse_js
+        self.use_sitemap = use_sitemap
+        self.respect_robots = respect_robots
+        self.include_subdomains = include_subdomains
+        self.max_links_per_page = max(1, max_links_per_page)
         # Set when a hard limit (max_urls / signature cap) aborts the crawl early
         # so callers can report "partial map".
         self.limit_reached = False
         self._signature_counts: dict[Any, int] = {}
         self.base_domain: str = ""
+        self._scope: ScopeEngine | None = None
+        self._robots: AsyncRobotsPolicy | None = None
         self.visited_urls: set[str] = set()
         self.discovered_subdomains: set[str] = set()
+        # url -> ordered list of query-param names discovered on it
+        self.discovered_params: dict[str, list[str]] = {}
+        # root-relative paths mined out of JavaScript bundles
+        self.js_endpoints: set[str] = set()
+        # absolute URLs seeded from sitemap.xml
+        self.sitemap_urls: set[str] = set()
         self.technologies: dict[str, Any] = {}
         self.vulnerabilities: list[Any] = []
         self.site_structure: dict[str, Any] = {
@@ -67,13 +99,17 @@ class WebMapperAsync:
         """
         True if ``netloc`` belongs to the target domain.
 
-        Uses host-part equality / subdomain suffix instead of a naive substring
-        check, so ``evil-example.com`` is NOT treated as internal to
-        ``example.com``.
+        Delegates to :class:`ScopeEngine` once the crawl root is known (strict
+        host / explicit-subdomain match), falling back to a host-equality check
+        before :meth:`map_website` has run.
         """
-        if not netloc or not self.base_domain:
+        if not netloc:
             return False
         host = netloc.split(':')[0].lower()
+        if self._scope is not None:
+            return self._scope.host_in_scope(host)
+        if not self.base_domain:
+            return False
         base = self.base_domain.split(':')[0].lower()
         return host == base or host.endswith('.' + base)
 
@@ -106,6 +142,24 @@ class WebMapperAsync:
         keys = tuple(sorted(k for k, _ in parse_qsl(parsed.query, keep_blank_values=True)))
         return (parsed.path.rstrip('/'), keys)
 
+    async def _ssrf_ok(self, url: str) -> bool:
+        """Third anti-SSRF layer: pre-flight DNS/IP check on a discovered URL.
+
+        Uses the scanner core's own resolver-backed guard when available (the
+        real :class:`AsyncScannerCore`); under lightweight test doubles that do
+        not expose it, the check is skipped and the request layer stays the
+        backstop.
+        """
+        assert_public = getattr(self.scanner, "_assert_public_url", None)
+        if assert_public is None:
+            return True
+        try:
+            await assert_public(url)
+        except Exception as exc:  # noqa: BLE001 - SSRFRedirectError and friends
+            self.logger.debug(f"SSRF guard blocked discovered URL {url}: {exc}")
+            return False
+        return True
+
     async def map_website(self, base_url: str, max_depth: int | None = None,
                           max_urls: int | None = None) -> dict[str, Any]:
         """Map a full website (async)."""
@@ -118,12 +172,28 @@ class WebMapperAsync:
         )
         parsed = urlparse(base_url)
         self.base_domain = parsed.netloc
+        root_host = parsed.hostname or parsed.netloc.split(':')[0]
+        self._scope = ScopeEngine(
+            root_host, include_subdomains=self.include_subdomains
+        )
+        self._robots = AsyncRobotsPolicy(
+            self.scanner, enabled=self.respect_robots, logger=self.logger
+        )
 
         self.logger.info("Discovering subdomains...")
         await self._discover_subdomains()
 
+        if self.use_sitemap:
+            self.logger.info("Seeding crawl frontier from sitemap.xml...")
+            await self._seed_from_sitemap(base_url)
+
         self.logger.info("Crawling site structure...")
         await self._crawl_structure(base_url, depth=0, max_depth=self.max_depth)
+        for seed in sorted(self.sitemap_urls):
+            if len(self.visited_urls) >= self.max_urls:
+                self.limit_reached = True
+                break
+            await self._crawl_structure(seed, depth=0, max_depth=self.max_depth)
         if self.limit_reached:
             self.logger.warning(
                 f"Crawler abortado preventivamente por límite max_urls "
@@ -141,6 +211,8 @@ class WebMapperAsync:
             'structure': self.site_structure,
             'technologies': self.technologies,
             'vulnerabilities': self.vulnerabilities,
+            'js_endpoints': sorted(self.js_endpoints),
+            'sitemap_urls': sorted(self.sitemap_urls),
             'statistics': self._generate_statistics()
         }
         self.logger.info(f"Map complete: {len(self.visited_urls)} URLs visited")
@@ -199,6 +271,70 @@ class WebMapperAsync:
 
         await asyncio.gather(*(resolve(s) for s in common))
 
+    async def _seed_from_sitemap(self, base_url: str) -> None:
+        """Download ``/sitemap.xml`` and record its in-scope ``<loc>`` URLs.
+
+        Each URL is normalized and filtered by domain policy before being kept;
+        the IP/SSRF revalidation happens when it is actually visited. Any
+        failure (network, invalid XML, DTD) degrades to "no seeds".
+        """
+        sitemap_url = urljoin(base_url, "/sitemap.xml")
+        try:
+            resp = await self.scanner.request("GET", sitemap_url)
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug(f"sitemap.xml fetch failed: {e}")
+            return
+        if resp.get("status_code") != 200 or not resp.get("text"):
+            self.logger.info("sitemap.xml not available")
+            return
+        added = 0
+        for loc in parse_sitemap(resp["text"]):
+            normalized = self._normalize_url(loc)
+            host = urlparse(normalized).netloc
+            if not self._is_internal(host):
+                continue
+            if normalized in self.sitemap_urls or normalized in self.visited_urls:
+                continue
+            if len(self.sitemap_urls) >= self.max_urls:
+                break
+            self.sitemap_urls.add(normalized)
+            added += 1
+        self.logger.info(f"sitemap.xml: {added} URLs seeded into the frontier")
+
+    async def _effective_delay(self, url: str) -> float:
+        """Courtesy pause before a request: ``max(crawl_delay, Crawl-delay)`` +/- jitter."""
+        delay = self.crawl_delay
+        if self._robots is not None:
+            try:
+                robots_delay = await self._robots.crawl_delay(url)
+            except Exception:  # noqa: BLE001
+                robots_delay = None
+            if robots_delay is not None and robots_delay > delay:
+                delay = robots_delay
+        if self.jitter > 0:
+            delay = max(0.0, delay + random.uniform(-self.jitter, self.jitter))  # noqa: S311
+        return delay
+
+    def _record_params(self, url: str) -> None:
+        names = [k for k, _ in parse_qsl(urlparse(url).query, keep_blank_values=True)]
+        if names:
+            self.discovered_params.setdefault(url, [])
+            for name in names:
+                if name not in self.discovered_params[url]:
+                    self.discovered_params[url].append(name)
+
+    @staticmethod
+    def _looks_like_javascript(url: str, headers: dict[str, Any]) -> bool:
+        ctype = ""
+        for k, v in (headers or {}).items():
+            if k.lower() == "content-type":
+                ctype = str(v).lower()
+                break
+        if "javascript" in ctype or "ecmascript" in ctype:
+            return True
+        path = urlparse(url).path.lower()
+        return path.endswith(".js") or path.endswith(".mjs")
+
     async def _crawl_structure(self, url: str, depth: int, max_depth: int):
         url_clean = self._normalize_url(url)
 
@@ -206,6 +342,9 @@ class WebMapperAsync:
             return
         if len(self.visited_urls) >= self.max_urls:
             self.limit_reached = True
+            return
+
+        if not self._is_internal(urlparse(url_clean).netloc):
             return
 
         signature = self._signature(url_clean)
@@ -219,7 +358,20 @@ class WebMapperAsync:
             return
         self._signature_counts[signature] = seen + 1
 
+        if self.respect_robots and self._robots is not None:
+            try:
+                allowed = await self._robots.can_fetch(url_clean)
+            except Exception:  # noqa: BLE001
+                allowed = True
+            if not allowed:
+                self.logger.debug(f"robots.txt disallows {url_clean}; skipping")
+                return
+
+        if not await self._ssrf_ok(url_clean):
+            return
+
         self.visited_urls.add(url_clean)
+        self._record_params(url_clean)
         self.logger.info(f"Mapping URL [{len(self.visited_urls)}]: {url_clean}")
         if self.event_emitter is not None:
             await self.event_emitter.emit(
@@ -229,8 +381,9 @@ class WebMapperAsync:
                 url=url_clean,
             )
 
-        if self.crawl_delay > 0:
-            await asyncio.sleep(self.crawl_delay)
+        delay = await self._effective_delay(url_clean)
+        if delay > 0:
+            await asyncio.sleep(delay)
 
         try:
             response = await self.scanner.request("GET", url_clean)
@@ -244,6 +397,10 @@ class WebMapperAsync:
             if not text:
                 return
 
+            if self._looks_like_javascript(url_clean, response.get('headers', {})):
+                await self._mine_js(url_clean, text, depth, max_depth)
+                return
+
             # Malformed / adversarial HTML can make the parser spike CPU or
             # raise; cap the work and never let a parse failure kill the crawl.
             try:
@@ -253,6 +410,7 @@ class WebMapperAsync:
                 return
 
             found_urls = set()
+            script_srcs: list[str] = []
             for link in soup.find_all('a', href=True):
                 try:
                     absolute_url_clean = self._normalize_url(urljoin(url_clean, str(link['href'])))
@@ -274,6 +432,15 @@ class WebMapperAsync:
                         'domain': parsed_link.netloc
                     })
 
+            if self.parse_js:
+                for script in soup.find_all('script', src=True):
+                    try:
+                        src = self._normalize_url(urljoin(url_clean, str(script['src'])))
+                    except ValueError:
+                        continue
+                    if self._is_internal(urlparse(src).netloc):
+                        script_srcs.append(src)
+
             for form in soup.find_all('form'):
                 self.site_structure['forms'].append({
                     'url': url_clean,
@@ -285,7 +452,9 @@ class WebMapperAsync:
             # Deterministic frontier order: a set iterates by hash, which makes
             # the crawl (and the signature-cap accounting) depend on
             # PYTHONHASHSEED and cross-test state. Sorting keeps runs reproducible.
-            for found_url in sorted(found_urls):
+            frontier = sorted(found_urls)[: self.max_links_per_page]
+            frontier.extend(s for s in sorted(script_srcs) if s not in frontier)
+            for found_url in frontier:
                 if len(self.visited_urls) >= self.max_urls:
                     self.limit_reached = True
                     break
@@ -293,6 +462,58 @@ class WebMapperAsync:
 
         except Exception as e:
             self.logger.debug(f"Error crawling {url_clean}: {e}")
+
+    async def _mine_js(self, js_url: str, content: str, depth: int, max_depth: int) -> None:
+        """Mine root-relative endpoints from a JavaScript body and crawl them."""
+        paths = sorted(extract_js_endpoints(content))[: self.max_links_per_page]
+        for path in paths:
+            try:
+                endpoint = self._normalize_url(urljoin(js_url, path))
+            except ValueError:
+                continue
+            if not self._is_internal(urlparse(endpoint).netloc):
+                continue
+            self.js_endpoints.add(endpoint)
+            self.site_structure['links'].append({
+                'from': js_url, 'to': endpoint, 'text': 'js-endpoint'
+            })
+            if len(self.visited_urls) >= self.max_urls:
+                self.limit_reached = True
+                break
+            await self._crawl_structure(endpoint, depth + 1, max_depth)
+
+    def get_scan_targets(self, base_url: str, max_targets: int = 60) -> list[str]:
+        """URLs to hand to the vulnerability testers (Phase 2 ingestion).
+
+        Always includes the seed. Adds every discovered URL that carries query
+        parameters (deduplicated per structural signature so a ``?id=`` trap
+        cannot flood the tester queue) plus the JavaScript- and sitemap-mined
+        endpoints. Capped at ``max_targets``.
+        """
+        targets: list[str] = [base_url]
+        seen_sig = {self._signature(self._normalize_url(base_url))}
+
+        def _add(candidate: str) -> None:
+            if len(targets) >= max_targets:
+                return
+            norm = self._normalize_url(candidate)
+            sig = self._signature(norm)
+            if sig in seen_sig or norm in targets:
+                return
+            seen_sig.add(sig)
+            targets.append(norm)
+
+        for url in sorted(self.discovered_params):
+            _add(url)
+        for url in sorted(self.js_endpoints):
+            _add(url)
+        for url in sorted(self.sitemap_urls):
+            _add(url)
+        for url in sorted(self.visited_urls):
+            if urlparse(url).query:
+                _add(url)
+
+        return targets[:max_targets]
 
     def _add_to_structure(self, parsed_url):
         domain = parsed_url.netloc
@@ -328,6 +549,8 @@ class WebMapperAsync:
             'total_forms': len(self.site_structure['forms']),
             'total_internal_links': len(self.site_structure['links']),
             'total_external_links': len(self.site_structure['external_links']),
+            'total_js_endpoints': len(self.js_endpoints),
+            'total_sitemap_urls': len(self.sitemap_urls),
             'total_technologies': sum(len(t) for t in self.technologies.values()),
             'total_vulnerabilities': len(self.vulnerabilities),
         }
@@ -368,6 +591,8 @@ class WebMapperAsync:
         ) + '</ul>'
         subs = data.get('subdomains', [])
         subs_html = ('<ul>' + ''.join(f'<li>{e(s)}</li>' for s in subs) + '</ul>') if subs else '<p>None found.</p>'
+        js_eps = data.get('js_endpoints', [])
+        js_html = ('<ul>' + ''.join(f'<li>{e(j)}</li>' for j in js_eps) + '</ul>') if js_eps else '<p>None found.</p>'
         techs = data.get('technologies', {})
         techs_html = ('<ul>' + ''.join(
             f'<li><b>{e(d)}:</b> {e(", ".join(t["name"] for t in ts))}</li>' for d, ts in techs.items()
@@ -392,6 +617,7 @@ class WebMapperAsync:
     <h2>Statistics</h2>
     <p>URLs found: {len(self.visited_urls)}</p>
     <p>Subdomains: {len(subs)}</p>
+    <p>JS endpoints: {len(js_eps)}</p>
     <p>Vulnerabilities: {len(vulns)}</p>
     <hr>
     <h2>Discovered URLs</h2>
@@ -399,6 +625,9 @@ class WebMapperAsync:
     <hr>
     <h2>Subdomains</h2>
     {subs_html}
+    <hr>
+    <h2>JavaScript endpoints</h2>
+    {js_html}
     <hr>
     <h2>Technologies</h2>
     {techs_html}

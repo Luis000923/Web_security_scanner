@@ -4,7 +4,7 @@ Escaner de seguridad web asincrono construido sobre `asyncio` y `aiohttp`, con
 un sistema de plugins para los testers de vulnerabilidades y una arquitectura
 orientada a eventos que desacopla el motor de escaneo de la presentacion.
 
-**Version:** 5.0.0
+**Version:** 5.2.0
 **Uso previsto:** exclusivamente pruebas de seguridad autorizadas y formacion.
 El escaneo de sistemas sobre los que no se dispone de permiso explicito puede
 constituir un delito.
@@ -110,6 +110,16 @@ flowchart TD
 - Rastreador con limites de profundidad (`--max-depth`) y de numero de URLs
   (`--max-urls`), con corte preventivo ante trampas de arana; en ese caso se
   entrega un mapa parcial.
+- Reconocimiento enriquecido con la tecnologia de `route-mapper` (Fase 1):
+  siembra de la cola desde `/sitemap.xml` (`--sitemap`), mineria lexica de
+  endpoints en bundles `.js` (`--parse-js` / `--no-parse-js`), cumplimiento del
+  `Crawl-delay` de `robots.txt`, `jitter` en el retardo entre peticiones
+  (`--jitter`), rotacion de `User-Agent` (`--ua-file`) y canalizacion por proxy
+  HTTP o SOCKS5 (`--proxy`). Cada URL descubierta pasa por el `ScopeEngine`
+  anti-SSRF de 3 capas (normalizacion, ambito de dominio y verificacion
+  DNS/IP).
+- Las rutas y parametros descubiertos en la Fase 1 alimentan automaticamente la
+  cola de los 16 testers de vulnerabilidades (Fase 2).
 - Descubrimiento de subdominios a partir de cabeceras CSP y de un ataque de
   diccionario DNS acotado, ejecutado fuera del bucle de eventos.
 - Deteccion de tecnologias por firmas (regex y parseo de HTML), ejecutada en un
@@ -197,6 +207,11 @@ python -m web_security_scanner.cli scan <URL> [opciones]
 | `--no-map` | Omite el rastreo y la generacion del mapa web. | mapa activo |
 | `--max-depth` | Profundidad maxima de rastreo. | `3` |
 | `--max-urls` | Tope de URLs que visitara el rastreador. | `1000` |
+| `--sitemap` | Siembra la cola de rastreo desde `/sitemap.xml`. | desactivado |
+| `--jitter` | Segundos aleatorios (+/-) sumados al retardo entre peticiones. | `0.0` |
+| `--parse-js` / `--no-parse-js` | Activa o desactiva la mineria de endpoints en archivos `.js`. | activado |
+| `--proxy` | Canaliza el trafico por un proxy `http://` o `socks5://`. | sin proxy |
+| `--ua-file` | Archivo con un `User-Agent` por linea; rotacion por peticion. | pool interno |
 | `-o, --output` | Directorio de salida para los informes. | `reports` |
 | `-f, --format` | Formatos de informe, separados por comas: `json`, `html`. | `json,html` |
 | `--lang` | Idioma de la salida: `en` o `es`. | `en` |
@@ -307,9 +322,9 @@ Documentacion complementaria en `Documentacion/`:
 - [COMANDOS.md](Documentacion/COMANDOS.md) - combinaciones de parametros y
   ejemplos de invocacion de la CLI.
 - [MEJORAS_V5.md](Documentacion/MEJORAS_V5.md) - detalle tecnico de las mejoras
-  introducidas en la version 5.0.0.
+  introducidas en la version 5.2.0
 - [COMPARATIVA_VERSIONES.md](Documentacion/COMPARATIVA_VERSIONES.md) - evolucion
-  historica del proyecto de la v1.0 a la v5.0.0.
+  historica del proyecto de la v1.0 a la v5.2.0.
 
 ---
 

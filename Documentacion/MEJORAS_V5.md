@@ -1,7 +1,7 @@
-# Mejoras de la version 5.0.0
+# Mejoras de la version 5.2.0
 
 Este documento describe las mejoras tecnicas incorporadas en
-`web-security-scanner` 5.0.0 respecto a la linea 4.x. La version 5 es una
+`web-security-scanner` 5.2.0 respecto a la linea 4.x. La version 5 es una
 reescritura del motor: se elimino la GUI de escritorio, el nucleo sincrono, el
 instalador interactivo y el resto de artefactos de la 4.x, y se consolido todo
 el producto en una unica interfaz de linea de comandos sobre un motor

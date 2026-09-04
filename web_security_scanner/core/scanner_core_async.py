@@ -30,6 +30,10 @@ USER_AGENTS = [
 
 REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
 
+# Proxy schemes aiohttp cannot handle through the per-request ``proxy=`` kwarg;
+# they need an aiohttp_socks connector built at session creation.
+_SOCKS_SCHEMES = ("socks5://", "socks5h://", "socks4://")
+
 # Hard ceiling on how many *decompressed* response bytes we buffer in memory per
 # request. Protects against infinite chunked streams and gzip/deflate bombs: the
 # stream is read incrementally and abandoned once this many bytes accumulate.
@@ -59,6 +63,9 @@ class ScanConfig:
     timeout: int = 10
     # None -> rotate a modern UA per request; a string pins that UA.
     user_agent: str | None = None
+    # Extra User-Agent pool (e.g. loaded from --ua-file). When non-empty and no
+    # UA is pinned, requests rotate over this list instead of the builtin one.
+    extra_user_agents: list[str] = field(default_factory=list)
     proxy: str | None = None
     rate_limit: float = 0.0          # min seconds between requests (0 = unlimited)
     rate_burst: int = 1             # token-bucket capacity (allowed burst size)
@@ -240,13 +247,38 @@ class AsyncScannerCore:
         # host -> {ip, ...}; avoids re-resolving on every redirect check.
         self._resolve_cache: dict[str, set] = {}
 
+    def _is_socks_proxy(self) -> bool:
+        proxy = (self.config.proxy or "").lower()
+        return proxy.startswith(_SOCKS_SCHEMES)
+
+    def _build_connector(self) -> "aiohttp.BaseConnector":
+        """TCP connector, or a SOCKS connector when a socks proxy is configured.
+
+        SOCKS support is optional: it needs the ``aiohttp_socks`` package. HTTP
+        proxying does not go through the connector (it rides on the per-request
+        ``proxy=`` kwarg), so this only special-cases socks URLs.
+        """
+        if self._is_socks_proxy():
+            try:
+                from aiohttp_socks import ProxyConnector
+            except ImportError as exc:  # pragma: no cover - optional dependency
+                raise RuntimeError(
+                    "SOCKS proxy requested but 'aiohttp_socks' is not installed; "
+                    "run `pip install aiohttp_socks` or use an http(s):// proxy."
+                ) from exc
+            return ProxyConnector.from_url(
+                self.config.proxy, ssl=self.config.verify_ssl,
+                limit=self.config.max_concurrency,
+            )
+        return aiohttp.TCPConnector(
+            limit=self.config.max_concurrency,
+            ssl=self.config.verify_ssl,
+        )
+
     async def start(self):
         """Initialize the aiohttp session."""
         if not self.session:
-            connector = aiohttp.TCPConnector(
-                limit=self.config.max_concurrency,
-                ssl=self.config.verify_ssl,
-            )
+            connector = self._build_connector()
             headers = dict(self.config.headers)
             if self.config.user_agent:
                 headers.setdefault("User-Agent", self.config.user_agent)
@@ -273,7 +305,8 @@ class AsyncScannerCore:
     def _request_headers(self, extra: dict[str, str] | None) -> dict[str, str]:
         headers: dict[str, str] = {}
         if self.config.rotate_user_agent and not self.config.user_agent:
-            headers["User-Agent"] = random.choice(USER_AGENTS)
+            pool = self.config.extra_user_agents or USER_AGENTS
+            headers["User-Agent"] = random.choice(pool)
         if extra:
             headers.update(extra)
         return headers
@@ -424,11 +457,15 @@ class AsyncScannerCore:
         started = time.monotonic()
         assert self.session is not None  # started by AsyncScannerCore.start()
 
+        # An http(s):// proxy rides on the per-request kwarg; a socks proxy is
+        # already baked into the connector, so it must not be passed here.
+        request_proxy = None if self._is_socks_proxy() else self.config.proxy
+
         while True:
             headers = self._request_headers(caller_headers)
             async with self.session.request(
                 current_method, current_url,
-                timeout=timeout, proxy=self.config.proxy,
+                timeout=timeout, proxy=request_proxy,
                 allow_redirects=False, headers=headers, **kwargs,
             ) as response:
                 status = response.status

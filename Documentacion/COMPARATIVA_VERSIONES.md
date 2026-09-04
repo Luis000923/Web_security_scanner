@@ -1,6 +1,6 @@
 # Comparativa de versiones
 
-Evolucion historica de `web-security-scanner`. La version 5.0.0 es la linea
+Evolucion historica de `web-security-scanner`. La version 5.2.0 es la linea
 soportada; las versiones anteriores se documentan aqui unicamente como
 referencia. Las descripciones de las versiones 1.x a 4.x se reconstruyen a
 partir del historial del repositorio y de la documentacion retirada en la
@@ -10,7 +10,7 @@ consolidacion de la v5.
 
 ## Tabla comparativa
 
-| Aspecto | v1.0 | v2.x | v3.0 | v4.0 | v5.0.0 |
+| Aspecto | v1.0 | v2.x | v3.0 | v4.0 | v5.x |
 |---------|------|------|------|------|--------|
 | Motor de escaneo | Sincrono, script unico | Sincrono, hilos (`concurrent.futures`) | Sincrono, hilos, crawling mas profundo | Sincrono modular + GUI tkinter | Asincrono (`asyncio` / `aiohttp`), bucle unico |
 | Interfaz | CLI basica | CLI | CLI con perfiles de velocidad | CLI + interfaz grafica de escritorio | CLI unica (`webscanner`) |
@@ -55,7 +55,7 @@ Injection, Path Traversal, XXE, CSRF, IDOR). Interfaz grafica de escritorio con
 tkinter, instalador interactivo y sistema de internacionalizacion de la
 interfaz. Esta linea quedo marcada como beta.
 
-### v5.0.0
+### v5.2.0
 
 Reescritura del motor a `asyncio` / `aiohttp`. Se elimina la GUI, el nucleo
 sincrono y el instalador. Se anade el blindaje anti-SSRF, la resistencia a

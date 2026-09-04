@@ -4,6 +4,7 @@ from typing import Any
 
 from .core.scanner_core_async import AsyncScannerCore, ScanConfig, SSRFRedirectError
 from .events.event_emitter import ScanEventEmitter, ScanEventType
+from .modules.recon import ReconConfig, ReconEngine
 from .modules.registry import TesterRegistry
 from .modules.technology_detector import TechnologyDetector
 from .modules.vulnerability_testers.base_tester_async import VulnerabilityTester
@@ -25,9 +26,25 @@ class WebSecurityScanner:
         self.core = AsyncScannerCore(core_config)
 
         self.testers: list[VulnerabilityTester] = []
-        self.mapper = WebMapperAsync(self.core)
+        # Phase 1 recon: route-mapper-derived crawling, JS endpoint mining,
+        # sitemap seeding, robots Crawl-delay, jitter and the 3-layer anti-SSRF
+        # ScopeEngine. Settings come from config['recon'].
+        self.recon_config = ReconConfig(**self.config.get('recon', {}))
+        self.mapper = WebMapperAsync(
+            self.core,
+            max_urls=self.recon_config.max_urls,
+            max_depth=self.recon_config.max_depth,
+            crawl_delay=self.recon_config.crawl_delay,
+            jitter=self.recon_config.jitter,
+            parse_js=self.recon_config.parse_js,
+            use_sitemap=self.recon_config.use_sitemap,
+            respect_robots=self.recon_config.respect_robots,
+            include_subdomains=self.recon_config.include_subdomains,
+            max_links_per_page=self.recon_config.max_links_per_page,
+        )
         # Let the crawler emit URL_SCANNED progress events through the same bus.
         self.mapper.event_emitter = self.event_emitter
+        self.recon = ReconEngine(self.mapper, self.recon_config)
         self._logger = logging.getLogger(__name__)
         # Accumulated findings for the current scan
         self.vulnerabilities: list[dict[str, Any]] = []
@@ -86,23 +103,23 @@ class WebSecurityScanner:
         try:
             self._logger.info(f"Starting scan on {target_url} with profile: {profile}")
 
-            runnable = [t for t in self.testers if self._should_run_tester(t, profile)]
-            if runnable:
-                self._logger.debug(f"Scheduling {len(runnable)} tester(s)")
-                await self._run_testers(runnable, target_url, max_duration)
-            else:
-                self._logger.warning("No testers scheduled for this profile.")
+            scan_targets: list[str] = [target_url]
 
-            # Technology fingerprinting on the target's landing page. The GET is
-            # cached, so the mapper (and any tester) reuses it for free.
-            technologies = await self._detect_technologies(target_url)
-
+            # --- Phase 1: Recon (route-mapper core) -------------------------
             if generate_map:
-                self._logger.info("Generating web architecture map...")
-                await self.event_emitter.emit(ScanEventType.PROGRESS_UPDATE, message="Mapping web architecture...")
-                map_data = await self.mapper.map_website(
-                    target_url, max_depth=max_depth, max_urls=max_urls
+                self._logger.info("Phase 1: reconnaissance (crawl / JS mining / sitemap)...")
+                await self.event_emitter.emit(
+                    ScanEventType.PROGRESS_UPDATE, message="Phase 1: reconnaissance..."
                 )
+                if max_depth is not None:
+                    self.recon_config.max_depth = max_depth
+                    self.mapper.max_depth = max_depth
+                if max_urls is not None:
+                    self.recon_config.max_urls = max_urls
+                    self.mapper.max_urls = max_urls
+                recon_result = await self.recon.run(target_url)
+                map_data = recon_result.map_data
+                scan_targets = recon_result.targets or [target_url]
                 if self.mapper.limit_reached:
                     msg = (f"Crawler abortado preventivamente por límite max_urls "
                            f"({self.mapper.max_urls}) / spider-trap; mapa parcial.")
@@ -110,7 +127,28 @@ class WebSecurityScanner:
                     await self.event_emitter.emit(ScanEventType.LOG_MESSAGE, message=msg)
                 map_report = await self.mapper.generate_map_async(map_data)
                 self._logger.info(f"Map generated at: {map_report}")
-                await self.event_emitter.emit(ScanEventType.LOG_MESSAGE, message=f"Report generated: {map_report}")
+                await self.event_emitter.emit(
+                    ScanEventType.LOG_MESSAGE, message=f"Report generated: {map_report}"
+                )
+                await self.event_emitter.emit(
+                    ScanEventType.LOG_MESSAGE,
+                    message=(f"Phase 2: {len(scan_targets)} target(s) queued for the "
+                             f"vulnerability testers."),
+                )
+
+            # --- Phase 2: Vulnerability testing over discovered targets ----
+            runnable = [t for t in self.testers if self._should_run_tester(t, profile)]
+            if runnable:
+                self._logger.debug(
+                    f"Scheduling {len(runnable)} tester(s) over {len(scan_targets)} target(s)"
+                )
+                await self._dispatch_testers(runnable, scan_targets, max_duration)
+            else:
+                self._logger.warning("No testers scheduled for this profile.")
+
+            # Technology fingerprinting on the target's landing page. The GET is
+            # cached, so the mapper (and any tester) reuses it for free.
+            technologies = await self._detect_technologies(target_url)
 
         except asyncio.CancelledError:
             # KeyboardInterrupt / external cancellation. Testers were already
@@ -224,12 +262,28 @@ class WebSecurityScanner:
 
     async def _run_testers(self, testers: list[VulnerabilityTester],
                            target_url: str, max_duration: float | None):
-        """Run testers through a bounded worker pool, honoring max_duration."""
-        async def _worker(tester: VulnerabilityTester):
-            await self._run_tester_safe(tester, target_url)
+        """Run every tester against a single URL (kept for callers/tests)."""
+        await self._dispatch_testers(testers, [target_url], max_duration)
 
-        concurrency = min(len(testers), self.MAX_TESTER_CONCURRENCY)
-        run = self.core.run_worker_pool(testers, _worker, concurrency=concurrency)
+    async def _dispatch_testers(self, testers: list[VulnerabilityTester],
+                                targets: list[str], max_duration: float | None):
+        """Run each tester against each discovered target through a bounded pool.
+
+        Work items are ``(tester, url)`` pairs, so the Phase 1 recon output
+        (URLs + parameters mined from HTML, JavaScript and the sitemap) is
+        ingested automatically by all 16 vulnerability testers. The pool bounds
+        fan-out and guarantees cancel+await of every task on timeout / Ctrl+C.
+        """
+        pairs = [(tester, url) for url in targets for tester in testers]
+        if not pairs:
+            return
+
+        async def _worker(item: tuple[VulnerabilityTester, str]):
+            tester, url = item
+            await self._run_tester_safe(tester, url)
+
+        concurrency = min(len(pairs), self.MAX_TESTER_CONCURRENCY)
+        run = self.core.run_worker_pool(pairs, _worker, concurrency=concurrency)
 
         if max_duration:
             try:

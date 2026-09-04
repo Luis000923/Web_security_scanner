@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "web-security-scanner"
-version = "5.1.0"
+version = "5.2.0"
 description = "Advanced Web Security Scanner with AsyncIO and Plugin System"
 readme = "README.md"
 requires-python = ">=3.9"

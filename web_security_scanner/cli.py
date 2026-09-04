@@ -71,6 +71,21 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="Max crawl depth for the site mapper (default: 3).")
     scan.add_argument("--max-urls", type=int, default=1000,
                       help="Hard cap on URLs the crawler will visit (default: 1000).")
+    # --- Phase 1 recon (route-mapper integration) ---
+    scan.add_argument("--sitemap", dest="sitemap", action="store_true",
+                      help="Seed the crawl frontier from /sitemap.xml.")
+    scan.add_argument("--jitter", type=float, default=0.0,
+                      help="Random +/- seconds added to the inter-request delay "
+                           "to blur the traffic pattern (default: 0).")
+    scan.add_argument("--parse-js", dest="parse_js", action="store_true", default=True,
+                      help="Mine endpoints from .js bundles (default: on).")
+    scan.add_argument("--no-parse-js", dest="parse_js", action="store_false",
+                      help="Disable JavaScript endpoint mining.")
+    scan.add_argument("--proxy", default=None,
+                      help="Route all traffic through a proxy "
+                           "(http://host:port or socks5://host:port).")
+    scan.add_argument("--ua-file", default=None,
+                      help="File with one User-Agent per line; rotated per request.")
     scan.add_argument("-o", "--output", default="reports",
                       help="Output directory for reports (default: reports).")
     scan.add_argument("-f", "--format", default="json,html",
@@ -150,6 +165,12 @@ def _register_listeners(scanner: WebSecurityScanner, verbose: bool,
     scanner.event_emitter.on(ScanEventType.URL_SCANNED, on_url_scanned)
 
 
+def _load_ua_file(path: str) -> list[str]:
+    """Read a User-Agent list file (one per line, '#' comments ignored)."""
+    lines = Path(path).read_text(encoding="utf-8").splitlines()
+    return [s.strip() for s in lines if s.strip() and not s.lstrip().startswith("#")]
+
+
 def _build_config(args) -> dict:
     core = {
         "rate_limit": args.rate_limit,
@@ -160,12 +181,25 @@ def _build_config(args) -> dict:
         core["max_concurrency"] = args.threads
     if args.timeout is not None:
         core["timeout"] = args.timeout
+    if getattr(args, "proxy", None):
+        core["proxy"] = args.proxy
+    if getattr(args, "ua_file", None):
+        uas = _load_ua_file(args.ua_file)
+        if uas:
+            core["extra_user_agents"] = uas
     testers = {
         "payload_delay": args.payload_delay,
         "max_payloads": args.max_payloads,
         "allow_destructive": args.allow_destructive,
     }
-    return {"core": core, "testers": testers}
+    recon = {
+        "max_urls": args.max_urls,
+        "max_depth": args.max_depth,
+        "jitter": args.jitter,
+        "parse_js": args.parse_js,
+        "use_sitemap": args.sitemap,
+    }
+    return {"core": core, "testers": testers, "recon": recon}
 
 
 async def _run_scan(args) -> int:
