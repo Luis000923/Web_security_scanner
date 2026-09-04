@@ -317,8 +317,9 @@ Documentacion/                 Documentacion tecnica complementaria
 ## Documentacion
 
 Este `README.md` es la referencia principal de uso, instalacion y arquitectura.
-Documentacion complementaria en `Documentacion/`:
+Documentacion complementaria:
 
+- [CHANGELOG.md](CHANGELOG.md) - registro de cambios por version.
 - [COMANDOS.md](Documentacion/COMANDOS.md) - combinaciones de parametros y
   ejemplos de invocacion de la CLI.
 - [MEJORAS_V5.md](Documentacion/MEJORAS_V5.md) - detalle tecnico de las mejoras
