@@ -1,0 +1,141 @@
+{
+  "version": "5.1.0",
+  "category": "deserialization",
+  "payloads": [
+    {
+      "id": "deser.probe.java_b64_marker",
+      "vector": "rO0ABXQADldTU2M0bjRyeTc3ODg=",
+      "description": "Base64 of a Java-serialized String 'WSSc4n4ry7788' (magic AC ED 00 05). Inert detection probe — no gadget chain.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "canary": "rO0ABXQADldTU2M0bjRyeTc3ODg=",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "expected_evidence": [
+        "java.io.",
+        "ObjectInputStream",
+        "InvalidClassException",
+        "resolveClass"
+      ],
+      "references": [
+        "https://swisskyrepo.github.io/PayloadsAllTheThings/Insecure%20Deserialization/Java/"
+      ],
+      "tags": [
+        "java",
+        "probe",
+        "detection-only"
+      ]
+    },
+    {
+      "id": "deser.probe.java_magic_hex",
+      "vector": "\\xac\\xed\\x00\\x05",
+      "description": "Raw Java serialization stream magic bytes as a probe.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "expected_evidence": [
+        "ObjectInputStream",
+        "StreamCorruptedException"
+      ],
+      "tags": [
+        "java",
+        "magic-bytes",
+        "detection-only"
+      ]
+    },
+    {
+      "id": "deser.probe.dotnet_b64",
+      "vector": "AAEAAAD/////AQAAAAAAAAAMAgAAAA==",
+      "description": "BinaryFormatter header (.NET). Inert — truncated, no type graph.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+      ],
+      "tags": [
+        "dotnet",
+        "detection-only"
+      ]
+    },
+    {
+      "id": "deser.probe.php_object",
+      "vector": "O:8:\"stdClass\":1:{s:2:\"wc\";s:13:\"WSSc4n4ry7788\";}",
+      "description": "PHP serialized stdClass probe (no __wakeup/__destruct gadget).",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "canary": "WSSc4n4ry7788",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "expected_evidence": [
+        "unserialize()",
+        "__PHP_Incomplete_Class"
+      ],
+      "engines": [
+        "php"
+      ],
+      "tags": [
+        "php",
+        "detection-only"
+      ]
+    },
+    {
+      "id": "deser.probe.python_pickle_header",
+      "vector": "\\x80\\x04\\x95",
+      "description": "Python pickle protocol-4 header bytes as a probe.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "expected_evidence": [
+        "UnpicklingError",
+        "_pickle",
+        "find_class"
+      ],
+      "engines": [
+        "python"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "detection-only"
+      ]
+    },
+    {
+      "id": "deser.probe.ruby_marshal",
+      "vector": "\\x04\\x08",
+      "description": "Ruby Marshal version header bytes as a probe.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "expected_evidence": [
+        "marshal data too short",
+        "Marshal.load",
+        "ArgumentError"
+      ],
+      "engines": [
+        "ruby"
+      ],
+      "tags": [
+        "ruby",
+        "detection-only"
+      ]
+    }
+  ]
+}

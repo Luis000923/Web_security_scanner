@@ -47,7 +47,7 @@ webscanner = "web_security_scanner.cli:main"
 include = ["web_security_scanner*"]
 
 [tool.setuptools.package-data]
-"web_security_scanner.PAYLOAD" = ["*.json"]
+"web_security_scanner.PAYLOAD" = ["*.json", "data/*.json"]
 "web_security_scanner.wordlists" = ["*.json"]
 
 [tool.pytest.ini_options]

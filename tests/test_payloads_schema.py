@@ -1,8 +1,10 @@
-"""Schema + invariant validation for PAYLOAD/payloads_v5.json.
+"""Schema + invariant validation for the PAYLOAD/ signature corpus.
 
-Fails CI on any malformed / mis-tagged signature. ``payloads_v5.json`` is the
-single committed source of truth; entries tagged ``source:legacy`` were folded
-in from the (now removed) historical flat files during the v5.1 migration.
+Fails CI on any malformed / mis-tagged signature. The corpus is committed as one
+file per category under ``PAYLOAD/data/<category>.json`` (validated against
+``PAYLOAD/schema.json``) plus ``PAYLOAD/meta.json`` (validated against
+``PAYLOAD/meta.schema.json``). Entries tagged ``source:legacy`` were folded in
+from the historical flat files during the v5.1 migration.
 """
 
 import json
@@ -16,7 +18,9 @@ jsonschema = pytest.importorskip("jsonschema")
 REPO = Path(__file__).resolve().parent.parent
 PAYLOAD_DIR = REPO / "web_security_scanner" / "PAYLOAD"
 SCHEMA_FILE = PAYLOAD_DIR / "schema.json"
-V5_FILE = PAYLOAD_DIR / "payloads_v5.json"
+META_SCHEMA_FILE = PAYLOAD_DIR / "meta.schema.json"
+META_FILE = PAYLOAD_DIR / "meta.json"
+DATA_DIR = PAYLOAD_DIR / "data"
 
 CANARY = "WSSc4n4ry7788"
 EXPECTED_CATEGORIES = {
@@ -34,8 +38,29 @@ _DESTRUCTIVE_TOKENS = re.compile(
 
 
 @pytest.fixture(scope="module")
-def doc():
-    return json.loads(V5_FILE.read_text(encoding="utf-8"))
+def category_files():
+    files = sorted(DATA_DIR.glob("*.json"))
+    assert files, f"no category files under {DATA_DIR}"
+    return files
+
+
+@pytest.fixture(scope="module")
+def category_docs(category_files):
+    return {p: json.loads(p.read_text(encoding="utf-8")) for p in category_files}
+
+
+@pytest.fixture(scope="module")
+def doc(category_docs):
+    """Reconstruct the aggregated ``{"categories": {...}}`` view for invariants."""
+    cats: dict[str, list] = {}
+    for raw in category_docs.values():
+        cats[raw["category"]] = raw["payloads"]
+    return {"categories": cats}
+
+
+@pytest.fixture(scope="module")
+def meta():
+    return json.loads(META_FILE.read_text(encoding="utf-8"))
 
 
 @pytest.fixture(scope="module")
@@ -44,17 +69,34 @@ def entries(doc):
 
 
 def test_schema_is_valid_draft202012():
-    schema = json.loads(SCHEMA_FILE.read_text(encoding="utf-8"))
-    jsonschema.Draft202012Validator.check_schema(schema)
+    for path in (SCHEMA_FILE, META_SCHEMA_FILE):
+        jsonschema.Draft202012Validator.check_schema(
+            json.loads(path.read_text(encoding="utf-8"))
+        )
 
 
-def test_corpus_validates_against_schema(doc):
+def test_every_category_file_validates_against_schema(category_docs):
     schema = json.loads(SCHEMA_FILE.read_text(encoding="utf-8"))
     validator = jsonschema.Draft202012Validator(schema)
-    errors = sorted(validator.iter_errors(doc), key=lambda e: list(e.absolute_path))
-    assert not errors, "\n".join(
-        f"{list(e.absolute_path)}: {e.message}" for e in errors[:25]
-    )
+    for path, raw in category_docs.items():
+        errors = sorted(validator.iter_errors(raw), key=lambda e: list(e.absolute_path))
+        assert not errors, f"{path.name}:\n" + "\n".join(
+            f"  {list(e.absolute_path)}: {e.message}" for e in errors[:25]
+        )
+
+
+def test_meta_validates_and_matches_data_dir(meta, category_docs):
+    schema = json.loads(META_SCHEMA_FILE.read_text(encoding="utf-8"))
+    errors = list(jsonschema.Draft202012Validator(schema).iter_errors(meta))
+    assert not errors, "\n".join(e.message for e in errors)
+    assert meta["canary_token"] == CANARY
+    on_disk = {raw["category"] for raw in category_docs.values()}
+    assert set(meta["categories"]) == on_disk
+
+
+def test_category_field_matches_filename(category_docs):
+    for path, raw in category_docs.items():
+        assert raw["category"] == path.stem, f"{path.name}: category != filename"
 
 
 def test_all_expected_categories_present_and_non_empty(doc):

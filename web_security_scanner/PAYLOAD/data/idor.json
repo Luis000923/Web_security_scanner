@@ -1,0 +1,97 @@
+{
+  "version": "5.1.0",
+  "category": "idor",
+  "payloads": [
+    {
+      "id": "idor.numeric.one",
+      "vector": "1",
+      "description": "Sequential id probe.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "sequential"
+      ]
+    },
+    {
+      "id": "idor.numeric.two",
+      "vector": "2",
+      "description": "Sequential id probe.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "sequential"
+      ]
+    },
+    {
+      "id": "idor.numeric.zero",
+      "vector": "0",
+      "description": "Boundary id probe.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "boundary"
+      ]
+    },
+    {
+      "id": "idor.numeric.minus_one",
+      "vector": "-1",
+      "description": "Negative boundary id probe.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "boundary"
+      ]
+    },
+    {
+      "id": "idor.numeric.large",
+      "vector": "999999",
+      "description": "Large id probe.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "sequential"
+      ]
+    },
+    {
+      "id": "idor.special.admin",
+      "vector": "admin",
+      "description": "Role-name identifier probe.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "role"
+      ]
+    },
+    {
+      "id": "idor.uuid.nil",
+      "vector": "00000000-0000-0000-0000-000000000000",
+      "description": "Nil UUID probe for UUID-keyed objects.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "uuid"
+      ]
+    }
+  ]
+}

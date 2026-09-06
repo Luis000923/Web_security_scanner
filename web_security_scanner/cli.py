@@ -55,6 +55,9 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="Delay between payloads per tester, in seconds.")
     scan.add_argument("--max-payloads", type=int, default=50,
                       help="Max payloads per parameter (default: 50).")
+    scan.add_argument("--waf-bypass-transforms", default="",
+                      help="Comma-separated payload transforms applied to every vector "
+                           "for WAF evasion (e.g. 'random_case,url_encode').")
     scan.add_argument("--max-duration", type=float, default=None,
                       help="Global cap on total tester time, in seconds.")
     scan.add_argument("--allow-destructive", action="store_true",
@@ -191,6 +194,9 @@ def _build_config(args) -> dict:
         "payload_delay": args.payload_delay,
         "max_payloads": args.max_payloads,
         "allow_destructive": args.allow_destructive,
+        "waf_bypass_transforms": [
+            t.strip() for t in getattr(args, "waf_bypass_transforms", "").split(",") if t.strip()
+        ],
     }
     recon = {
         "max_urls": args.max_urls,

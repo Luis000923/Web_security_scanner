@@ -1,0 +1,1716 @@
+{
+  "version": "5.1.0",
+  "category": "open_redirect",
+  "payloads": [
+    {
+      "id": "redir.absolute.https",
+      "vector": "https://evil-webscanner-test.invalid",
+      "description": "Absolute URL to the marker host.",
+      "context": "absolute",
+      "cwe": "CWE-601",
+      "owasp": "A01:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html"
+      ],
+      "tags": [
+        "marker"
+      ]
+    },
+    {
+      "id": "redir.absolute.http",
+      "vector": "http://evil-webscanner-test.invalid",
+      "description": "Absolute http URL to the marker host.",
+      "context": "absolute",
+      "cwe": "CWE-601",
+      "owasp": "A01:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "marker"
+      ]
+    },
+    {
+      "id": "redir.scheme_relative.double_slash",
+      "vector": "//evil-webscanner-test.invalid",
+      "description": "Scheme-relative URL — browsers treat as protocol-relative host.",
+      "context": "scheme_relative",
+      "cwe": "CWE-601",
+      "owasp": "A01:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "marker"
+      ]
+    },
+    {
+      "id": "redir.scheme_relative.no_slash",
+      "vector": "https:evil-webscanner-test.invalid",
+      "description": "Scheme with no slashes — normalised by many HTTP clients.",
+      "context": "scheme_relative",
+      "cwe": "CWE-601",
+      "owasp": "A01:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "marker",
+        "no-slash"
+      ]
+    },
+    {
+      "id": "redir.backslash.slash_backslash",
+      "vector": "/\\evil-webscanner-test.invalid",
+      "description": "/\\ is treated as // by browsers but not by server-side validators.",
+      "context": "backslash",
+      "cwe": "CWE-601",
+      "owasp": "A01:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "waf_bypass": true,
+      "tags": [
+        "marker",
+        "slash-backslash"
+      ]
+    },
+    {
+      "id": "redir.whitelist.userinfo",
+      "vector": "https://trusted.example.com@evil-webscanner-test.invalid",
+      "description": "Userinfo trick — real host is after the @.",
+      "context": "whitelist_bypass",
+      "cwe": "CWE-601",
+      "owasp": "A01:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "waf_bypass": true,
+      "tags": [
+        "marker",
+        "userinfo"
+      ]
+    },
+    {
+      "id": "redir.whitelist.path_confusion",
+      "vector": "https://evil-webscanner-test.invalid/%2f%2e%2e%2ftrusted.example.com",
+      "description": "Path-confusion suffix to satisfy a naive substring allowlist.",
+      "context": "whitelist_bypass",
+      "cwe": "CWE-601",
+      "owasp": "A01:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "waf_bypass": true,
+      "tags": [
+        "marker",
+        "path-trick"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.0002ef1dcb",
+      "vector": "/redirect?goto=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.0134c2f027",
+      "vector": "https://evil.com%00",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.035e080614",
+      "vector": "javascript://example.com%0Aalert(document.domain)",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.07c8efc92f",
+      "vector": "//evil.com%2F%2E%2E",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.08a5ed405e",
+      "vector": "//evil.com/..;/..;/..;/example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.08abf5819a",
+      "vector": "//evil.com%3F@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.0986596c74",
+      "vector": "//evil.com%0A@example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.0c1e6f1a47",
+      "vector": "/redirect?image_url=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.0c7cb66e4e",
+      "vector": "/redirect?out=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.0e68ac2b4d",
+      "vector": "http://localhost@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.0e76db1af0",
+      "vector": "//%09evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.112e920880",
+      "vector": "/redirect?destination=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.11560214b8",
+      "vector": "/redirect?redirect_url=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.11619393be",
+      "vector": "/redirect?u=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.1285ae5eb4",
+      "vector": "/redirect?out=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.12aa5107c8",
+      "vector": "/redirect?u=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.1382508f57",
+      "vector": "/redirect?continue=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.144ff34420",
+      "vector": "javascript://evil.com%0Aalert(1)",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.152c2448da",
+      "vector": "javascript:alert(1)",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.19f03e0537",
+      "vector": "//evil.com%252F@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "open_redirect.legacy.1a78330c67",
+      "vector": "http://127.0.0.1@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.1ce98356f4",
+      "vector": "/redirect?from=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.1f34122d24",
+      "vector": "/redirect?redirect_uri=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.2051e516a4",
+      "vector": "/redirect?target=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.22d8ea712d",
+      "vector": "///evil.com/..;/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.28d01fb326",
+      "vector": "http://evil.com\\@example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.2a20d795dc",
+      "vector": "/redirect?next=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.2a75a20f87",
+      "vector": "//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.2cb4dcc904",
+      "vector": "//evil.com%E3%80%82",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.3ae7e0e45f",
+      "vector": "//evil%E3%80%82com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.400958b623",
+      "vector": "//example.com%2F%2F@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.410e0d8176",
+      "vector": "//evil.com@example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.41a8d888cb",
+      "vector": "/redirect?goto=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.432e7437b4",
+      "vector": "//www.google.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.44339a28f4",
+      "vector": "//example.com%252F@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "open_redirect.legacy.45406d38fc",
+      "vector": "https://evil.com%E3%80%82",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.45f5de2a30",
+      "vector": "////evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.4c069999e2",
+      "vector": "/redirect?return_url=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.51ce822aea",
+      "vector": "/redirect?r=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.5258317913",
+      "vector": "\\\\evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.533dc96012",
+      "vector": "http://0x7f.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "open_redirect.legacy.56d6fbe433",
+      "vector": "http://0177.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.58452100cc",
+      "vector": "http://127。0。0。1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.58d76ae6e4",
+      "vector": "http://2130706433@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.59546868e0",
+      "vector": "/\\evil.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.5ae415e63b",
+      "vector": "/redirect?view=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.5c2465e138",
+      "vector": "/redirect?to=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.5d6c8e583b",
+      "vector": "https://example.com.evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.5f68f65c12",
+      "vector": "//google.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.5ff8367d7f",
+      "vector": "/redirect?link=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.62c31041db",
+      "vector": "//example.com%00evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.62ea26edf8",
+      "vector": "/redirect?return=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.634d628e8a",
+      "vector": "////evil.com\\example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.63a52d42bb",
+      "vector": "/\\evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.6502b6fa72",
+      "vector": "http:evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.651b7ebd93",
+      "vector": "https://evil.com%0D",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.6613667a9c",
+      "vector": "/redirect?return_url=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.6925533978",
+      "vector": "/redirect?returnUrl=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.6ade863d0c",
+      "vector": "///evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.6bb75930a1",
+      "vector": "//evil.com%2F%2E%2E/example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.6e87c59ea6",
+      "vector": "//evil.com?example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.70f1248798",
+      "vector": "/redirect?image_url=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.74d92cf07a",
+      "vector": "/redirect?url=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.74ee26014f",
+      "vector": "//evil。com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.7586d0c757",
+      "vector": "https:evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.776fa36d4d",
+      "vector": "/redirect?from=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.78d7899f3f",
+      "vector": "/////evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.79b5e02bdf",
+      "vector": "//evil.com/.../example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.79f61fb54e",
+      "vector": "/redirect?url=data:text/html,<script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.7a86fdf6de",
+      "vector": "vbscript:msgbox(1)",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.7a923ebd60",
+      "vector": "//evil.com%2523@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "open_redirect.legacy.7f5f3cdd56",
+      "vector": "https://evil.com%0A",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.838c951308",
+      "vector": "/redirect?url=javascript:alert(1)",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.83b1d635b8",
+      "vector": "///evil.com\\example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.88dbb0c2c3",
+      "vector": "http://①②⑦.⓪.⓪.①",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.8d5fed0e2b",
+      "vector": "//evil.com%2F.example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.8d66dce376",
+      "vector": "//evil.com%0D",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.8e85d8ded5",
+      "vector": "https://evil.com%09",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.8f99d7ac1e",
+      "vector": "/redirect?callback=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.90151bc238",
+      "vector": "//@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.9106369dbe",
+      "vector": "/redirect?r=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.9129c4c688",
+      "vector": "https://evil.com/example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.92b39fb5d2",
+      "vector": "//evil.com:80?@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.9425d4b7a0",
+      "vector": "http://example.com.evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.9bb9bd2d07",
+      "vector": "http://[::1]@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.a0ee8c56cb",
+      "vector": "https://evil.com\\t@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.a2549e541b",
+      "vector": "/redirect?to=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.a657852e01",
+      "vector": "http://example.com@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.a686bc1bc0",
+      "vector": "//evil.com%5C@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.a82ab24266",
+      "vector": "/redirect?redirect_url=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.a8978b4232",
+      "vector": "//evil.com%00@example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.a91eb53c1c",
+      "vector": "//example.com%2F@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.ab3eb63920",
+      "vector": "https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.aceed25c30",
+      "vector": "//evil.com:80%23@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.ae453b3486",
+      "vector": "/redirect?continue=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.b174863b6e",
+      "vector": "data:text/html,<script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.b35a1887e6",
+      "vector": "/redirect?returnUrl=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.b6f5ef8176",
+      "vector": "//evil.com%E3%80%82example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.b7c91b070e",
+      "vector": "////evil.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.ba54bd7e5c",
+      "vector": "/redirect?url=http://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.bdcc076c9c",
+      "vector": "//evil.com#example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.bee1e6b188",
+      "vector": "javascript:alert('XSS')",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.c049d52d67",
+      "vector": "//example.com@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.c04c1e4d2c",
+      "vector": "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.c3b03120ed",
+      "vector": "//evil.com\\texample.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.c599d594bb",
+      "vector": "/redirect?redir=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.c5f86cacf3",
+      "vector": "//%00evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.c5ff80827e",
+      "vector": "//example.com%09evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.c8f7598f4e",
+      "vector": "/redirect?return=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.cf3c45943a",
+      "vector": "/redirect?redirect_uri=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.d4f55e293b",
+      "vector": "/redirect?url=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.d54db90c89",
+      "vector": "//evil.com%2F%2E.example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.d624cfee01",
+      "vector": "///evil.com/..",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.d95550060c",
+      "vector": "/redirect?next=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.da6d751996",
+      "vector": "//evil.com:80#@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.df8f32fa03",
+      "vector": "///\\;@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.e1a0a1841b",
+      "vector": "http://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.e24d272464",
+      "vector": "//evil.com%09",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.e28f7a4f0f",
+      "vector": "https://example.com@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.e62597259c",
+      "vector": "//evil.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.e9127a441c",
+      "vector": "http://evil.com/example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.ea5588bcd4",
+      "vector": "/redirect?target=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.ec08d4c4c8",
+      "vector": "/redirect?link=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.ed5f93128f",
+      "vector": "/redirect?redir=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.f4fee59fe5",
+      "vector": "//evil.com%23@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.f531881dfc",
+      "vector": "//evil.com%0D@example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.fa49f354dd",
+      "vector": "/redirect?view=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.fbc663bef2",
+      "vector": "http://evil.com%5C@example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.fbf852d64f",
+      "vector": "/redirect?destination=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.fc1058d75a",
+      "vector": "http://0x7f.0.0.1@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "open_redirect.legacy.fc55af7b8d",
+      "vector": "//evil.com%255C@example.com/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "open_redirect.legacy.fc725ebcaa",
+      "vector": "//evil.com%0A",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "open_redirect.legacy.ff603c6a45",
+      "vector": "/redirect?callback=https://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-601",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

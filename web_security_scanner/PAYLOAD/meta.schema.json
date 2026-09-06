@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-security-scanner/PAYLOAD/meta.schema.json",
+  "title": "web-security-scanner payload corpus metadata (v5.1)",
+  "type": "object",
+  "required": ["version", "canary_token", "categories"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "schema": { "type": "string" },
+    "description": { "type": "string" },
+    "canary_token": { "type": "string", "minLength": 6 },
+    "marker_host": { "type": "string" },
+    "categories": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+      "uniqueItems": true
+    }
+  }
+}

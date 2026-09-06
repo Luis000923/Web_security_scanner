@@ -2,7 +2,7 @@
 
 These are enumeration inputs for the crawler / mapper, not injection
 signatures — they live here rather than in ``PAYLOAD/`` (which is reserved for
-``payloads_v5.json`` and its schema).
+the ``data/<category>.json`` corpus and its schema).
 
     from web_security_scanner.wordlists import load_wordlist
     subs = load_wordlist("subdomains")          # list[str], deduped, order kept

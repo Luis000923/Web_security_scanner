@@ -1,22 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://web-security-scanner/PAYLOAD/schema.json",
-  "title": "web-security-scanner payload signature file (v5.1)",
+  "title": "web-security-scanner payload category file (v5.1)",
   "type": "object",
-  "required": ["version", "canary_token", "categories"],
-  "additionalProperties": true,
+  "required": ["category", "payloads"],
+  "additionalProperties": false,
   "properties": {
     "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
-    "description": { "type": "string" },
-    "schema": { "type": "string" },
-    "canary_token": { "type": "string", "minLength": 6 },
-    "categories": {
-      "type": "object",
-      "minProperties": 1,
-      "additionalProperties": {
-        "type": "array",
-        "items": { "$ref": "#/$defs/payload" }
-      }
+    "category": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "payloads": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/payload" }
     }
   },
   "$defs": {

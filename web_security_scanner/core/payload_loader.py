@@ -4,8 +4,9 @@ The historical approach opened one flat JSON file per tester on every
 instantiation and returned a bare ``list[str]`` with no context, confidence or
 severity metadata. This module replaces that with:
 
-* a single curated, schema-validated signature file
-  (``PAYLOAD/payloads_v5.json`` + ``PAYLOAD/schema.json``),
+* a curated, schema-validated signature corpus split one file per category
+  (``PAYLOAD/data/<category>.json`` + ``PAYLOAD/schema.json``, with shared
+  metadata in ``PAYLOAD/meta.json``),
 * an immutable in-memory cache shared process-wide (parsed exactly once),
 * strict typing via a frozen :class:`Payload` dataclass, and
 * an async access API (:meth:`PayloadLoader.get_payloads`) that performs the
@@ -27,7 +28,11 @@ from pathlib import Path
 from typing import Any
 
 PAYLOAD_DIR = Path(__file__).resolve().parent.parent / "PAYLOAD"
-PAYLOAD_FILE = PAYLOAD_DIR / "payloads_v5.json"
+# Curated corpus, one JSON file per vulnerability category. Each file is
+# ``{"category": "<name>", "payloads": [ ... ]}`` (a bare ``[ ... ]`` array is
+# also accepted, category taken from the filename stem).
+PAYLOAD_DATA_DIR = PAYLOAD_DIR / "data"
+PAYLOAD_META_FILE = PAYLOAD_DIR / "meta.json"
 
 # Weakest -> strongest. Mirrors base_tester_async.CONFIDENCE_LEVELS.
 CONFIDENCE_LEVELS: tuple[str, ...] = ("LOW", "MEDIUM", "HIGH", "CONFIRMED")
@@ -113,7 +118,10 @@ class PayloadLoader:
     """
 
     def __init__(self, source: Path | None = None) -> None:
-        self._source = source or PAYLOAD_FILE
+        # ``source`` is the directory holding the per-category files; a single
+        # aggregated file (``{"categories": {...}}``) is still accepted for
+        # ad-hoc use in tests.
+        self._source = source or PAYLOAD_DATA_DIR
         self._lock = threading.Lock()
         self._cache: dict[str, tuple[Payload, ...]] | None = None
 
@@ -173,28 +181,49 @@ class PayloadLoader:
             references=references,
         )
 
-    def _read_source(self) -> dict[str, tuple[Payload, ...]]:
-        raw: Any = {}
-        try:
-            with open(self._source, encoding="utf-8") as fh:
-                raw = json.load(fh)
-        except (OSError, ValueError):
-            raw = {}
-        categories = raw.get("categories", {}) if isinstance(raw, dict) else {}
-
-        result: dict[str, tuple[Payload, ...]] = {}
-        for category, entries in categories.items():
-            if not isinstance(entries, list):
+    def _build_bucket(self, category: str, entries: Any) -> tuple[Payload, ...]:
+        if not isinstance(entries, list):
+            return ()
+        bucket: list[Payload] = []
+        seen: set[str] = set()
+        for entry in entries:
+            payload = self._parse_entry(category, entry)
+            if payload is None or payload.vector in seen:
                 continue
-            bucket: list[Payload] = []
-            seen: set[str] = set()
-            for entry in entries:
-                payload = self._parse_entry(str(category), entry)
-                if payload is None or payload.vector in seen:
-                    continue
-                seen.add(payload.vector)
-                bucket.append(payload)
-            result[str(category)] = tuple(bucket)
+            seen.add(payload.vector)
+            bucket.append(payload)
+        return tuple(bucket)
+
+    @staticmethod
+    def _load_json(path: Path) -> Any:
+        try:
+            with open(path, encoding="utf-8") as fh:
+                return json.load(fh)
+        except (OSError, ValueError):
+            return None
+
+    def _read_source(self) -> dict[str, tuple[Payload, ...]]:
+        result: dict[str, tuple[Payload, ...]] = {}
+        src = self._source
+
+        if src.is_dir():
+            files: list[Path] = sorted(src.glob("*.json"))
+        elif src.is_file():
+            files = [src]
+        else:
+            return result
+
+        for path in files:
+            raw = self._load_json(path)
+            if isinstance(raw, list):
+                result[path.stem] = self._build_bucket(path.stem, raw)
+            elif isinstance(raw, dict) and isinstance(raw.get("payloads"), list):
+                category = str(raw.get("category") or path.stem)
+                result[category] = self._build_bucket(category, raw["payloads"])
+            elif isinstance(raw, dict) and isinstance(raw.get("categories"), dict):
+                # Aggregated single-file form (test convenience).
+                for category, entries in raw["categories"].items():
+                    result[str(category)] = self._build_bucket(str(category), entries)
         return result
 
     def _ensure_loaded(self) -> dict[str, tuple[Payload, ...]]:

@@ -132,7 +132,13 @@ webscanner scan https://ejemplo.com --rate-limit 2      # pausa minima entre req
 webscanner scan https://ejemplo.com --payload-delay 1.5 # delay entre payloads por tester (s)
 webscanner scan https://ejemplo.com --max-payloads 100  # payloads por parametro
 webscanner scan https://ejemplo.com --max-duration 120  # cap total de tiempo (s)
+webscanner scan https://ejemplo.com --waf-bypass-transforms random_case,url_encode  # muta cada vector (evasion WAF)
 ```
+
+Transformaciones disponibles para `--waf-bypass-transforms` (se aplican en orden,
+izquierda -> derecha): `url_encode`, `double_url_encode`, `hex_entity` (`&#xNN;`),
+`html_entity` (`&#NN;`), `random_case`. Los vectores destructivos no se mutan
+salvo `--allow-destructive`.
 
 ---
 
@@ -226,6 +232,7 @@ webscanner scan https://ejemplo.com -p mapping \
 | `--payload-delay` | segundos (ej: `1.5`) | Delay entre payloads dentro de cada tester |
 | `--max-payloads` | entero (ej: `50`) | Max payloads probados por parametro |
 | `--max-duration` | segundos (ej: `180`) | Tiempo total maximo del escaneo (Fase 2) |
+| `--waf-bypass-transforms` | lista (ej: `random_case,url_encode`) | Muta cada vector con la cadena de transformaciones (evasion de firmas WAF) |
 | `--no-map` | flag | Omite la Fase 1; los testers solo reciben la URL semilla |
 | `--max-depth` | entero (ej: `5`) | Profundidad maxima del crawler |
 | `--max-urls` | entero (ej: `500`) | Limite de URLs que visita el crawler |

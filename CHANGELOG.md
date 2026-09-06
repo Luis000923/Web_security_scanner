@@ -5,6 +5,54 @@ archivo. El formato sigue las convenciones de
 [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y el proyecto se adhiere
 al versionado semantico.
 
+## [No publicado]
+
+### Anadido
+
+- **Modulo de transformaciones y mutaciones de payloads.**
+  `web_security_scanner/core/transforms/` define la interfaz abstracta
+  `BaseTransform` (`transform(value: str) -> str`) y un registro nombre ->
+  instancia extensible via el decorador `@register(...)`. Transformadores
+  incorporados: `url_encode`, `double_url_encode`, `hex_entity` (`&#xNN;`),
+  `html_entity` (`&#NN;`) y `random_case` (evasion de firmas estaticas
+  sensibles a mayusculas). `web_security_scanner/core/payload_mutator.py`
+  anade `PayloadMutator.mutate(payload, transform_names)`, que devuelve una
+  **nueva** instancia inmutable de `Payload` con el `vector` reescrito por la
+  cadena de transformaciones y todos los demas metadatos intactos. Tests en
+  `tests/test_payload_mutator.py`.
+- **`PayloadMutator` integrado en la clase base `VulnerabilityTester`.**
+  `__init__` instancia `self.mutator = PayloadMutator()` (o lo acepta por
+  inyeccion via `mutator=`) y lee `config['waf_bypass_transforms']` (lista de
+  nombres de transformacion). El nuevo helper `_apply_runtime_mutations()`
+  reescribe cada vector cargado por `load_payloads()` /
+  `load_payload_vectors()` a traves de esa cadena; los nombres desconocidos se
+  descartan con un unico `logger.warning` y el vector original se conserva
+  (`UnknownTransformError` nunca aborta el escaneo). Los vectores destructivos
+  no se mutan salvo `--allow-destructive`, para que la puerta de string de
+  `filter_payloads()` los siga detectando. Nuevo flag CLI
+  `--waf-bypass-transforms a,b,c`. Tests en `tests/test_base_tester_async.py`.
+
+### Cambiado
+
+- **Priorizacion de payloads antes del recorte `max_payloads`.**
+  `base_tester_async.py` define mapas de peso explicitos
+  (`CONFIDENCE_WEIGHT`: CONFIRMED 4 / HIGH 3 / MEDIUM 2 / LOW 1;
+  `SEVERITY_WEIGHT`: Critical 4 / High 3 / Medium 2 / Low 1 / Info 0) y
+  `payload_priority()`. `load_payloads()` ahora: descarta firmas `oob: true`
+  cuando no hay `config['oob_domain']` (peticiones sin receptor), intercala por
+  `context` y luego aplica un orden estable por peso combinado descendente, de
+  modo que el `[:max_payloads]` posterior de `filter_payloads()` conserva las
+  firmas CONFIRMED/HIGH sobre las LOW. Tests en `tests/test_payload_loader.py`.
+- **Corpus de payloads dividido por categoria.** El fichero agregado
+  `web_security_scanner/PAYLOAD/payloads_v5.json` se sustituye por un fichero por
+  categoria en `PAYLOAD/data/<categoria>.json` (14 ficheros, 2195 firmas). Los
+  metadatos compartidos del corpus (`version`, `canary_token`, `marker_host`,
+  lista de categorias) pasan a `PAYLOAD/meta.json`, validado contra el nuevo
+  `PAYLOAD/meta.schema.json`. `schema.json` valida ahora un unico fichero de
+  categoria. `PayloadLoader` descubre los ficheros con un glob sobre `data/` y
+  cachea el corpus una sola vez igual que antes; la API publica
+  (`get_payload_loader()`, `get_payloads()`, ...) no cambia.
+
 ## [5.2.0] - 2026-09-04
 
 ### Anadido

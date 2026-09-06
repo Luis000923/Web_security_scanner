@@ -1,7 +1,7 @@
 # Wordlists
 
 Enumeration inputs for the crawler / web mapper. **Not** injection signatures —
-those live in [`../PAYLOAD/payloads_v5.json`](../PAYLOAD/payloads_v5.json).
+those live in [`../PAYLOAD/data/`](../PAYLOAD/data/).
 
 | file | used by | notes |
 |---|---|---|

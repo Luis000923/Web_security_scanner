@@ -3,7 +3,7 @@
 import inspect
 
 import pytest
-from conftest import collect_vulns, param_value
+from conftest import MockScanner, collect_vulns, param_value
 
 from web_security_scanner.core.payload_loader import (
     CONFIDENCE_LEVELS,
@@ -11,6 +11,14 @@ from web_security_scanner.core.payload_loader import (
     Payload,
     PayloadLoader,
     get_payload_loader,
+)
+from web_security_scanner.events.event_emitter import ScanEventEmitter
+from web_security_scanner.modules.vulnerability_testers import base_tester_async as base_mod
+from web_security_scanner.modules.vulnerability_testers.base_tester_async import (
+    CONFIDENCE_WEIGHT,
+    SEVERITY_WEIGHT,
+    VulnerabilityTester,
+    payload_priority,
 )
 from web_security_scanner.modules.vulnerability_testers.xss_tester_async import XSSTester
 
@@ -178,3 +186,86 @@ async def test_xss_tester_confirms_with_canary_on_vulnerable_server():
 async def test_tester_falls_back_when_category_unknown():
     loader = PayloadLoader()
     assert await loader.get_payloads("does_not_exist") == ()
+
+
+# ---- Prioritisation & OOB gate before the max_payloads cap --------------
+
+
+class _DummyTester(VulnerabilityTester):
+    """Concrete tester exposing only the shared payload plumbing."""
+
+    name = "dummy"
+    description = "dummy"
+
+    async def run_test(self, target_url, **kwargs):  # pragma: no cover - unused
+        return None
+
+
+def _make_tester(**config):
+    return _DummyTester(MockScanner(lambda *a, **k: {}), ScanEventEmitter(), config)
+
+
+def _sig(vector, confidence="LOW", severity="Low", *, context="generic", oob=False):
+    return Payload(
+        vector=vector,
+        category="xss",
+        context=context,
+        confidence=confidence,
+        severity=severity,
+        oob=oob,
+    )
+
+
+def _patch_corpus(monkeypatch, corpus):
+    class _FakeLoader:
+        async def get_payloads(self, _vt, **_kw):
+            return tuple(corpus)
+
+    monkeypatch.setattr(base_mod, "get_payload_loader", lambda: _FakeLoader())
+
+
+def test_payload_priority_weight_maps_are_explicit():
+    assert CONFIDENCE_WEIGHT == {"CONFIRMED": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
+    assert SEVERITY_WEIGHT == {"Critical": 4, "High": 3, "Medium": 2, "Low": 1, "Info": 0}
+    assert payload_priority(_sig("x", "CONFIRMED", "Critical")) == (4, 4)
+    assert payload_priority(_sig("x", "LOW", "Info")) == (1, 0)
+
+
+async def test_max_payloads_preserves_high_confidence_over_low(monkeypatch):
+    corpus = [
+        _sig("low-1", "LOW", "Low"),
+        _sig("low-2", "LOW", "Low"),
+        _sig("confirmed-crit", "CONFIRMED", "Critical"),
+        _sig("high-high", "HIGH", "High"),
+        _sig("low-3", "LOW", "Low"),
+        _sig("medium-med", "MEDIUM", "Medium"),
+    ]
+    _patch_corpus(monkeypatch, corpus)
+
+    tester = _make_tester(max_payloads=3)
+    ordered = await tester.load_payloads("xss")
+    assert [p.vector for p in ordered[:3]] == [
+        "confirmed-crit", "high-high", "medium-med",
+    ]
+
+    capped = tester.filter_payloads([p.vector for p in ordered])
+    assert capped == ["confirmed-crit", "high-high", "medium-med"]
+    assert "low-1" not in capped
+
+
+async def test_oob_signatures_dropped_without_collaborator(monkeypatch):
+    corpus = [
+        _sig("plain", "HIGH", "High"),
+        _sig("oob-only", "CONFIRMED", "Critical", oob=True),
+    ]
+    _patch_corpus(monkeypatch, corpus)
+
+    without = await _make_tester(max_payloads=50).load_payloads("xss")
+    assert [p.vector for p in without] == ["plain"]
+
+    with_oob = await _make_tester(
+        max_payloads=50, oob_domain="oob.example.com"
+    ).load_payloads("xss")
+    assert {p.vector for p in with_oob} == {"plain", "oob-only"}
+    # OOB signature still ranks first once it has a receiver
+    assert with_oob[0].vector == "oob-only"

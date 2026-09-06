@@ -1,0 +1,23 @@
+{
+  "version": "5.1.0",
+  "schema": "./schema.json",
+  "description": "Curated, strongly-typed, context-tagged payload signatures for web-security-scanner v5.1. Single source of truth, consumed exclusively through web_security_scanner.core.payload_loader.PayloadLoader and validated against ./schema.json. Each entry: id (dotted, stable), vector (raw injection string), description, context (injection technique), cwe, owasp, canary (true -> shared WSS canary token embedded in the vector, or an explicit marker string), confidence (a-priori LOW/MEDIUM/HIGH/CONFIRMED before runtime confirmation), severity (Info/Low/Medium/High/Critical), time_based, min_intrusion_level (safe/low/medium/high), destructive (gated behind --allow-destructive), waf_bypass, oob (needs an out-of-band collaborator), engines, expected_evidence, references, tags. Entries tagged source:legacy were folded in from the historical flat payloads*.json files by scripts/import_legacy_payloads.py.",
+  "canary_token": "WSSc4n4ry7788",
+  "marker_host": "evil-webscanner-test.invalid",
+  "categories": [
+    "command_injection",
+    "crlf",
+    "deserialization",
+    "idor",
+    "ldap",
+    "log4shell",
+    "nosql_injection",
+    "open_redirect",
+    "path_traversal",
+    "sql_injection",
+    "ssrf",
+    "ssti",
+    "xss",
+    "xxe"
+  ]
+}
