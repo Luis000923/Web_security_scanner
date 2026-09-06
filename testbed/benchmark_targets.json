@@ -1,1692 +1,1692 @@
 [
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00021",
-    "param": "password",
+    "param": "BenchmarkTest00021",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00026",
-    "param": "password",
+    "param": "BenchmarkTest00026",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00041",
-    "param": "password",
+    "param": "BenchmarkTest00041",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00047",
-    "param": "password",
+    "param": "BenchmarkTest00047",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00048",
-    "param": "password",
+    "param": "BenchmarkTest00048",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00049",
-    "param": "password",
+    "param": "BenchmarkTest00049",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00362",
-    "param": "password",
+    "param": "BenchmarkTest00362",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00367",
-    "param": "password",
+    "param": "BenchmarkTest00367",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00377",
-    "param": "password",
+    "param": "BenchmarkTest00377",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00382",
-    "param": "password",
+    "param": "BenchmarkTest00382",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00387",
-    "param": "password",
+    "param": "BenchmarkTest00387",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00392",
-    "param": "password",
+    "param": "BenchmarkTest00392",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00407",
-    "param": "password",
+    "param": "BenchmarkTest00407",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00412",
-    "param": "password",
+    "param": "BenchmarkTest00412",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00432",
-    "param": "password",
+    "param": "BenchmarkTest00432",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00437",
-    "param": "password",
+    "param": "BenchmarkTest00437",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00452",
-    "param": "password",
+    "param": "BenchmarkTest00452",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00457",
-    "param": "password",
+    "param": "BenchmarkTest00457",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00467",
-    "param": "password",
+    "param": "BenchmarkTest00467",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00472",
-    "param": "password",
+    "param": "BenchmarkTest00472",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00477",
-    "param": "password",
+    "param": "BenchmarkTest00477",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00492",
-    "param": "password",
+    "param": "BenchmarkTest00492",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00497",
-    "param": "password",
+    "param": "BenchmarkTest00497",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00512",
-    "param": "password",
+    "param": "BenchmarkTest00512",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00517",
-    "param": "password",
+    "param": "BenchmarkTest00517",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00619",
-    "param": "password",
+    "param": "BenchmarkTest00619",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00624",
-    "param": "password",
+    "param": "BenchmarkTest00624",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00629",
-    "param": "password",
+    "param": "BenchmarkTest00629",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00644",
-    "param": "password",
+    "param": "BenchmarkTest00644",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00649",
-    "param": "password",
+    "param": "BenchmarkTest00649",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00659",
-    "param": "password",
+    "param": "BenchmarkTest00659",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00674",
-    "param": "password",
+    "param": "BenchmarkTest00674",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00679",
-    "param": "password",
+    "param": "BenchmarkTest00679",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00694",
-    "param": "password",
+    "param": "BenchmarkTest00694",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00699",
-    "param": "password",
+    "param": "BenchmarkTest00699",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00714",
-    "param": "password",
+    "param": "BenchmarkTest00714",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00719",
-    "param": "password",
+    "param": "BenchmarkTest00719",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00724",
-    "param": "password",
+    "param": "BenchmarkTest00724",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00729",
-    "param": "password",
+    "param": "BenchmarkTest00729",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00739",
-    "param": "password",
+    "param": "BenchmarkTest00739",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00764",
-    "param": "password",
+    "param": "BenchmarkTest00764",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00769",
-    "param": "password",
+    "param": "BenchmarkTest00769",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00774",
-    "param": "password",
+    "param": "BenchmarkTest00774",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00783",
-    "param": "password",
+    "param": "BenchmarkTest00783",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00784",
-    "param": "password",
+    "param": "BenchmarkTest00784",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00785",
-    "param": "password",
+    "param": "BenchmarkTest00785",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00786",
-    "param": "password",
+    "param": "BenchmarkTest00786",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00787",
-    "param": "password",
+    "param": "BenchmarkTest00787",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00788",
-    "param": "password",
+    "param": "BenchmarkTest00788",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00799",
-    "param": "password",
+    "param": "BenchmarkTest00799",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00800",
-    "param": "password",
+    "param": "BenchmarkTest00800",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00801",
-    "param": "password",
+    "param": "BenchmarkTest00801",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00802",
-    "param": "password",
+    "param": "BenchmarkTest00802",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00803",
-    "param": "password",
+    "param": "BenchmarkTest00803",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00804",
-    "param": "password",
+    "param": "BenchmarkTest00804",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00805",
-    "param": "password",
+    "param": "BenchmarkTest00805",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00806",
-    "param": "password",
+    "param": "BenchmarkTest00806",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00807",
-    "param": "password",
+    "param": "BenchmarkTest00807",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00808",
-    "param": "password",
+    "param": "BenchmarkTest00808",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00809",
-    "param": "password",
+    "param": "BenchmarkTest00809",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00810",
-    "param": "password",
+    "param": "BenchmarkTest00810",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00811",
-    "param": "password",
+    "param": "BenchmarkTest00811",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00812",
-    "param": "password",
+    "param": "BenchmarkTest00812",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00813",
-    "param": "password",
+    "param": "BenchmarkTest00813",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00814",
-    "param": "password",
+    "param": "BenchmarkTest00814",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00815",
-    "param": "password",
+    "param": "BenchmarkTest00815",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00816",
-    "param": "password",
+    "param": "BenchmarkTest00816",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00822",
-    "param": "password",
+    "param": "BenchmarkTest00822",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00823",
-    "param": "password",
+    "param": "BenchmarkTest00823",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00824",
-    "param": "password",
+    "param": "BenchmarkTest00824",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00825",
-    "param": "password",
+    "param": "BenchmarkTest00825",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00826",
-    "param": "password",
+    "param": "BenchmarkTest00826",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00827",
-    "param": "password",
+    "param": "BenchmarkTest00827",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00837",
-    "param": "password",
+    "param": "BenchmarkTest00837",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00838",
-    "param": "password",
+    "param": "BenchmarkTest00838",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00839",
-    "param": "password",
+    "param": "BenchmarkTest00839",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00840",
-    "param": "password",
+    "param": "BenchmarkTest00840",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00841",
-    "param": "password",
+    "param": "BenchmarkTest00841",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00842",
-    "param": "password",
+    "param": "BenchmarkTest00842",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00843",
-    "param": "password",
+    "param": "BenchmarkTest00843",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00844",
-    "param": "password",
+    "param": "BenchmarkTest00844",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00845",
-    "param": "password",
+    "param": "BenchmarkTest00845",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00846",
-    "param": "password",
+    "param": "BenchmarkTest00846",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00847",
-    "param": "password",
+    "param": "BenchmarkTest00847",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00848",
-    "param": "password",
+    "param": "BenchmarkTest00848",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00849",
-    "param": "password",
+    "param": "BenchmarkTest00849",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00850",
-    "param": "password",
+    "param": "BenchmarkTest00850",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00851",
-    "param": "password",
+    "param": "BenchmarkTest00851",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00862",
-    "param": "password",
+    "param": "BenchmarkTest00862",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest00867",
-    "param": "password",
+    "param": "BenchmarkTest00867",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00882",
-    "param": "password",
+    "param": "BenchmarkTest00882",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00887",
-    "param": "password",
+    "param": "BenchmarkTest00887",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00892",
-    "param": "password",
+    "param": "BenchmarkTest00892",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00897",
-    "param": "password",
+    "param": "BenchmarkTest00897",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907",
-    "param": "password",
+    "param": "BenchmarkTest00907",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00927",
-    "param": "password",
+    "param": "BenchmarkTest00927",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00932",
-    "param": "password",
+    "param": "BenchmarkTest00932",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest00937",
-    "param": "password",
+    "param": "BenchmarkTest00937",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01233",
-    "param": "password",
+    "param": "BenchmarkTest01233",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01238",
-    "param": "password",
+    "param": "BenchmarkTest01238",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01243",
-    "param": "password",
+    "param": "BenchmarkTest01243",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01253",
-    "param": "password",
+    "param": "BenchmarkTest01253",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01258",
-    "param": "password",
+    "param": "BenchmarkTest01258",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01263",
-    "param": "password",
+    "param": "BenchmarkTest01263",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01268",
-    "param": "password",
+    "param": "BenchmarkTest01268",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01288",
-    "param": "password",
+    "param": "BenchmarkTest01288",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01303",
-    "param": "password",
+    "param": "BenchmarkTest01303",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01308",
-    "param": "password",
+    "param": "BenchmarkTest01308",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01313",
-    "param": "password",
+    "param": "BenchmarkTest01313",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01328",
-    "param": "password",
+    "param": "BenchmarkTest01328",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01338",
-    "param": "password",
+    "param": "BenchmarkTest01338",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01343",
-    "param": "password",
+    "param": "BenchmarkTest01343",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01348",
-    "param": "password",
+    "param": "BenchmarkTest01348",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01353",
-    "param": "password",
+    "param": "BenchmarkTest01353",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01363",
-    "param": "password",
+    "param": "BenchmarkTest01363",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01378",
-    "param": "password",
+    "param": "BenchmarkTest01378",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01383",
-    "param": "password",
+    "param": "BenchmarkTest01383",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01388",
-    "param": "password",
+    "param": "BenchmarkTest01388",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01393",
-    "param": "password",
+    "param": "BenchmarkTest01393",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01491",
-    "param": "password",
+    "param": "BenchmarkTest01491",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01496",
-    "param": "password",
+    "param": "BenchmarkTest01496",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01501",
-    "param": "password",
+    "param": "BenchmarkTest01501",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01506",
-    "param": "password",
+    "param": "BenchmarkTest01506",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01511",
-    "param": "password",
+    "param": "BenchmarkTest01511",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01516",
-    "param": "password",
+    "param": "BenchmarkTest01516",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01526",
-    "param": "password",
+    "param": "BenchmarkTest01526",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01531",
-    "param": "password",
+    "param": "BenchmarkTest01531",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01556",
-    "param": "password",
+    "param": "BenchmarkTest01556",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01571",
-    "param": "password",
+    "param": "BenchmarkTest01571",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01586",
-    "param": "password",
+    "param": "BenchmarkTest01586",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01591",
-    "param": "password",
+    "param": "BenchmarkTest01591",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01596",
-    "param": "password",
+    "param": "BenchmarkTest01596",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01601",
-    "param": "password",
+    "param": "BenchmarkTest01601",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01606",
-    "param": "password",
+    "param": "BenchmarkTest01606",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01621",
-    "param": "password",
+    "param": "BenchmarkTest01621",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01626",
-    "param": "password",
+    "param": "BenchmarkTest01626",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01631",
-    "param": "password",
+    "param": "BenchmarkTest01631",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01642",
-    "param": "password",
+    "param": "BenchmarkTest01642",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01643",
-    "param": "password",
+    "param": "BenchmarkTest01643",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01644",
-    "param": "password",
+    "param": "BenchmarkTest01644",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01645",
-    "param": "password",
+    "param": "BenchmarkTest01645",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01646",
-    "param": "password",
+    "param": "BenchmarkTest01646",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01647",
-    "param": "password",
+    "param": "BenchmarkTest01647",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01657",
-    "param": "password",
+    "param": "BenchmarkTest01657",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01658",
-    "param": "password",
+    "param": "BenchmarkTest01658",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01659",
-    "param": "password",
+    "param": "BenchmarkTest01659",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01660",
-    "param": "password",
+    "param": "BenchmarkTest01660",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01661",
-    "param": "password",
+    "param": "BenchmarkTest01661",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01662",
-    "param": "password",
+    "param": "BenchmarkTest01662",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01663",
-    "param": "password",
+    "param": "BenchmarkTest01663",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01664",
-    "param": "password",
+    "param": "BenchmarkTest01664",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01665",
-    "param": "password",
+    "param": "BenchmarkTest01665",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01666",
-    "param": "password",
+    "param": "BenchmarkTest01666",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01667",
-    "param": "password",
+    "param": "BenchmarkTest01667",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01668",
-    "param": "password",
+    "param": "BenchmarkTest01668",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01669",
-    "param": "password",
+    "param": "BenchmarkTest01669",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01670",
-    "param": "password",
+    "param": "BenchmarkTest01670",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01671",
-    "param": "password",
+    "param": "BenchmarkTest01671",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01672",
-    "param": "password",
+    "param": "BenchmarkTest01672",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01673",
-    "param": "password",
+    "param": "BenchmarkTest01673",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01674",
-    "param": "password",
+    "param": "BenchmarkTest01674",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01685",
-    "param": "password",
+    "param": "BenchmarkTest01685",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01686",
-    "param": "password",
+    "param": "BenchmarkTest01686",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01687",
-    "param": "password",
+    "param": "BenchmarkTest01687",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01688",
-    "param": "password",
+    "param": "BenchmarkTest01688",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01689",
-    "param": "password",
+    "param": "BenchmarkTest01689",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01690",
-    "param": "password",
+    "param": "BenchmarkTest01690",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01691",
-    "param": "password",
+    "param": "BenchmarkTest01691",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01692",
-    "param": "password",
+    "param": "BenchmarkTest01692",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01693",
-    "param": "password",
+    "param": "BenchmarkTest01693",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01712",
-    "param": "password",
+    "param": "BenchmarkTest01712",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01713",
-    "param": "password",
+    "param": "BenchmarkTest01713",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01714",
-    "param": "password",
+    "param": "BenchmarkTest01714",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01715",
-    "param": "password",
+    "param": "BenchmarkTest01715",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01716",
-    "param": "password",
+    "param": "BenchmarkTest01716",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01717",
-    "param": "password",
+    "param": "BenchmarkTest01717",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01718",
-    "param": "password",
+    "param": "BenchmarkTest01718",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01719",
-    "param": "password",
+    "param": "BenchmarkTest01719",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01720",
-    "param": "password",
+    "param": "BenchmarkTest01720",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01721",
-    "param": "password",
+    "param": "BenchmarkTest01721",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01722",
-    "param": "password",
+    "param": "BenchmarkTest01722",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01723",
-    "param": "password",
+    "param": "BenchmarkTest01723",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01724",
-    "param": "password",
+    "param": "BenchmarkTest01724",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01725",
-    "param": "password",
+    "param": "BenchmarkTest01725",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01726",
-    "param": "password",
+    "param": "BenchmarkTest01726",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01727",
-    "param": "password",
+    "param": "BenchmarkTest01727",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01728",
-    "param": "password",
+    "param": "BenchmarkTest01728",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01729",
-    "param": "password",
+    "param": "BenchmarkTest01729",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01730",
-    "param": "password",
+    "param": "BenchmarkTest01730",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01731",
-    "param": "password",
+    "param": "BenchmarkTest01731",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01732",
-    "param": "password",
+    "param": "BenchmarkTest01732",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01733",
-    "param": "password",
+    "param": "BenchmarkTest01733",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01746",
-    "param": "password",
+    "param": "BenchmarkTest01746",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01751",
-    "param": "password",
+    "param": "BenchmarkTest01751",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01756",
-    "param": "password",
+    "param": "BenchmarkTest01756",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01771",
-    "param": "password",
+    "param": "BenchmarkTest01771",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01776",
-    "param": "password",
+    "param": "BenchmarkTest01776",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01791",
-    "param": "password",
+    "param": "BenchmarkTest01791",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01796",
-    "param": "password",
+    "param": "BenchmarkTest01796",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01806",
-    "param": "password",
+    "param": "BenchmarkTest01806",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01811",
-    "param": "password",
+    "param": "BenchmarkTest01811",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest01816",
-    "param": "password",
+    "param": "BenchmarkTest01816",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02108",
-    "param": "password",
+    "param": "BenchmarkTest02108",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02113",
-    "param": "password",
+    "param": "BenchmarkTest02113",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02123",
-    "param": "password",
+    "param": "BenchmarkTest02123",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02128",
-    "param": "password",
+    "param": "BenchmarkTest02128",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02133",
-    "param": "password",
+    "param": "BenchmarkTest02133",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02148",
-    "param": "password",
+    "param": "BenchmarkTest02148",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02153",
-    "param": "password",
+    "param": "BenchmarkTest02153",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02173",
-    "param": "password",
+    "param": "BenchmarkTest02173",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02178",
-    "param": "password",
+    "param": "BenchmarkTest02178",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02183",
-    "param": "password",
+    "param": "BenchmarkTest02183",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02188",
-    "param": "password",
+    "param": "BenchmarkTest02188",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02198",
-    "param": "password",
+    "param": "BenchmarkTest02198",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02203",
-    "param": "password",
+    "param": "BenchmarkTest02203",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02208",
-    "param": "password",
+    "param": "BenchmarkTest02208",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02223",
-    "param": "password",
+    "param": "BenchmarkTest02223",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02228",
-    "param": "password",
+    "param": "BenchmarkTest02228",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02233",
-    "param": "password",
+    "param": "BenchmarkTest02233",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02238",
-    "param": "password",
+    "param": "BenchmarkTest02238",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02243",
-    "param": "password",
+    "param": "BenchmarkTest02243",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02253",
-    "param": "password",
+    "param": "BenchmarkTest02253",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02268",
-    "param": "password",
+    "param": "BenchmarkTest02268",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02273",
-    "param": "password",
+    "param": "BenchmarkTest02273",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02278",
-    "param": "password",
+    "param": "BenchmarkTest02278",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02283",
-    "param": "password",
+    "param": "BenchmarkTest02283",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02288",
-    "param": "password",
+    "param": "BenchmarkTest02288",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02377",
-    "param": "password",
+    "param": "BenchmarkTest02377",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02382",
-    "param": "password",
+    "param": "BenchmarkTest02382",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02397",
-    "param": "password",
+    "param": "BenchmarkTest02397",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02402",
-    "param": "password",
+    "param": "BenchmarkTest02402",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02407",
-    "param": "password",
+    "param": "BenchmarkTest02407",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02412",
-    "param": "password",
+    "param": "BenchmarkTest02412",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02432",
-    "param": "password",
+    "param": "BenchmarkTest02432",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02452",
-    "param": "password",
+    "param": "BenchmarkTest02452",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02462",
-    "param": "password",
+    "param": "BenchmarkTest02462",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02467",
-    "param": "password",
+    "param": "BenchmarkTest02467",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02472",
-    "param": "password",
+    "param": "BenchmarkTest02472",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02482",
-    "param": "password",
+    "param": "BenchmarkTest02482",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02487",
-    "param": "password",
+    "param": "BenchmarkTest02487",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02492",
-    "param": "password",
+    "param": "BenchmarkTest02492",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02512",
-    "param": "password",
+    "param": "BenchmarkTest02512",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02517",
-    "param": "password",
+    "param": "BenchmarkTest02517",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02532",
-    "param": "password",
+    "param": "BenchmarkTest02532",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02537",
-    "param": "password",
+    "param": "BenchmarkTest02537",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02542",
-    "param": "password",
+    "param": "BenchmarkTest02542",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02553",
-    "param": "password",
+    "param": "BenchmarkTest02553",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02554",
-    "param": "password",
+    "param": "BenchmarkTest02554",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02555",
-    "param": "password",
+    "param": "BenchmarkTest02555",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02556",
-    "param": "password",
+    "param": "BenchmarkTest02556",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02557",
-    "param": "password",
+    "param": "BenchmarkTest02557",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02558",
-    "param": "password",
+    "param": "BenchmarkTest02558",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02559",
-    "param": "password",
+    "param": "BenchmarkTest02559",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02560",
-    "param": "password",
+    "param": "BenchmarkTest02560",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02561",
-    "param": "password",
+    "param": "BenchmarkTest02561",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02562",
-    "param": "password",
+    "param": "BenchmarkTest02562",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02563",
-    "param": "password",
+    "param": "BenchmarkTest02563",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02564",
-    "param": "password",
+    "param": "BenchmarkTest02564",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02565",
-    "param": "password",
+    "param": "BenchmarkTest02565",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02566",
-    "param": "password",
+    "param": "BenchmarkTest02566",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02567",
-    "param": "password",
+    "param": "BenchmarkTest02567",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02568",
-    "param": "password",
+    "param": "BenchmarkTest02568",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02569",
-    "param": "password",
+    "param": "BenchmarkTest02569",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02570",
-    "param": "password",
+    "param": "BenchmarkTest02570",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02571",
-    "param": "password",
+    "param": "BenchmarkTest02571",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02572",
-    "param": "password",
+    "param": "BenchmarkTest02572",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02578",
-    "param": "password",
+    "param": "BenchmarkTest02578",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02579",
-    "param": "password",
+    "param": "BenchmarkTest02579",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02580",
-    "param": "password",
+    "param": "BenchmarkTest02580",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02581",
-    "param": "password",
+    "param": "BenchmarkTest02581",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02582",
-    "param": "password",
+    "param": "BenchmarkTest02582",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02583",
-    "param": "password",
+    "param": "BenchmarkTest02583",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02584",
-    "param": "password",
+    "param": "BenchmarkTest02584",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02585",
-    "param": "password",
+    "param": "BenchmarkTest02585",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02586",
-    "param": "password",
+    "param": "BenchmarkTest02586",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02587",
-    "param": "password",
+    "param": "BenchmarkTest02587",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02588",
-    "param": "password",
+    "param": "BenchmarkTest02588",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02589",
-    "param": "password",
+    "param": "BenchmarkTest02589",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02590",
-    "param": "password",
+    "param": "BenchmarkTest02590",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02591",
-    "param": "password",
+    "param": "BenchmarkTest02591",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02592",
-    "param": "password",
+    "param": "BenchmarkTest02592",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02593",
-    "param": "password",
+    "param": "BenchmarkTest02593",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02594",
-    "param": "password",
+    "param": "BenchmarkTest02594",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02595",
-    "param": "password",
+    "param": "BenchmarkTest02595",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02596",
-    "param": "password",
+    "param": "BenchmarkTest02596",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02597",
-    "param": "password",
+    "param": "BenchmarkTest02597",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02598",
-    "param": "password",
+    "param": "BenchmarkTest02598",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02599",
-    "param": "password",
+    "param": "BenchmarkTest02599",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02600",
-    "param": "password",
+    "param": "BenchmarkTest02600",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02601",
-    "param": "password",
+    "param": "BenchmarkTest02601",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02608",
-    "param": "password",
+    "param": "BenchmarkTest02608",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02609",
-    "param": "password",
+    "param": "BenchmarkTest02609",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02610",
-    "param": "password",
+    "param": "BenchmarkTest02610",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02611",
-    "param": "password",
+    "param": "BenchmarkTest02611",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02612",
-    "param": "password",
+    "param": "BenchmarkTest02612",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02613",
-    "param": "password",
+    "param": "BenchmarkTest02613",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02625",
-    "param": "password",
+    "param": "BenchmarkTest02625",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02626",
-    "param": "password",
+    "param": "BenchmarkTest02626",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02627",
-    "param": "password",
+    "param": "BenchmarkTest02627",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02628",
-    "param": "password",
+    "param": "BenchmarkTest02628",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02629",
-    "param": "password",
+    "param": "BenchmarkTest02629",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02630",
-    "param": "password",
+    "param": "BenchmarkTest02630",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02631",
-    "param": "password",
+    "param": "BenchmarkTest02631",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02632",
-    "param": "password",
+    "param": "BenchmarkTest02632",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02633",
-    "param": "password",
+    "param": "BenchmarkTest02633",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02634",
-    "param": "password",
+    "param": "BenchmarkTest02634",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02635",
-    "param": "password",
+    "param": "BenchmarkTest02635",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02636",
-    "param": "password",
+    "param": "BenchmarkTest02636",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02637",
-    "param": "password",
+    "param": "BenchmarkTest02637",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02638",
-    "param": "password",
+    "param": "BenchmarkTest02638",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02639",
-    "param": "password",
+    "param": "BenchmarkTest02639",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02640",
-    "param": "password",
+    "param": "BenchmarkTest02640",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02641",
-    "param": "password",
+    "param": "BenchmarkTest02641",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02642",
-    "param": "password",
+    "param": "BenchmarkTest02642",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02643",
-    "param": "password",
+    "param": "BenchmarkTest02643",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02644",
-    "param": "password",
+    "param": "BenchmarkTest02644",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02645",
-    "param": "password",
+    "param": "BenchmarkTest02645",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02646",
-    "param": "password",
+    "param": "BenchmarkTest02646",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02647",
-    "param": "password",
+    "param": "BenchmarkTest02647",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02648",
-    "param": "password",
+    "param": "BenchmarkTest02648",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02649",
-    "param": "password",
+    "param": "BenchmarkTest02649",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02650",
-    "param": "password",
+    "param": "BenchmarkTest02650",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02651",
-    "param": "password",
+    "param": "BenchmarkTest02651",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02652",
-    "param": "password",
+    "param": "BenchmarkTest02652",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02653",
-    "param": "password",
+    "param": "BenchmarkTest02653",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02654",
-    "param": "password",
+    "param": "BenchmarkTest02654",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02655",
-    "param": "password",
+    "param": "BenchmarkTest02655",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02656",
-    "param": "password",
+    "param": "BenchmarkTest02656",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02657",
-    "param": "password",
+    "param": "BenchmarkTest02657",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02667",
-    "param": "password",
+    "param": "BenchmarkTest02667",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02682",
-    "param": "password",
+    "param": "BenchmarkTest02682",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02687",
-    "param": "password",
+    "param": "BenchmarkTest02687",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02692",
-    "param": "password",
+    "param": "BenchmarkTest02692",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02697",
-    "param": "password",
+    "param": "BenchmarkTest02697",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02712",
-    "param": "password",
+    "param": "BenchmarkTest02712",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02727",
-    "param": "password",
+    "param": "BenchmarkTest02727",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02732",
-    "param": "password",
+    "param": "BenchmarkTest02732",
     "method": "GET"
   },
   {
     "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02737",
-    "param": "password",
+    "param": "BenchmarkTest02737",
     "method": "GET"
   }
 ]

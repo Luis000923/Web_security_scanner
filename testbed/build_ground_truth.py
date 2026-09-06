@@ -179,9 +179,12 @@ def parse_expectedresults(path: Path) -> dict[str, tuple[str, bool, int]]:
 def parse_crawler_xml(path: Path) -> dict[str, tuple[str, str, str]]:
     """tcName -> (url, vector, param_name).
 
-    The vector is the tag of the lone child element; some test cases carry
-    more than one child (e.g. a cookie plus a header) — we take the first
-    element whose tag is a known vector.
+    The vector is the tag of a child element (getparam / formparam / cookie /
+    header). A test case may carry several children: real decoy parameters
+    (e.g. empty ``username`` / ``password``) alongside the tainted one. By
+    OWASP Benchmark convention the injectable parameter is the one whose name
+    equals the test-case name (``BenchmarkTestNNNNN``); we prefer that child
+    and fall back to the first vector child otherwise.
     """
     out: dict[str, tuple[str, str, str]] = {}
     root = ET.parse(path).getroot()
@@ -190,13 +193,14 @@ def parse_crawler_xml(path: Path) -> dict[str, tuple[str, str, str]]:
         url = tc.get("URL") or ""
         if not name or not url:
             continue
-        vector = param = ""
-        for child in tc:
-            tag = child.tag.split("}")[-1]  # strip any namespace
-            if tag in _VALID_VECTORS:
-                vector, param = tag, (child.get("name") or "")
-                break
-        out[name] = (url, vector, param)
+        vector_children = [
+            (child.tag.split("}")[-1], child.get("name") or "")
+            for child in tc
+            if child.tag.split("}")[-1] in _VALID_VECTORS
+        ]
+        chosen = next((vc for vc in vector_children if vc[1] == name),
+                      vector_children[0] if vector_children else ("", ""))
+        out[name] = (url, chosen[0], chosen[1])
     return out
 
 
