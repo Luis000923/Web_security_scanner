@@ -270,6 +270,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--vectors", default=",".join(_DEFAULT_VECTORS))
     ap.add_argument("--no-traps", dest="keep_traps", action="store_false")
     ap.add_argument("--out", default="testbed/ground_truth.json")
+    ap.add_argument("--emit-targets", default=None, metavar="PATH",
+                    help="Also write a scanner --target-list file: an array of "
+                         "{url, param, method:'GET'} for every in-scope endpoint "
+                         "(positives AND traps), deduped.")
     ap.add_argument("--preview", type=int, default=2, metavar="N")
     args = ap.parse_args(argv)
 
@@ -310,6 +314,20 @@ def main(argv: list[str] | None = None) -> int:
           f"({stats['positives']} positive / {stats['traps']} traps)", file=sys.stderr)
     print(f"  -> {out_path}", file=sys.stderr)
     print("=" * 62, file=sys.stderr)
+
+    if args.emit_targets:
+        seen: set[tuple[str, str | None]] = set()
+        targets: list[dict] = []
+        for r in records:
+            key = (r["url"], r["param"])
+            if key in seen:
+                continue
+            seen.add(key)
+            targets.append({"url": r["url"], "param": r["param"], "method": "GET"})
+        tp = Path(args.emit_targets)
+        tp.parent.mkdir(parents=True, exist_ok=True)
+        tp.write_text(json.dumps(targets, indent=2) + "\n", encoding="utf-8")
+        print(f"  target-list written  : {len(targets)}  -> {tp}", file=sys.stderr)
 
     if args.preview > 0:
         print(json.dumps(records[:args.preview], indent=2))

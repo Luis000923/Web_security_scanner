@@ -1,0 +1,1692 @@
+[
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00021",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00026",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00041",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00047",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00048",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00049",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00362",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00367",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00377",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00382",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00387",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00392",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00407",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00412",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00432",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00437",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00452",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00457",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00467",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00472",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00477",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00492",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00497",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00512",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00517",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00619",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00624",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00629",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00644",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00649",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00659",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00674",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00679",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00694",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00699",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00714",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00719",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00724",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00729",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00739",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00764",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00769",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00774",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00783",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00784",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00785",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00786",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00787",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00788",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00799",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00800",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00801",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00802",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00803",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00804",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00805",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00806",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00807",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00808",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00809",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00810",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00811",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00812",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00813",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00814",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00815",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00816",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00822",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00823",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00824",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00825",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00826",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00827",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00837",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00838",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00839",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00840",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00841",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00842",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00843",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00844",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00845",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00846",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00847",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00848",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00849",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00850",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00851",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00862",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest00867",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00882",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00887",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00892",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00897",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00927",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00932",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest00937",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01233",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01238",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01243",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01253",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01258",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01263",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01268",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01288",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01303",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01308",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01313",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01328",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01338",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01343",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01348",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01353",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01363",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01378",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01383",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01388",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01393",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01491",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01496",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01501",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01506",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01511",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01516",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01526",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01531",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01556",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01571",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01586",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01591",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01596",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01601",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01606",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01621",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01626",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01631",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01642",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01643",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01644",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01645",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01646",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01647",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01657",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01658",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01659",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01660",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01661",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01662",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01663",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01664",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01665",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01666",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01667",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01668",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01669",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01670",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01671",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01672",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01673",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01674",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01685",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01686",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01687",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01688",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01689",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01690",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01691",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01692",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01693",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01712",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01713",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01714",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01715",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01716",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01717",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01718",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01719",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01720",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01721",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01722",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01723",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01724",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01725",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01726",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01727",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01728",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01729",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01730",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01731",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01732",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01733",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01746",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01751",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01756",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01771",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01776",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01791",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01796",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01806",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01811",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest01816",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02108",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02113",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02123",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02128",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02133",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02148",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02153",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02173",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02178",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02183",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02188",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02198",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02203",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02208",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02223",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02228",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02233",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02238",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02243",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02253",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02268",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02273",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02278",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02283",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02288",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02377",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02382",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02397",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02402",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02407",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02412",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02432",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02452",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02462",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02467",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02472",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02482",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02487",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02492",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02512",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02517",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02532",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02537",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02542",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02553",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02554",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02555",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02556",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02557",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02558",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02559",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02560",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02561",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02562",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02563",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02564",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02565",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02566",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02567",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02568",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02569",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02570",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02571",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02572",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02578",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02579",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02580",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02581",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02582",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02583",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02584",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02585",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02586",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02587",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02588",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02589",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02590",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02591",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02592",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02593",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02594",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02595",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02596",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02597",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02598",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02599",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02600",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02601",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02608",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02609",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02610",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02611",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02612",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02613",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02625",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02626",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02627",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02628",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02629",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02630",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02631",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02632",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02633",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02634",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02635",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02636",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02637",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02638",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02639",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02640",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02641",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02642",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02643",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02644",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02645",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02646",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02647",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02648",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02649",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02650",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02651",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02652",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02653",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02654",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02655",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02656",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02657",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02667",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02682",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02687",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02692",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02697",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02712",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02727",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02732",
+    "param": "password",
+    "method": "GET"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02737",
+    "param": "password",
+    "method": "GET"
+  }
+]

@@ -73,6 +73,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_BUDGETS = [10, 20, 50, 0]
+SMOKE_BUDGETS = [10]
+SMOKE_TARGET_CAP = 100
 
 # condition -> the ablation flags that condition adds. Everything not listed
 # stays at the scanner's optimized default (interleave / priority /
@@ -140,10 +142,12 @@ def check_precondition(target: str, compose_file: Path) -> bool:
 
 
 def build_scan_command(
-    target: str, budget: int, condition: str, run_dir: Path, extra: list[str],
+    target: str, target_list: Path, budget: int, condition: str,
+    run_dir: Path, extra: list[str],
 ) -> list[str]:
     cmd = [
         *scanner_cmd(), "scan", target,
+        "--target-list", str(target_list),   # recon skipped; scans exactly this set
         "--no-verify-ssl",
         "--allow-private-redirects",
         "--max-payloads", str(budget),
@@ -216,17 +220,23 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--ground-truth", default=str(REPO_ROOT / "testbed" / "ground_truth.json"))
     ap.add_argument("--results-dir", default=str(REPO_ROOT / "testbed" / "results"))
     ap.add_argument("--csv", default=str(REPO_ROOT / "testbed" / "experiment_results.csv"))
+    ap.add_argument("--target-list", default=str(REPO_ROOT / "testbed" / "benchmark_targets.json"))
     ap.add_argument("--budgets", default=",".join(map(str, DEFAULT_BUDGETS)))
     ap.add_argument("--conditions", default=",".join(CONDITIONS))
     ap.add_argument("--compose-file", default=str(REPO_ROOT / "testbed" / "docker-compose.yml"))
     ap.add_argument("--skip-precondition", action="store_true")
-    ap.add_argument("--scan-timeout", type=int, default=3600)
+    ap.add_argument("--scan-timeout", type=int, default=7200)
     ap.add_argument("--extra-args", default="")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--smoke", action="store_true",
+                    help=f"Validation run: budgets={SMOKE_BUDGETS}, target list "
+                         f"truncated to the first {SMOKE_TARGET_CAP} endpoints.")
     args = ap.parse_args(argv)
 
     budgets = [int(b) for b in args.budgets.split(",") if b.strip() != ""]
+    if args.smoke:
+        budgets = list(SMOKE_BUDGETS)
     conditions = [c.strip() for c in args.conditions.split(",") if c.strip()]
     unknown = set(conditions) - set(CONDITIONS)
     if unknown:
@@ -243,6 +253,22 @@ def main(argv: list[str] | None = None) -> int:
     csv_path = Path(args.csv)
     extra = args.extra_args.split() if args.extra_args else []
 
+    target_list = Path(args.target_list)
+    if not target_list.exists():
+        sys.exit(f"[ERROR] target list not found: {target_list}\n"
+                 f"        run: python testbed/build_ground_truth.py --download "
+                 f"--base-url https://127.0.0.1:8443 --vectors getparam "
+                 f"--emit-targets testbed/benchmark_targets.json")
+
+    if args.smoke:
+        full = json.loads(target_list.read_text(encoding="utf-8"))
+        smoke_list = results_dir / "benchmark_targets.smoke.json"
+        results_dir.mkdir(parents=True, exist_ok=True)
+        smoke_list.write_text(json.dumps(full[:SMOKE_TARGET_CAP], indent=2) + "\n",
+                              encoding="utf-8")
+        _log(f"smoke: {len(full[:SMOKE_TARGET_CAP])}/{len(full)} targets -> {smoke_list}")
+        target_list = smoke_list
+
     _log(f"grid: budgets={budgets} x conditions={conditions} "
          f"=> {len(budgets) * len(conditions)} run(s)")
 
@@ -257,7 +283,8 @@ def main(argv: list[str] | None = None) -> int:
         for condition in conditions:
             tag = f"budget{budget}_{condition.replace('-', '')}"
             run_dir = results_dir / tag
-            scan_cmd = build_scan_command(args.target, budget, condition, run_dir, extra)
+            scan_cmd = build_scan_command(args.target, target_list, budget,
+                                          condition, run_dir, extra)
 
             if args.dry_run:
                 _log(f"DRY {tag}")
@@ -281,7 +308,9 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 (run_dir / "scanner.stdout.log").write_text(proc.stdout, encoding="utf-8")
                 (run_dir / "scanner.stderr.log").write_text(proc.stderr, encoding="utf-8")
-                if proc.returncode != 0:
+                # exit 1 == "vulnerabilities found" (CI convention), still a
+                # successful scan. Only >1 is a real failure.
+                if proc.returncode > 1:
                     status = f"scan-exit-{proc.returncode}"
                     _log(f"     scanner exited {proc.returncode} — see scanner.stderr.log")
 
