@@ -1,12 +1,15 @@
 # ai_module — agentic AI subsystem
 
-Optional add-on to the async DAST scanner. Two capabilities:
+The **default engine** of the async DAST scanner (disable with `--ai-no`).
+Two capabilities:
 
 1. **Finding triage** — classify scanner candidates as true / false positive.
 2. **Dynamic payload synthesis** — propose the next confirmation probes.
 
-Both are *advisory*: results carry a confidence score and never override the
-scanner's own logic. Intended for **authorized** engagements only.
+Both are *advisory*: results carry a confidence score, the scanner only drops
+a finding on a high-confidence false-positive verdict, and if the local
+inference backend is unreachable the scan transparently falls back to the
+deterministic heuristics. Intended for **authorized** engagements only.
 
 ## Layout
 
@@ -55,31 +58,59 @@ If `unsloth` resolution fights the pinned deps, skip `ai-unsloth` and pass
 `--no-unsloth` to the trainer — the `transformers + peft + trl` path is fully
 supported.
 
-### 3. Build the training set from our telemetry
+### 3. Build & curate the training set from our telemetry
 
-The 20-run testbed sweep under `testbed/results/**/telemetry_*.jsonl` is the
-raw material; the OWASP Benchmark CSV is the ground-truth oracle.
+The 20-run testbed sweep under `testbed/results/**/telemetry_*.jsonl` (plus any
+OWASP Benchmark runs) is the raw material; the OWASP Benchmark CSV is the
+ground-truth oracle. The generator runs a 4-stage curation pipeline:
+**ingest+enrich → clean (noise drop / body normalisation / dedup) → structure →
+balance+stratified split**.
 
 ```bash
-# triage: TP/FP classification (labels joined from the OWASP Benchmark oracle)
+# one shot: both tasks, oracle-labelled, 1:1 balanced triage, 90/10 split,
+# + a JSON curation manifest (rows dropped, dedup count, class balance, sizes)
 python -m ai_module.dataset_generator \
     --telemetry testbed/results \
     --benchmark-csv testbed/.cache/benchmark/expectedresults-1.2.csv \
-    --task triage --format alpaca --balance \
-    --out data/triage.jsonl --split 0.9
+    --task both --format alpaca \
+    --balance --balance-ratio 1.0 --split 0.9 \
+    --out data/sft.jsonl --report data/curation.json
 
-# payload: next-probe synthesis (trajectory-reconstructed, weak-labelled)
+# triage only, keeping noisy rows for inspection, bigger evidence budget
+python -m ai_module.dataset_generator \
+    --telemetry testbed/results reports/telemetry \
+    --benchmark-csv testbed/.cache/benchmark/expectedresults-1.2.csv \
+    --task triage --format chatml --balance \
+    --max-body-bytes 4096 --keep-noise \
+    --out data/triage.jsonl --split 0.9 --report data/triage.clean.json
+
+# payload synthesis: trajectory-reconstructed, weak-labelled (no oracle needed)
 python -m ai_module.dataset_generator \
     --telemetry testbed/results \
     --task payload --format alpaca \
     --out data/payload.jsonl --split 0.95
 ```
 
-Produces `data/triage.train.jsonl` / `data/triage.val.jsonl` (and likewise for
-`payload`). Each line is `{"instruction","input","output","meta"}`
-(`--format sharegpt` → `{"conversations":[…]}`, `--format chatml` →
-`{"messages":[…]}`). Without any `--benchmark-csv` / `--ground-truth` the
-generator falls back to weak labels from the scanner's own verdicts.
+`--task both` writes `data/sft.triage.{train,val}.jsonl` and
+`data/sft.payload.{train,val}.jsonl`; a single `--task` writes
+`data/<name>.{train,val}.jsonl` (or one file when `--split 1.0`). Each line is
+`{"instruction","input","output","meta"}` (`--format sharegpt` →
+`{"conversations":[…]}`, `chatml` → `{"messages":[…]}`).
+
+**Cleaning knobs**
+
+| Flag | Effect |
+|------|--------|
+| *(default)* | drops rows with `missing_url` / transport error / timeout / `truncated_empty` / `server_error` / `implausible_latency` |
+| `--keep-noise` | keep those rows (still counted in the manifest) |
+| `--max-body-bytes N` | response-body evidence budget; long bodies are cut to the reflection windows around the payload / canary markers (default 2048) |
+| `--no-dedup` | keep identical `(payload, response, class, verdict)` samples |
+| `--balance` / `--balance-ratio R` | downsample majority TP/FP class to `≤ R×` the minority (triage) |
+| `--split F` | stratified train/val split so val keeps both classes |
+| `--report PATH` | write the curation manifest JSON |
+
+Without any `--benchmark-csv` / `--ground-truth` the generator falls back to
+weak labels from the scanner's own `decision` / `confidence_final` columns.
 
 ### 4. Smoke-test the hardware (≈1 min)
 
@@ -127,30 +158,47 @@ python -m vllm.entrypoints.openai.api_server \
 Or run in-process with no server: `--ai-backend transformers` and
 `AI_AGENT_HF_MODEL=runs/triage-qlora/merged`.
 
-### 7. Run the scanner with AI verification
+### 7. Run the scanner — the AI agent is the default engine
+
+As of the `ai-agent` branch the LLM agent runs on **every** scan: no opt-in
+flag is needed.
 
 ```bash
 export AI_AGENT_BACKEND=openai
 export AI_AGENT_BASE_URL=http://127.0.0.1:8000/v1
 export AI_AGENT_MODEL=local-security-agent
 
-python -m web_security_scanner.cli https://target.example \
-    --ai-verify --ai-synthesize \
+python -m web_security_scanner.cli scan https://target.example \
     --ai-fp-threshold 0.75 \
     --telemetry-dir reports/telemetry
 ```
 
-- `--ai-verify` — every heuristic finding is sent to `triage_finding()`; a
-  confident false positive (≥ `--ai-fp-threshold`) is dropped, the rest are
-  annotated with `ai_verdict` / `ai_confidence`.
-- `--ai-synthesize` — when a parameter's static payload list is exhausted with
-  no hit, `synthesize_payloads()` proposes adapted vectors that are replayed.
-- If `ai_module` is missing or the endpoint is down, the scan silently
-  continues on its traditional heuristics.
+On startup the orchestrator builds the `AgentClient` and runs
+`healthcheck()`. If it passes you get `AI engine active (backend=openai …)`;
+if the inference server is down (or `ai_module` isn't installed) you get one
+warning line and the scan falls back to the deterministic heuristics — it
+never fails because of the agent.
 
-Quick offline check without a model:
+During the scan:
+
+- **Triage** — every heuristic finding goes to `triage_finding()`; a confident
+  false positive (≥ `--ai-fp-threshold`) is dropped, the rest are annotated
+  with `ai_verdict` / `ai_confidence` / `ai_reasoning`.
+- **Synthesis** — when a parameter's static payload list is exhausted with no
+  hit, `synthesize_payloads()` proposes adapted vectors that are replayed
+  through the cheap checks (still gated by the destructive-payload filter).
+
+Opting out:
+
+| Flag | Effect |
+|------|--------|
+| `--ai-no` (`--no-ai`) | Disable the agent entirely; pure deterministic engine |
+| `--ai-no-verify` | Keep synthesis, skip LLM false-positive triage |
+| `--ai-no-synthesize` | Keep triage, never synthesise extra payloads |
+
+Quick offline check without a model server (in-process stub):
 
 ```bash
-python -m web_security_scanner.cli https://target.example --ai-verify --ai-backend echo
+python -m web_security_scanner.cli scan https://target.example --ai-backend echo
 python -m ai_module.agent_inference        # echo-backend smoke test
 ```

@@ -149,18 +149,24 @@ def _build_parser() -> argparse.ArgumentParser:
 
     ai = scan.add_argument_group(
         "AI agent (ai_module)",
-        "Optional LLM-assisted triage and payload synthesis. Degrades "
-        "gracefully: if ai_module isn't installed or the inference server is "
-        "down, the scan continues on its traditional heuristics.")
-    ai.add_argument("--ai-verify", action="store_true",
-                    help="Send each heuristic finding to AgentClient.triage_finding() "
-                         "with the HTTP request/response context. Findings the agent "
-                         "confidently rates a false positive are dropped; the rest are "
-                         "annotated with the agent's verdict (ai_verified/ai_confidence).")
-    ai.add_argument("--ai-synthesize", action="store_true",
-                    help="When a parameter's static payload list is exhausted without "
-                         "a hit, ask AgentClient.synthesize_payloads() for adapted "
-                         "vectors (WAF/framework-aware) and replay the cheap checks.")
+        "The LLM agent is the DEFAULT engine: every scan runs AI triage of "
+        "false positives and agentic payload synthesis. It degrades gracefully "
+        "— if ai_module isn't installed or the local inference server is down, "
+        "the scan automatically falls back to the deterministic heuristics. "
+        "Use the --ai-no* flags to opt out.")
+    ai.add_argument("--ai-no", "--no-ai", dest="ai_no", action="store_true",
+                    help="Disable the AI agent entirely and force the traditional "
+                         "deterministic heuristic engine (no triage, no synthesis).")
+    ai.add_argument("--ai-no-verify", dest="ai_no_verify", action="store_true",
+                    help="Keep agentic payload synthesis but skip LLM false-positive "
+                         "triage (findings are never dropped/annotated by the agent).")
+    ai.add_argument("--ai-no-synthesize", dest="ai_no_synthesize", action="store_true",
+                    help="Keep LLM triage but never ask the agent for extra payloads "
+                         "when a parameter's static list is exhausted.")
+    # Back-compat: the agent is on by default now, so these are accepted but
+    # redundant. Kept (hidden) so existing scripts/CI don't break.
+    ai.add_argument("--ai-verify", action="store_true", help=argparse.SUPPRESS)
+    ai.add_argument("--ai-synthesize", action="store_true", help=argparse.SUPPRESS)
     ai.add_argument("--ai-backend", default=None,
                     choices=["openai", "transformers", "echo"],
                     help="AgentClient backend (default: env AI_AGENT_BACKEND or 'openai').")
@@ -280,9 +286,14 @@ def _build_config(args) -> dict:
         "runtime_confirm": getattr(args, "runtime_confirm", True),
         # Phase 3 live heuristic ordering (adaptive feedback loop).
         "adaptive_sorting": getattr(args, "adaptive_sorting", True),
-        # ai-agent: optional LLM triage / payload synthesis.
-        "ai_verify": getattr(args, "ai_verify", False),
-        "ai_synthesize": getattr(args, "ai_synthesize", False),
+        # ai-agent: LLM triage / payload synthesis is the DEFAULT engine.
+        # --ai-no turns the whole agent off; --ai-no-verify / --ai-no-synthesize
+        # disable one half. (Legacy --ai-verify/--ai-synthesize are no-ops now.)
+        "ai_enabled": not getattr(args, "ai_no", False),
+        "ai_verify": (not getattr(args, "ai_no", False)
+                      and not getattr(args, "ai_no_verify", False)),
+        "ai_synthesize": (not getattr(args, "ai_no", False)
+                          and not getattr(args, "ai_no_synthesize", False)),
         "ai_backend": getattr(args, "ai_backend", None),
         "ai_base_url": getattr(args, "ai_base_url", None),
         "ai_model": getattr(args, "ai_model", None),

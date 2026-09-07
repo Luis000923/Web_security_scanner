@@ -118,12 +118,27 @@ def test_low_confidence_fp_is_not_discarded():
     assert found[0]["ai_verdict"] == "FALSE_POSITIVE"
 
 
-def test_ai_verify_off_never_calls_agent():
-    agent = FakeAgent(triage=TriageResult("FALSE_POSITIVE", 0.99, "x"))
+def test_ai_on_by_default_without_any_flags():
+    """No flags at all -> the agent IS the engine and gets consulted."""
+    agent = FakeAgent(triage=TriageResult("TRUE_POSITIVE", 0.8, "confirmed"))
     found, _ = asyncio.run(
         _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR}, {}, agent))
     assert len(found) == 1
+    assert agent.triage_calls                     # consulted with no opt-in flag
+    assert found[0]["ai_verified"] is True
+
+
+def test_ai_no_forces_deterministic_engine():
+    """--ai-no maps to ai_verify=ai_synthesize=False -> agent never touched."""
+    agent = FakeAgent(triage=TriageResult("FALSE_POSITIVE", 0.99, "x"),
+                      payloads=[{"payload": "x"}])
+    found, _ = asyncio.run(
+        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+             {"ai_verify": False, "ai_synthesize": False}, agent))
+    assert len(found) == 1                         # heuristic finding kept as-is
     assert agent.triage_calls == []
+    assert agent.synth_calls == []
+    assert "ai_verified" not in found[0]
 
 
 # --------------------------------------------------------------------------- #
@@ -214,3 +229,121 @@ def test_echo_backend_roundtrip():
     sugg = asyncio.run(
         client.synthesize_payloads({"url": "http://t", "param": "q"}, n=3))
     assert sugg and sugg[0].payload
+
+
+# --------------------------------------------------------------------------- #
+# 5. CLI: the agent is the default engine; --ai-no* opts out
+# --------------------------------------------------------------------------- #
+
+from web_security_scanner.cli import _build_config, _build_parser  # noqa: E402
+
+
+def _cfg(*argv):
+    args = _build_parser().parse_args(["scan", "http://t", *argv])
+    return _build_config(args)["testers"]
+
+
+def test_cli_ai_engine_on_by_default():
+    t = _cfg()
+    assert t["ai_enabled"] is True
+    assert t["ai_verify"] is True
+    assert t["ai_synthesize"] is True
+
+
+def test_cli_ai_no_disables_everything():
+    for flag in ("--ai-no", "--no-ai"):
+        t = _cfg(flag)
+        assert t["ai_enabled"] is False
+        assert t["ai_verify"] is False
+        assert t["ai_synthesize"] is False
+
+
+def test_cli_ai_no_verify_keeps_synthesis():
+    t = _cfg("--ai-no-verify")
+    assert t["ai_enabled"] is True
+    assert t["ai_verify"] is False
+    assert t["ai_synthesize"] is True
+
+
+def test_cli_ai_no_synthesize_keeps_triage():
+    t = _cfg("--ai-no-synthesize")
+    assert t["ai_verify"] is True
+    assert t["ai_synthesize"] is False
+
+
+# --------------------------------------------------------------------------- #
+# 6. healthcheck + orchestrator graceful fallback
+# --------------------------------------------------------------------------- #
+
+def test_healthcheck_echo_is_ready():
+    assert asyncio.run(AgentClient(backend="echo").healthcheck()) is True
+
+
+def test_healthcheck_openai_dead_server_is_false():
+    client = AgentClient(backend="openai",
+                         base_url="http://127.0.0.1:9/v1", timeout=1.0)
+    assert asyncio.run(client.healthcheck()) is False
+
+
+def test_orchestrator_attaches_agent_by_default(monkeypatch):
+    from web_security_scanner.web_security_scanner_async import WebSecurityScanner
+
+    scanner = WebSecurityScanner.__new__(WebSecurityScanner)
+    scanner.config = {"testers": {}}          # no flags -> AI is the default
+    scanner._logger = __import__("logging").getLogger("test")
+    t = FakeAgent(triage=None)
+
+    class _T:
+        ai_client = None
+    holder = _T()
+    scanner.testers = [holder]
+
+    import ai_module.agent_inference as inf
+    monkeypatch.setattr(inf.AgentClient, "healthcheck",
+                        lambda self: _coro(True))
+    asyncio.run(scanner._start_ai_agent())
+    assert isinstance(holder.ai_client, inf.AgentClient)
+
+
+def test_orchestrator_falls_back_when_backend_down(monkeypatch):
+    from web_security_scanner.web_security_scanner_async import WebSecurityScanner
+
+    scanner = WebSecurityScanner.__new__(WebSecurityScanner)
+    scanner.config = {"testers": {}}
+    scanner._logger = __import__("logging").getLogger("test")
+
+    class _T:
+        ai_client = None
+    holder = _T()
+    scanner.testers = [holder]
+
+    import ai_module.agent_inference as inf
+    monkeypatch.setattr(inf.AgentClient, "healthcheck",
+                        lambda self: _coro(False))
+    asyncio.run(scanner._start_ai_agent())
+    assert holder.ai_client is None           # deterministic fallback
+
+
+def test_orchestrator_respects_ai_no(monkeypatch):
+    from web_security_scanner.web_security_scanner_async import WebSecurityScanner
+
+    scanner = WebSecurityScanner.__new__(WebSecurityScanner)
+    scanner.config = {"testers": {"ai_enabled": False}}
+    scanner._logger = __import__("logging").getLogger("test")
+
+    class _T:
+        ai_client = None
+    holder = _T()
+    scanner.testers = [holder]
+
+    called = []
+    import ai_module.agent_inference as inf
+    monkeypatch.setattr(inf.AgentClient, "healthcheck",
+                        lambda self: called.append(1) or _coro(True))
+    asyncio.run(scanner._start_ai_agent())
+    assert holder.ai_client is None
+    assert not called                          # never even built the client
+
+
+async def _coro(value):
+    return value

@@ -1,58 +1,68 @@
 #!/usr/bin/env python3
 """
-dataset_generator.py — Telemetry JSONL  ->  LLM fine-tuning dataset.
+dataset_generator.py — Telemetry JSONL  ->  curated LLM fine-tuning dataset.
 
 The async scanner, when run with ``--telemetry-dir PATH``, writes one
 newline-delimited JSON row per payload probe (see
 ``web_security_scanner/core/telemetry_async.py``). Our testbed sweep leaves
-those files at ``testbed/results/<run>/telemetry_*.jsonl``. This script folds
-the raw probe rows into supervised samples the fine-tuning pipeline consumes:
+those files at ``testbed/results/<run>/telemetry_*.jsonl``. OWASP Benchmark
+runs add response bodies / evidence snippets. This script folds the raw probe
+rows into supervised samples the QLoRA pipeline consumes:
 
   * ``triage``   — given a candidate finding + evidence, label it TP / FP.
   * ``payload``  — given an endpoint/param probe history, propose the next payload.
 
+Curation pipeline
+-----------------
+1. **Ingest + enrich** — decode every ``*.jsonl`` row, join to the ground-truth
+   oracle (OWASP Benchmark CSV and/or a ``--ground-truth`` sink list) to label
+   TP / FP with surgical precision.
+2. **Clean** (``classify_noise`` / ``normalize_body`` / ``dedup``):
+     - drop malformed rows, timeouts, transport errors not caused by the
+       scanner, and truncated/empty responses;
+     - normalise evidence: strip control/binary bytes, collapse whitespace,
+       and truncate long bodies to the first ~2 KB *or* the reflection windows
+       around the injected payload / canary markers;
+     - de-duplicate: identical ``(payload, response, class, verdict)`` samples
+       repeated across iterations collapse to one.
+3. **Structure** — emit Alpaca / ShareGPT / ChatML, one task per file.
+4. **Balance + split** — optional 1:1 (``--balance-ratio``) TP/FP downsampling,
+   then a stratified train/val split (``--split 0.9``) so val keeps both
+   classes.
+
 Ground truth
 ------------
-Two interchangeable sources (either, both, or neither):
-
   * ``--benchmark-csv testbed/.cache/benchmark/expectedresults-1.2.csv``
-    The OWASP Benchmark oracle. Rows are joined to probes by the
-    ``BenchmarkTestNNNNN`` id embedded in the request URL path.
+    joined by the ``BenchmarkTestNNNNN`` id in the request URL path.
   * ``--ground-truth file.json`` — ``{"vulnerabilities": [{"url","param","type"}]}``
-    or a bare list of the same; joined on ``(url, param, vuln_class)``.
-
-With no oracle the script falls back to *weak labels*: the scanner's own
-``decision`` / ``confidence_final`` columns become the training target
-(``--weak-labels`` is then implied). Useful for bootstrapping, noisier.
-
-Real telemetry rows carry no response body, so ``triage`` evidence is built
-from the columns that *are* present (a-priori confidence, context, latency vs.
-the run's benign baseline, the scanner's verdict). The literal payload string
-is reconstructed from the URL query component.
+    or a bare list; joined on ``(url, param, vuln_class)``.
+With no oracle the script falls back to *weak labels* from the scanner's own
+``decision`` / ``confidence_final`` columns (``--weak-labels`` implied).
 
 Output formats
 --------------
-- ``alpaca``   : ``{"instruction","input","output"}`` per line (+ ``meta``)
-- ``sharegpt`` : ``{"conversations": [{"from","value"}, ...]}`` per line
-- ``chatml``   : ``{"messages": [{"role","content"}, ...]}`` per line
+- ``alpaca``   : ``{"instruction","input","output","meta"}`` per line
+- ``sharegpt`` : ``{"conversations": [{"from","value"}, ...], "meta": ...}``
+- ``chatml``   : ``{"messages": [{"role","content"}, ...], "meta": ...}``
 
 Usage
 -----
     python -m ai_module.dataset_generator \
         --telemetry testbed/results \
         --benchmark-csv testbed/.cache/benchmark/expectedresults-1.2.csv \
-        --task triage --format alpaca \
-        --out data/triage.jsonl --split 0.9
+        --task triage --format alpaca --balance \
+        --out data/triage.jsonl --split 0.9 --report data/triage.clean.json
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import random
 import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -124,6 +134,197 @@ def _payload_from_url(url: str, param: str) -> str:
         if values:
             return values[-1]
     return unquote(url.rsplit("=", 1)[-1]) if "=" in url else ""
+
+
+# --------------------------------------------------------------------------- #
+# Data cleaning
+# --------------------------------------------------------------------------- #
+
+_MAX_BODY_BYTES = 2048
+_REFLECT_WINDOW = 240          # chars kept either side of a reflection hit
+_MAX_PLAUSIBLE_ELAPSED = 180.0  # s — anything slower is a hung socket, not signal
+
+# Substrings that mark a transport failure the *scanner* caused, not the target.
+_NETWORK_ERROR_TOKENS = (
+    "timeout", "timed out", "connection reset", "connection refused",
+    "connection aborted", "connection closed", "server disconnected",
+    "clientconnectorerror", "serverdisconnectederror", "econnreset",
+    "cannot connect to host", "name or service not known",
+    "temporary failure in name resolution", "ssl", "certificate verify failed",
+    "too many redirects", "client error", "event loop is closed",
+)
+
+# Keys a body / evidence snippet may arrive under (benchmark & legacy rows).
+_BODY_KEYS = (
+    "response_body", "response_text", "body", "response", "evidence",
+    "evidence_snippet", "match_context", "snippet", "reflection_context",
+)
+
+# Canary / marker tokens our testers embed so we can find the reflection window.
+_MARKER_RE = re.compile(
+    r"(?:wss|zap|scan|inj|xss|sqli|cmd|ptrav|canary|probe|marker)[-_]?[0-9a-fA-F]{4,}"
+)
+
+
+def _f(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _extract_body(row: dict[str, Any]) -> tuple[str, bool]:
+    """Return ``(raw_body, truncated_flag)`` — ``("", …)`` when no body is present."""
+    truncated = bool(row.get("truncated") or row.get("body_truncated"))
+    for key in _BODY_KEYS:
+        val = row.get(key)
+        if isinstance(val, str) and val:
+            return val, truncated
+        if isinstance(val, dict):
+            inner = val.get("snippet") or val.get("text") or val.get("body")
+            if isinstance(inner, str) and inner:
+                return inner, truncated
+    return "", truncated
+
+
+def _has_body(row: dict[str, Any]) -> bool:
+    return bool(_extract_body(row)[0])
+
+
+def classify_noise(row: dict[str, Any]) -> str | None:
+    """Return a short reason string if the row is unusable for training, else ``None``.
+
+    Native telemetry rows legitimately omit ``status_code`` / body, so we only
+    reject on *explicit* failure signals — never on absence.
+    """
+    if not row.get("url"):
+        return "missing_url"
+
+    err = str(
+        row.get("error") or row.get("exception") or row.get("err") or ""
+    ).lower()
+    if err:
+        if any(tok in err for tok in _NETWORK_ERROR_TOKENS):
+            return "network_error"
+        return "request_error"
+    if row.get("timed_out") or row.get("timeout_hit") or row.get("is_timeout"):
+        return "timeout"
+
+    if "status_code" in row or "status" in row:
+        status = row.get("status_code", row.get("status"))
+        try:
+            code = int(status)
+        except (TypeError, ValueError):
+            code = -1
+        if code == 0:
+            return "no_response"
+        if code >= 500 and not row.get("decision") and not _has_body(row):
+            return "server_error"
+
+    raw, truncated = _extract_body(row)
+    if truncated and len(raw.strip()) < 16:
+        return "truncated_empty"
+    if ("status_code" in row or "status" in row) and not raw and not row.get("decision"):
+        # a response we recorded but that carried no usable payload
+        if row.get("content_length") == 0 or row.get("empty_response"):
+            return "empty_response"
+
+    if _f(row.get("elapsed_time")) > _MAX_PLAUSIBLE_ELAPSED:
+        return "implausible_latency"
+    return None
+
+
+def _looks_binary(text: str) -> bool:
+    sample = text[:4096]
+    if not sample:
+        return False
+    ok = sum(1 for c in sample if c.isprintable() or c in "\r\n\t ")
+    return ok / len(sample) < 0.75
+
+
+def normalize_body(
+    raw: str, payload: str, *, max_bytes: int = _MAX_BODY_BYTES, window: int = _REFLECT_WINDOW
+) -> str:
+    """Clean and shrink an HTTP body for the model context.
+
+    - drops NULs and control noise, collapses whitespace runs;
+    - if the body already fits ``max_bytes``, returns it verbatim (trimmed);
+    - otherwise keeps only the windows around each payload / canary-marker
+      occurrence, joined by ``---`` and prefixed/suffixed with ``…``.
+    """
+    text = raw.replace("\x00", "")
+    if _looks_binary(text):
+        return "<non-text / binary response body omitted>"
+    text = re.sub(r"[ \t\f\v]{3,}", "  ", text)
+    text = re.sub(r"(?:\r?\n){3,}", "\n\n", text).strip()
+
+    if len(text.encode("utf-8", "ignore")) <= max_bytes:
+        return text
+
+    needles: list[str] = []
+    if payload and len(payload) >= 3:
+        needles.append(payload)
+    needles.extend(dict.fromkeys(_MARKER_RE.findall(text)))
+
+    spans: list[tuple[int, int]] = []
+    for needle in dict.fromkeys(needles):
+        start = text.find(needle)
+        while start != -1 and len(spans) < 8:
+            spans.append((max(0, start - window), min(len(text), start + len(needle) + window)))
+            start = text.find(needle, start + 1)
+
+    if not spans:
+        return text[:max_bytes].rstrip() + "\n…[truncated]"
+
+    spans.sort()
+    merged = [spans[0]]
+    for lo, hi in spans[1:]:
+        if lo <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], hi))
+        else:
+            merged.append((lo, hi))
+
+    chunks = [
+        ("…" if lo > 0 else "") + text[lo:hi] + ("…" if hi < len(text) else "")
+        for lo, hi in merged
+    ]
+    return "\n---\n".join(chunks)[: max_bytes * 2].rstrip()
+
+
+def clean_rows(
+    rows: list[dict[str, Any]], *, drop_noise: bool = True
+) -> tuple[list[dict[str, Any]], Counter[str]]:
+    """Filter raw telemetry rows; return ``(kept_rows, reason_counts)``."""
+    stats: Counter[str] = Counter()
+    kept: list[dict[str, Any]] = []
+    for row in rows:
+        if not _is_probe_row(row):
+            stats["skipped:not_a_probe"] += 1
+            continue
+        reason = classify_noise(row)
+        if reason:
+            stats[f"noise:{reason}"] += 1
+            if drop_noise:
+                continue
+        kept.append(row)
+    stats["kept"] = len(kept)
+    return kept, stats
+
+
+def dedup(samples: list["Sample"]) -> tuple[list["Sample"], int]:
+    """Collapse samples that share a ``meta['_dedup']`` signature (or a rendered
+    ``user``+``assistant`` hash when no explicit key was set)."""
+    seen: set[str] = set()
+    out: list[Sample] = []
+    for s in samples:
+        key = s.meta.get("_dedup") or hashlib.sha1(
+            (s.user + "\x00" + s.assistant).encode("utf-8")
+        ).hexdigest()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(s)
+    return out, len(samples) - len(out)
 
 
 # --------------------------------------------------------------------------- #
@@ -205,6 +406,9 @@ class Sample:
     assistant: str
     meta: dict[str, Any] = field(default_factory=dict)
 
+    def _public_meta(self) -> dict[str, Any]:
+        return {k: v for k, v in self.meta.items() if not k.startswith("_")}
+
     def to_chatml(self) -> dict[str, Any]:
         return {
             "messages": [
@@ -212,7 +416,7 @@ class Sample:
                 {"role": "user", "content": self.user},
                 {"role": "assistant", "content": self.assistant},
             ],
-            "meta": self.meta,
+            "meta": self._public_meta(),
         }
 
     def to_alpaca(self) -> dict[str, Any]:
@@ -220,7 +424,7 @@ class Sample:
             "instruction": self.system,
             "input": self.user,
             "output": self.assistant,
-            "meta": self.meta,
+            "meta": self._public_meta(),
         }
 
     def to_sharegpt(self) -> dict[str, Any]:
@@ -230,7 +434,7 @@ class Sample:
                 {"from": "human", "value": self.user},
                 {"from": "gpt", "value": self.assistant},
             ],
-            "meta": self.meta,
+            "meta": self._public_meta(),
         }
 
 
@@ -260,6 +464,27 @@ def _run_baselines(rows: list[dict[str, Any]]) -> dict[tuple[str, str], float]:
         xs.sort()
         out[key] = xs[len(xs) // 2] if xs else 0.0
     return out
+
+
+def _reflection_evidence(row: dict[str, Any], payload: str) -> tuple[dict[str, Any], str]:
+    """Body-derived evidence for triage, normalised for the model context."""
+    raw, truncated = _extract_body(row)
+    if not raw:
+        return {}, ""
+    excerpt = normalize_body(raw, payload)
+    reflected = bool(payload) and len(payload) >= 3 and payload in raw
+    ev: dict[str, Any] = {
+        "response_excerpt": excerpt,
+        "payload_reflected_verbatim": reflected,
+        "response_truncated": truncated,
+    }
+    note = ""
+    if reflected:
+        note = (
+            " The injected string appears verbatim in the response body excerpt; "
+            "assess whether the surrounding context makes it executable."
+        )
+    return ev, note
 
 
 def build_triage_samples(
@@ -309,6 +534,9 @@ def build_triage_samples(
             "run_baseline_latency_ms": round(base * 1000, 1),
             "latency_delta_ms": round((elapsed - base) * 1000, 1),
         }
+        body_ev, body_note = _reflection_evidence(row, payload)
+        evidence.update(body_ev)
+
         verdict = "TRUE_POSITIVE" if truth else "FALSE_POSITIVE"
         user = (
             f"Endpoint: {url}\n"
@@ -323,7 +551,7 @@ def build_triage_samples(
             reasoning = (
                 f"The {vclass} sink at this endpoint is confirmed vulnerable and the "
                 "probe's context/verdict are consistent with injection rather than "
-                "benign reflection or latency noise."
+                "benign reflection or latency noise." + body_note
             )
             next_step = "Replay with a differentiating oracle payload to demonstrate impact."
         else:
@@ -342,6 +570,11 @@ def build_triage_samples(
             },
             ensure_ascii=False,
         )
+        # No explicit _dedup key: dedup() hashes the fully-rendered
+        # (user, assistant) pair, so only *byte-identical* samples — same
+        # endpoint, payload, evidence and verdict — collapse. Two probes of
+        # different BenchmarkTest endpoints that happen to share a payload stay
+        # distinct (their URL and latency evidence differ).
         yield Sample(
             system, user, assistant,
             meta={"url": url, "label": verdict, "label_source": label_src,
@@ -354,7 +587,7 @@ def build_payload_samples(
 ) -> Iterator[Sample]:
     system = load_prompt("payload_system")
     # Reconstruct each parameter's probing trajectory.
-    traj: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    traj: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         if not _is_probe_row(row):
             continue
@@ -375,9 +608,10 @@ def build_payload_samples(
             tester_id = nxt.get("tester_id", "")
             prev_payload = prev.get("payload") or _payload_from_url(prev.get("url", ""), param)
             prev_elapsed = float(prev.get("elapsed_time", 0.0) or 0.0)
+            vclass = next(iter(_TESTER_TO_CATEGORY.get(tester_id, {"unknown"})))
             user = (
                 f"Target: {base_url}  param={param}\n"
-                f"Suspected class: {next(iter(_TESTER_TO_CATEGORY.get(tester_id, {'unknown'})))}\n"
+                f"Suspected class: {vclass}\n"
                 f"Last payload: {prev_payload!r}\n"
                 f"  -> scanner_decision={bool(prev.get('decision'))} "
                 f"context={prev.get('context')} "
@@ -405,7 +639,10 @@ def build_payload_samples(
                 },
                 ensure_ascii=False,
             )
-            yield Sample(system, user, assistant, meta={"url": base_url, "param": param})
+            yield Sample(
+                system, user, assistant,
+                meta={"url": base_url, "param": param, "label": vclass},
+            )
 
 
 BUILDERS = {
@@ -415,8 +652,28 @@ BUILDERS = {
 
 
 # --------------------------------------------------------------------------- #
-# CLI
+# Balancing + split
 # --------------------------------------------------------------------------- #
+
+
+def balance_classes(
+    samples: list[Sample], ratio: float, seed: int
+) -> tuple[list[Sample], dict[str, int]]:
+    """Downsample majority classes so ``len(class) <= ratio * len(smallest)``."""
+    rng = random.Random(seed)
+    by_label: dict[str, list[Sample]] = defaultdict(list)
+    for s in samples:
+        by_label[s.meta.get("label", "?")].append(s)
+    before = {k: len(v) for k, v in by_label.items()}
+    if len(by_label) < 2:
+        return samples, before
+    smallest = min(len(v) for v in by_label.values())
+    cap = max(smallest, int(round(smallest * ratio)))
+    out: list[Sample] = []
+    for grp in by_label.values():
+        out.extend(rng.sample(grp, cap) if len(grp) > cap else grp)
+    rng.shuffle(out)
+    return out, before
 
 
 def _to_record(fmt: str):
@@ -427,29 +684,90 @@ def _to_record(fmt: str):
     }[fmt]
 
 
-def write_split(samples: list[Sample], out: Path, fmt: str, split: float, seed: int) -> None:
+def _dump(path: Path, part: list[Sample], to_rec) -> None:
+    with path.open("w", encoding="utf-8") as fh:
+        for s in part:
+            fh.write(json.dumps(to_rec(s), ensure_ascii=False) + "\n")
+    print(f"wrote {len(part):>6} samples -> {path}")
+
+
+def write_split(
+    samples: list[Sample], out: Path, fmt: str, split: float, seed: int
+) -> dict[str, int]:
+    """Stratified train/val split (by ``meta['label']``); returns piece sizes."""
     rng = random.Random(seed)
-    rng.shuffle(samples)
     out.parent.mkdir(parents=True, exist_ok=True)
     to_rec = _to_record(fmt)
 
     if split >= 1.0:
-        pieces = [(out, samples)]
-    else:
-        cut = int(len(samples) * split)
-        pieces = [
-            (out.with_name(out.stem + ".train" + out.suffix), samples[:cut]),
-            (out.with_name(out.stem + ".val" + out.suffix), samples[cut:]),
-        ]
+        rng.shuffle(samples)
+        _dump(out, samples, to_rec)
+        return {"single": len(samples)}
 
-    for path, part in pieces:
-        with path.open("w", encoding="utf-8") as fh:
-            for s in part:
-                fh.write(json.dumps(to_rec(s), ensure_ascii=False) + "\n")
-        print(f"wrote {len(part):>6} samples -> {path}")
+    buckets: dict[str, list[Sample]] = defaultdict(list)
+    for s in samples:
+        buckets[s.meta.get("label", "_")].append(s)
+
+    train: list[Sample] = []
+    val: list[Sample] = []
+    for _, grp in sorted(buckets.items()):
+        rng.shuffle(grp)
+        cut = round(len(grp) * split)
+        train.extend(grp[:cut])
+        val.extend(grp[cut:])
+    rng.shuffle(train)
+    rng.shuffle(val)
+
+    _dump(out.with_name(out.stem + ".train" + out.suffix), train, to_rec)
+    _dump(out.with_name(out.stem + ".val" + out.suffix), val, to_rec)
+    return {"train": len(train), "val": len(val)}
+
+
+# --------------------------------------------------------------------------- #
+# CLI
+# --------------------------------------------------------------------------- #
+
+
+def _run_task(
+    task: str,
+    rows: list[dict[str, Any]],
+    oracle: Oracle,
+    args: argparse.Namespace,
+    weak: bool,
+) -> dict[str, Any]:
+    report: dict[str, Any] = {"task": task}
+    samples = list(BUILDERS[task](rows, oracle, weak=weak))
+    report["samples_built"] = len(samples)
+
+    if not args.no_dedup:
+        samples, removed = dedup(samples)
+        report["deduped_removed"] = removed
+    report["after_dedup"] = len(samples)
+
+    if args.balance and task == "triage":
+        samples, before = balance_classes(samples, args.balance_ratio, args.seed)
+        report["class_counts_before_balance"] = before
+        print(f"[{task}] balanced (ratio {args.balance_ratio}) -> {len(samples)}", file=sys.stderr)
+    report["class_counts"] = dict(Counter(s.meta.get("label", "?") for s in samples))
+
+    if args.limit:
+        samples = samples[: args.limit]
+
+    if not samples:
+        print(f"[{task}] no samples produced", file=sys.stderr)
+        report["error"] = "no_samples"
+        return report
+
+    out = args.out
+    if len(args.task_list) > 1:
+        out = out.with_name(out.stem + f".{task}" + out.suffix)
+    report["split"] = write_split(samples, out, args.format, args.split, args.seed)
+    report["out"] = str(out)
+    return report
 
 
 def main(argv: list[str] | None = None) -> int:
+    global _MAX_BODY_BYTES
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -459,7 +777,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="OWASP Benchmark expectedresults-*.csv oracle")
     ap.add_argument("--ground-truth", type=Path, default=None,
                     help="JSON list/obj of known vulnerable sinks")
-    ap.add_argument("--task", choices=sorted(BUILDERS), default="triage")
+    ap.add_argument("--task", choices=[*sorted(BUILDERS), "both"], default="triage")
     ap.add_argument("--format", choices=["alpaca", "sharegpt", "chatml"], default="alpaca")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--split", type=float, default=1.0,
@@ -470,41 +788,69 @@ def main(argv: list[str] | None = None) -> int:
                     help="use the scanner's own decision/confidence as labels "
                          "(implied when no oracle is given)")
     ap.add_argument("--balance", action="store_true",
-                    help="downsample the majority class to a 1:1 TP/FP ratio (triage)")
+                    help="downsample the majority class toward a 1:1 TP/FP ratio (triage)")
+    ap.add_argument("--balance-ratio", type=float, default=1.0,
+                    help="max majority:minority ratio kept by --balance (default 1.0)")
+    ap.add_argument("--keep-noise", action="store_true",
+                    help="keep malformed / timeout / truncated rows instead of dropping them")
+    ap.add_argument("--no-dedup", action="store_true",
+                    help="do not collapse identical (payload, response, verdict) samples")
+    ap.add_argument("--max-body-bytes", type=int, default=_MAX_BODY_BYTES,
+                    help="response-body truncation budget for evidence (default 2048)")
+    ap.add_argument("--report", type=Path, default=None,
+                    help="write a JSON cleaning/curation manifest to this path")
     args = ap.parse_args(argv)
 
-    rows = list(iter_jsonl(args.telemetry))
-    print(f"loaded {len(rows)} telemetry rows", file=sys.stderr)
+    _MAX_BODY_BYTES = max(256, args.max_body_bytes)
+
+    raw_rows = list(iter_jsonl(args.telemetry))
+    print(f"loaded {len(raw_rows)} telemetry rows", file=sys.stderr)
+
+    rows, clean_stats = clean_rows(raw_rows, drop_noise=not args.keep_noise)
+    print(f"clean: kept {len(rows)}/{len(raw_rows)} rows "
+          f"({dict(clean_stats)})", file=sys.stderr)
+
     oracle = load_oracle(args.benchmark_csv, args.ground_truth)
     weak = args.weak_labels or oracle.empty
     if oracle.empty and not args.weak_labels:
         print("no oracle supplied — falling back to weak labels", file=sys.stderr)
 
-    samples = list(BUILDERS[args.task](rows, oracle, weak=weak))
+    args.task_list = ["triage", "payload"] if args.task == "both" else [args.task]
 
-    if args.balance and args.task == "triage":
-        rng = random.Random(args.seed)
-        by_label: dict[str, list[Sample]] = defaultdict(list)
-        for s in samples:
-            by_label[s.meta.get("label", "?")].append(s)
-        if len(by_label) > 1:
-            k = min(len(v) for v in by_label.values())
-            samples = [s for v in by_label.values() for s in rng.sample(v, k)]
-            print(f"balanced to {k} per class", file=sys.stderr)
+    manifest: dict[str, Any] = {
+        "input_rows": len(raw_rows),
+        "cleaned_rows": len(rows),
+        "clean_stats": dict(clean_stats),
+        "oracle": {
+            "benchmark_entries": len(oracle.benchmark),
+            "ground_truth_sinks": len(oracle.index),
+            "weak_labels": weak,
+        },
+        "params": {
+            "format": args.format, "split": args.split, "seed": args.seed,
+            "balance": args.balance, "balance_ratio": args.balance_ratio,
+            "dedup": not args.no_dedup, "drop_noise": not args.keep_noise,
+            "max_body_bytes": _MAX_BODY_BYTES,
+        },
+        "tasks": [],
+    }
 
-    if args.limit:
-        samples = samples[: args.limit]
-    if not samples:
-        print("no samples produced — check telemetry / oracle inputs", file=sys.stderr)
-        return 1
+    rc = 0
+    for task in args.task_list:
+        result = _run_task(task, rows, oracle, args, weak)
+        manifest["tasks"].append(result)
+        if result.get("error"):
+            rc = 1
+        else:
+            cc = result["class_counts"]
+            print(f"[{task}] {sum(cc.values())} samples {cc}", file=sys.stderr)
 
-    if args.task == "triage":
-        n_tp = sum(1 for s in samples if s.meta.get("label") == "TRUE_POSITIVE")
-        print(f"{len(samples)} samples (TP={n_tp}, FP={len(samples) - n_tp})", file=sys.stderr)
-    else:
-        print(f"{len(samples)} samples", file=sys.stderr)
-    write_split(samples, args.out, args.format, args.split, args.seed)
-    return 0
+    if args.report:
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), "utf-8")
+        print(f"manifest -> {args.report}", file=sys.stderr)
+
+    return rc
 
 
 if __name__ == "__main__":  # pragma: no cover

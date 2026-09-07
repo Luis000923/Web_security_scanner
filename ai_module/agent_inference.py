@@ -88,6 +88,30 @@ class AgentClient:
     # public API
     # ------------------------------------------------------------------ #
 
+    async def healthcheck(self) -> bool:
+        """Cheap readiness probe used by the orchestrator before it commits the
+        agent as the scan's engine.
+
+        ``echo`` is always ready; ``transformers`` loads lazily in-process so we
+        assume it is intended; ``openai`` pings the server's ``/models`` route
+        with a short timeout. Any failure returns ``False`` and the caller falls
+        back to the deterministic heuristics.
+        """
+        if self.backend in ("echo", "transformers"):
+            return True
+        try:
+            import aiohttp
+
+            timeout = aiohttp.ClientTimeout(total=min(self.timeout, 5.0))
+            async with aiohttp.ClientSession(timeout=timeout) as sess:
+                async with sess.get(
+                    f"{self.base_url}/models",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                ) as resp:
+                    return resp.status < 500
+        except Exception:  # noqa: BLE001 - unreachable / DNS / TLS / timeout
+            return False
+
     async def triage_finding(self, finding: dict[str, Any]) -> TriageResult:
         user = (
             "Classify the following DAST candidate.\n\n"

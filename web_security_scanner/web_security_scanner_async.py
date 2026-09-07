@@ -114,9 +114,10 @@ class WebSecurityScanner:
         # hand it to every tester before any payload is fired.
         await self._start_telemetry()
 
-        # ai-agent: attach the optional LLM triage / payload-synthesis client
-        # to every tester (no-op unless --ai-verify / --ai-synthesize is set).
-        self._start_ai_agent()
+        # ai-agent: the LLM triage / payload-synthesis client is the default
+        # engine — attach it to every tester unless --ai-no was passed or the
+        # local inference backend is unreachable (then: deterministic fallback).
+        await self._start_ai_agent()
 
         # Phase 3: snapshot the reproducibility manifest (corpus hash, RNG
         # seed, full config, git commit) before Phase 1/2 probing starts.
@@ -259,27 +260,42 @@ class WebSecurityScanner:
                 out.append(url)
         return out
 
-    def _start_ai_agent(self) -> None:
+    async def _start_ai_agent(self) -> None:
         """Build the AI ``AgentClient`` and attach it to every tester.
 
-        Driven by ``config['testers']``:
-            ai_verify / ai_synthesize -> at least one must be truthy or this
-                is a no-op (client stays ``None``, testers use heuristics only)
+        The agent is the **default engine**. Driven by ``config['testers']``:
+            ai_enabled    -> master switch (default True; ``--ai-no`` sets False)
+            ai_verify / ai_synthesize -> per-half switches (default True)
             ai_backend / ai_base_url / ai_model -> forwarded to ``AgentClient``
 
-        Every failure mode here (``ai_module`` not installed, bad config,
-        constructor raising) is caught and logged — the scan continues on its
-        traditional heuristics. The client itself degrades per-call if the
-        local inference server is unreachable.
+        Graceful degradation — any of the following logs one line and lets the
+        scan continue on the deterministic heuristics, never raising:
+            * ``--ai-no`` passed
+            * ``ai_module`` / its deps not installed
+            * ``AgentClient`` constructor fails
+            * the inference backend fails its ``healthcheck()`` (server down)
+        Per-call failures after attach are still absorbed inside the testers.
         """
         tcfg = self.config.get("testers", {}) or {}
-        if not (tcfg.get("ai_verify") or tcfg.get("ai_synthesize")):
+        if not tcfg.get("ai_enabled", True):
+            self._logger.info(
+                "AI agent disabled via --ai-no; running the deterministic "
+                "heuristic engine."
+            )
+            return
+        if not (tcfg.get("ai_verify", True) or tcfg.get("ai_synthesize", True)):
+            self._logger.info(
+                "Both AI halves disabled (--ai-no-verify --ai-no-synthesize); "
+                "running the deterministic heuristic engine."
+            )
             return
         try:
             from ai_module.agent_inference import AgentClient
         except Exception as exc:  # noqa: BLE001
             self._logger.warning(
-                "ai_module unavailable (%s); --ai-verify/--ai-synthesize ignored", exc
+                "AI engine unavailable (%s); falling back to deterministic "
+                "heuristics. Install with `pip install -e \".[ai]\"` or pass "
+                "--ai-no to silence this.", exc
             )
             return
         kwargs: dict[str, Any] = {}
@@ -291,14 +307,31 @@ class WebSecurityScanner:
             client = AgentClient(**kwargs)
         except Exception as exc:  # noqa: BLE001
             self._logger.warning(
-                "Could not build AI AgentClient (%s); continuing without it", exc
+                "Could not build AI AgentClient (%s); falling back to "
+                "deterministic heuristics.", exc
             )
             return
+
+        try:
+            healthy = await client.healthcheck()
+        except Exception as exc:  # noqa: BLE001 - defensive; healthcheck catches its own
+            healthy = False
+            self._logger.debug("AI healthcheck raised: %s", exc)
+        if not healthy:
+            self._logger.warning(
+                "AI inference backend not reachable (backend=%s url=%s); "
+                "falling back to deterministic heuristics. Start the local "
+                "inference server or pass --ai-no to silence this.",
+                client.backend, getattr(client, "base_url", "n/a"),
+            )
+            return
+
         for tester in self.testers:
             tester.ai_client = client
         self._logger.info(
-            "AI agent attached (backend=%s verify=%s synthesize=%s)",
-            client.backend, bool(tcfg.get("ai_verify")), bool(tcfg.get("ai_synthesize")),
+            "AI engine active (backend=%s verify=%s synthesize=%s)",
+            client.backend, bool(tcfg.get("ai_verify", True)),
+            bool(tcfg.get("ai_synthesize", True)),
         )
 
     async def _start_telemetry(self) -> None:
