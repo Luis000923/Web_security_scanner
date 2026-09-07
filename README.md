@@ -11,6 +11,40 @@ constituir un delito.
 
 ---
 
+## Ramas del repositorio
+
+| Rama       | Contenido                                                                 |
+|------------|--------------------------------------------------------------------------|
+| `main`     | La herramienta como paquete limpio (`web_security_scanner/`, `pyproject.toml`). |
+| `research` | La herramienta + el articulo cientifico en `paper/` (fuentes LaTeX, `refs.bib`). |
+| `testbed`  | **(esta rama)** La herramienta + orquestacion y analisis experimental. |
+
+### Rama `testbed`
+
+Contiene el banco de pruebas de ablacion y los guiones de analisis:
+
+| Ruta | Rol |
+|------|-----|
+| `testbed/docker-compose.yml` | OWASP Benchmark contenedorizado. |
+| `testbed/build_ground_truth.py` | Generador de verdad-terreno (tuplas url/param/tipo). |
+| `testbed/benchmark_targets.json`, `testbed/ground_truth.json` | Objetivos y etiquetas. |
+| `testbed/experiment_results.csv` | Resultados calificados de la barrida (fuente de datos del paper). |
+| `tools/run_experiments.py` | Orquestador de la rejilla presupuesto x condicion (RCBD). |
+| `tools/eval_oracle.py` | Oraculo de calificacion independiente (TP/FP/FN/FPR). |
+| `tools/analyze_results.py` | Pruebas no parametricas (Friedman, Nemenyi, Wilcoxon, delta de Cliff) y figuras. |
+| `tools/make_submission.sh` | Empaquetado del envio. |
+
+`testbed/results/` (telemetria JSONL pesada) y `testbed/analysis/`
+(figuras/estadisticos regenerables) estan excluidos del control de versiones.
+
+```sh
+uv sync --extra experiments
+python tools/run_experiments.py            # ejecuta la barrida
+python tools/analyze_results.py            # estadistica + figuras -> paper/figures/
+```
+
+---
+
 ## Resumen ejecutivo
 
 Web Security Scanner automatiza la fase de deteccion de un analisis de seguridad
