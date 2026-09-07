@@ -114,6 +114,10 @@ class WebSecurityScanner:
         # hand it to every tester before any payload is fired.
         await self._start_telemetry()
 
+        # ai-agent: attach the optional LLM triage / payload-synthesis client
+        # to every tester (no-op unless --ai-verify / --ai-synthesize is set).
+        self._start_ai_agent()
+
         # Phase 3: snapshot the reproducibility manifest (corpus hash, RNG
         # seed, full config, git commit) before Phase 1/2 probing starts.
         await self._write_manifest()
@@ -254,6 +258,48 @@ class WebSecurityScanner:
                 seen.add(url)
                 out.append(url)
         return out
+
+    def _start_ai_agent(self) -> None:
+        """Build the AI ``AgentClient`` and attach it to every tester.
+
+        Driven by ``config['testers']``:
+            ai_verify / ai_synthesize -> at least one must be truthy or this
+                is a no-op (client stays ``None``, testers use heuristics only)
+            ai_backend / ai_base_url / ai_model -> forwarded to ``AgentClient``
+
+        Every failure mode here (``ai_module`` not installed, bad config,
+        constructor raising) is caught and logged — the scan continues on its
+        traditional heuristics. The client itself degrades per-call if the
+        local inference server is unreachable.
+        """
+        tcfg = self.config.get("testers", {}) or {}
+        if not (tcfg.get("ai_verify") or tcfg.get("ai_synthesize")):
+            return
+        try:
+            from ai_module.agent_inference import AgentClient
+        except Exception as exc:  # noqa: BLE001
+            self._logger.warning(
+                "ai_module unavailable (%s); --ai-verify/--ai-synthesize ignored", exc
+            )
+            return
+        kwargs: dict[str, Any] = {}
+        for src, dst in (("ai_backend", "backend"), ("ai_base_url", "base_url"),
+                         ("ai_model", "model")):
+            if tcfg.get(src):
+                kwargs[dst] = tcfg[src]
+        try:
+            client = AgentClient(**kwargs)
+        except Exception as exc:  # noqa: BLE001
+            self._logger.warning(
+                "Could not build AI AgentClient (%s); continuing without it", exc
+            )
+            return
+        for tester in self.testers:
+            tester.ai_client = client
+        self._logger.info(
+            "AI agent attached (backend=%s verify=%s synthesize=%s)",
+            client.backend, bool(tcfg.get("ai_verify")), bool(tcfg.get("ai_synthesize")),
+        )
 
     async def _start_telemetry(self) -> None:
         """Create + start the JSONL telemetry worker and attach it to testers.

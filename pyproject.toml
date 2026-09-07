@@ -27,6 +27,36 @@ browser = [
 experiments = [
     "rich>=13.0",
 ]
+# Agentic AI subsystem (ai_module/). Heavy, GPU-oriented; install explicitly:
+#   pip install -e ".[ai]"
+# Tuned for a single NVIDIA RTX 5090 (Blackwell / sm_120). As of early 2026 the
+# Blackwell wheels need CUDA 12.8+; install a matching torch build first, e.g.
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+ai = [
+    "torch>=2.6.0",
+    "transformers>=4.48.0",
+    "datasets>=2.19.0",
+    "accelerate>=1.3.0",
+    "peft>=0.14.0",
+    "trl>=0.13.0",
+    "bitsandbytes>=0.45.0",
+    "sentencepiece>=0.2.0",
+    "safetensors>=0.4.5",
+    "tensorboard>=2.16",
+]
+# Optional: Unsloth fused kernels (~2x throughput, lower VRAM). Kept separate
+# because its pinned deps can conflict; install alongside the `ai` extra:
+#   pip install -e ".[ai,ai-unsloth]"
+ai-unsloth = [
+    "unsloth>=2025.1.1",
+    "unsloth-zoo>=2025.1.1",
+    "xformers>=0.0.29",
+]
+# Serving the fine-tuned adapter over an OpenAI-compatible local endpoint.
+ai-serve = [
+    "vllm>=0.7.0",
+    "aiohttp>=3.8.0",
+]
 dev = [
     "pytest",
     "pytest-asyncio",
@@ -50,11 +80,12 @@ dev = [
 webscanner = "web_security_scanner.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["web_security_scanner*"]
+include = ["web_security_scanner*", "ai_module*"]
 
 [tool.setuptools.package-data]
 "web_security_scanner.PAYLOAD" = ["*.json", "data/*.json"]
 "web_security_scanner.wordlists" = ["*.json"]
+"ai_module.prompts" = ["*.md", "*.txt"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

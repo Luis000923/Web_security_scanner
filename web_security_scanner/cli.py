@@ -146,6 +146,32 @@ def _build_parser() -> argparse.ArgumentParser:
                      help="Seed random.seed() at startup for full reproducibility "
                           "of random payload order, User-Agent rotation and "
                           "payload mutations.")
+
+    ai = scan.add_argument_group(
+        "AI agent (ai_module)",
+        "Optional LLM-assisted triage and payload synthesis. Degrades "
+        "gracefully: if ai_module isn't installed or the inference server is "
+        "down, the scan continues on its traditional heuristics.")
+    ai.add_argument("--ai-verify", action="store_true",
+                    help="Send each heuristic finding to AgentClient.triage_finding() "
+                         "with the HTTP request/response context. Findings the agent "
+                         "confidently rates a false positive are dropped; the rest are "
+                         "annotated with the agent's verdict (ai_verified/ai_confidence).")
+    ai.add_argument("--ai-synthesize", action="store_true",
+                    help="When a parameter's static payload list is exhausted without "
+                         "a hit, ask AgentClient.synthesize_payloads() for adapted "
+                         "vectors (WAF/framework-aware) and replay the cheap checks.")
+    ai.add_argument("--ai-backend", default=None,
+                    choices=["openai", "transformers", "echo"],
+                    help="AgentClient backend (default: env AI_AGENT_BACKEND or 'openai').")
+    ai.add_argument("--ai-base-url", default=None, metavar="URL",
+                    help="OpenAI-compatible endpoint for the 'openai' backend "
+                         "(default: http://127.0.0.1:8000/v1).")
+    ai.add_argument("--ai-model", default=None, metavar="NAME",
+                    help="Model / adapter name passed to the backend.")
+    ai.add_argument("--ai-fp-threshold", type=float, default=0.75, metavar="0-1",
+                    help="Minimum agent confidence required to discard a finding as "
+                         "a false positive (default: 0.75).")
     return parser
 
 
@@ -254,6 +280,13 @@ def _build_config(args) -> dict:
         "runtime_confirm": getattr(args, "runtime_confirm", True),
         # Phase 3 live heuristic ordering (adaptive feedback loop).
         "adaptive_sorting": getattr(args, "adaptive_sorting", True),
+        # ai-agent: optional LLM triage / payload synthesis.
+        "ai_verify": getattr(args, "ai_verify", False),
+        "ai_synthesize": getattr(args, "ai_synthesize", False),
+        "ai_backend": getattr(args, "ai_backend", None),
+        "ai_base_url": getattr(args, "ai_base_url", None),
+        "ai_model": getattr(args, "ai_model", None),
+        "ai_fp_threshold": getattr(args, "ai_fp_threshold", 0.75),
     }
     recon = {
         "max_urls": args.max_urls,
