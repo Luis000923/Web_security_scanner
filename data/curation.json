@@ -1,0 +1,55 @@
+{
+  "input_rows": 1110179,
+  "cleaned_rows": 1110179,
+  "clean_stats": {
+    "kept": 1110179
+  },
+  "oracle": {
+    "benchmark_entries": 2740,
+    "ground_truth_sinks": 0,
+    "weak_labels": false
+  },
+  "params": {
+    "format": "alpaca",
+    "split": 0.9,
+    "seed": 1337,
+    "balance": false,
+    "balance_ratio": 1.0,
+    "dedup": true,
+    "drop_noise": true,
+    "max_body_bytes": 2048
+  },
+  "tasks": [
+    {
+      "task": "triage",
+      "samples_built": 26,
+      "deduped_removed": 0,
+      "after_dedup": 26,
+      "class_counts": {
+        "FALSE_POSITIVE": 17,
+        "UNCERTAIN": 7,
+        "TRUE_POSITIVE": 2
+      },
+      "split": {
+        "train": 23,
+        "val": 3
+      },
+      "out": "data/sft.triage.jsonl"
+    },
+    {
+      "task": "payload",
+      "samples_built": 777236,
+      "deduped_removed": 776061,
+      "after_dedup": 1175,
+      "class_counts": {
+        "xss": 586,
+        "sqli": 589
+      },
+      "split": {
+        "train": 1057,
+        "val": 118
+      },
+      "out": "data/sft.payload.jsonl"
+    }
+  ]
+}

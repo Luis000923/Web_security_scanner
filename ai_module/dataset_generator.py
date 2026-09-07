@@ -23,9 +23,21 @@ Curation pipeline
      - normalise evidence: strip control/binary bytes, collapse whitespace,
        and truncate long bodies to the first ~2 KB *or* the reflection windows
        around the injected payload / canary markers;
-     - de-duplicate: identical ``(payload, response, class, verdict)`` samples
-       repeated across iterations collapse to one.
-3. **Structure** — emit Alpaca / ShareGPT / ChatML, one task per file.
+     - **anonymise the endpoint** (``sanitize_endpoint`` / ``generic_param``):
+       the OWASP Benchmark encodes the vuln class *and* verdict in the URL
+       path, so the model input keeps only ``/app/target_endpoint/`` — no
+       shortcut from the URL to the label;
+     - **filter junk payloads** (``is_junk_payload``): drop structureless blobs
+       >120 chars and ultra-short <15-char strings with no injection tokens;
+     - de-duplicate on the *observable* key (anonymised prompt + bucketed
+       latency): rows the model cannot tell apart collapse to one, so
+       millisecond jitter can never leak a near-identical row across the split.
+3. **Structure** — emit Alpaca / ShareGPT / ChatML, one task per file. Triage
+   ``output`` is built *dynamically* from the evidence (latency delta vs. run
+   baseline, verbatim reflection, interpreter errors, a-priori/scanner
+   confidence); genuinely non-discriminating probes are labelled ``UNCERTAIN``
+   rather than forced onto a binary, and endpoints whose ground truth conflicts
+   under an identical evidence profile are reconciled to ``UNCERTAIN``.
 4. **Balance + split** — optional 1:1 (``--balance-ratio``) TP/FP downsampling,
    then a stratified train/val split (``--split 0.9``) so val keeps both
    classes.
@@ -89,13 +101,8 @@ _TESTER_TO_CATEGORY: dict[str, set[str]] = {
     "SSRFTester": {"ssrf"},
 }
 
-# tester class  ->  a generic "what confirms this" hint for payload samples
-_CONFIRM_HINT: dict[str, str] = {
-    "XSSTester": "unique reflected marker rendered unescaped in an executable context",
-    "SQLInjectionTester": "database error string, or a repeatable boolean/time oracle differential",
-    "CommandInjectionTester": "bounded, payload-correlated response delay above baseline jitter",
-    "PathTraversalTester": "contents of a known out-of-webroot file in the response body",
-}
+# NOTE: payload-sample confirm signals are now derived per *payload family*
+# (see ``_FAMILY_CONFIRM``), not per tester class.
 
 
 def iter_jsonl(paths: Iterable[Path]) -> Iterator[dict[str, Any]]:
@@ -134,6 +141,140 @@ def _payload_from_url(url: str, param: str) -> str:
         if values:
             return values[-1]
     return unquote(url.rsplit("=", 1)[-1]) if "=" in url else ""
+
+
+# --------------------------------------------------------------------------- #
+# Anonymisation — keep endpoint identity out of the model's reach
+# --------------------------------------------------------------------------- #
+
+_GENERIC_ENDPOINT = "/app/target_endpoint/"
+_BENCH_PARAM_RE = re.compile(
+    r"^(?:benchmarktest\d+|param\d*|p\d*|q|input|foo|bar|arg\d*)$", re.I
+)
+
+
+def sanitize_endpoint(url: str) -> str:
+    """Collapse a probe URL to a class-free placeholder path.
+
+    The OWASP Benchmark encodes the vulnerability *class* and often the verdict
+    in the path (``/benchmark/xss-03/BenchmarkTest01234``). Leaving that in the
+    model input lets it shortcut the whole triage/synthesis task straight from
+    the URL, so we drop scheme, host, query string and every path segment down
+    to one opaque endpoint token. The real URL is retained only in private
+    (``_``-prefixed) metadata for traceability.
+    """
+    return _GENERIC_ENDPOINT
+
+
+def generic_param(param: str) -> str:
+    """Replace oracle-correlated parameter names with a neutral token."""
+    p = (param or "").strip()
+    if not p or _BENCH_PARAM_RE.match(p):
+        return "p"
+    return p
+
+
+# --------------------------------------------------------------------------- #
+# Payload sanity filtering
+# --------------------------------------------------------------------------- #
+
+_INJECTION_MARKERS = (
+    "<", ">", "'", '"', ";", "--", "/*", "*/", "${", "{{", "}}", "|", "&&",
+    "../", "..\\", "%00", "%2e", "\\x", "`", "$(", "()", "=", "\n", "\r",
+    "select", "union", "sleep", "benchmark(", "waitfor", "pg_sleep", "script",
+    "alert(", "confirm(", "prompt(", "onerror", "onload", "svg", "img",
+    "javascript:", "/etc/", "cmd", "nslookup", "curl ", "http://", "https://",
+)
+
+
+def _has_injection_marker(payload: str) -> bool:
+    low = payload.lower()
+    return any(m in low for m in _INJECTION_MARKERS)
+
+
+def is_junk_payload(payload: str) -> bool:
+    """True for strings that carry no learnable injection semantics."""
+    s = (payload or "").strip()
+    if not s:
+        return True
+    if len(s) < 15 and not _has_injection_marker(s):
+        return True
+    if len(s) > 120 and not _has_injection_marker(s):
+        return True
+    if len(s) > 120:
+        punct = sum(1 for c in s if not c.isalnum() and not c.isspace())
+        if punct / len(s) < 0.05:          # long, near-structureless blob
+            return True
+    return False
+
+
+_PAYLOAD_FAMILY_KEYS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("sqli-time", ("sleep(", "benchmark(", "waitfor", "pg_sleep", "dbms_lock")),
+    ("sqli-error-union", ("union select", "union all select", "extractvalue",
+                           "updatexml", "convert(int", "cast(")),
+    ("sqli-boolean", (" or 1=1", "' or '", "\" or \"", " and 1=", "'='", "')-- ")),
+    ("xss", ("<script", "<svg", "<img", "<iframe", "onerror", "onload",
+              "javascript:", "alert(", "confirm(", "prompt(", "<body")),
+    ("path-traversal", ("../", "..\\", "/etc/passwd", "%2e%2e", "c:\\", "file://")),
+    ("cmd-injection", (";id", "|id", "&&", "`id`", "$(", "nslookup", "curl ",
+                        "|nslookup", ";sleep")),
+    ("ssrf", ("http://169.254", "http://127.0.0.1", "http://localhost",
+               "gopher://", "dict://", "@")),
+    ("open-redirect", ("//evil", "https://evil", "\\\\evil", "///")),
+)
+
+
+def payload_family(payload: str, tester_id: str = "") -> str:
+    low = (payload or "").lower()
+    for name, keys in _PAYLOAD_FAMILY_KEYS:
+        if any(k in low for k in keys):
+            return name
+    cats = _TESTER_TO_CATEGORY.get(tester_id)
+    return next(iter(cats)) if cats else "generic"
+
+
+_FAMILY_CONFIRM: dict[str, str] = {
+    "sqli-time": ("a repeatable, payload-correlated delay matching the injected "
+                  "sleep interval, with no delay for a 0-second control"),
+    "sqli-error-union": ("a database error disclosing schema/version, or extra "
+                          "UNION-sourced columns/rows appearing in the response"),
+    "sqli-boolean": ("a stable content differential between the true (1=1) and "
+                      "false (1=2) variants of the predicate"),
+    "xss": ("the unique marker rendered unescaped in an executable HTML/JS "
+             "context — the script actually runs in a browser"),
+    "path-traversal": ("the verbatim contents of a known out-of-webroot file in "
+                        "the response body"),
+    "cmd-injection": ("an out-of-band DNS/HTTP callback, or a bounded "
+                       "command-correlated response delay"),
+    "ssrf": "an out-of-band request from the target to a collaborator host",
+    "open-redirect": "a 3xx Location header pointing at the attacker-controlled host",
+    "generic": "an unambiguous, payload-correlated response differential",
+}
+
+_FAMILY_LEAD: dict[str, str] = {
+    "sqli-time": "Switches to a time-based blind oracle",
+    "sqli-error-union": "Forces an error-based / UNION disclosure",
+    "sqli-boolean": "Tests a boolean predicate differential",
+    "xss": "Breaks out of the current markup context",
+    "path-traversal": "Walks the path toward an out-of-webroot file",
+    "cmd-injection": "Chains an OS command with an out-of-band signal",
+    "ssrf": "Points the server-side fetch at an internal address",
+    "open-redirect": "Supplies an external absolute URL to the redirect sink",
+    "generic": "Escalates probe specificity",
+}
+
+
+def payload_rationale(
+    family: str, prev_payload: str, prev_ctx: str, prev_latency_ms: float,
+    prev_decision: bool,
+) -> str:
+    lead = _FAMILY_LEAD.get(family, _FAMILY_LEAD["generic"])
+    prior = (
+        f"the previous vector {prev_payload!r} "
+        f"({prev_ctx or 'unknown'} context, {prev_latency_ms:.1f} ms, "
+        f"scanner_decision={prev_decision})"
+    )
+    return f"{lead} after {prior} produced no decisive signal."
 
 
 # --------------------------------------------------------------------------- #
@@ -487,11 +628,138 @@ def _reflection_evidence(row: dict[str, Any], payload: str) -> tuple[dict[str, A
     return ev, note
 
 
+_DB_ERROR_RE = re.compile(
+    r"(SQL syntax|ORA-\d{5}|SQLSTATE|ODBC|mysql_fetch|pg_query|psql:|"
+    r"Unclosed quotation mark|quoted string not properly terminated|"
+    r"System\.Data\.|Microsoft OLE DB|java\.sql\.|javax\.servlet|"
+    r"org\.hibernate|Warning: |Fatal error|Traceback \(most recent call last\)|"
+    r"XPathException|LDAP: error code|supplied argument is not a valid)",
+    re.I,
+)
+_TIME_CONTEXT_HINTS = ("time_based", "time-based", "time_blind", "timeblind", "timing")
+
+_NEXT_PROOF: dict[str, str] = {
+    "xss": "Load the reflected marker in a browser context to confirm script execution.",
+    "sqli": "Send paired boolean payloads (1=1 vs 1=2) or a bounded time delay to confirm the oracle.",
+    "cmdi": "Confirm with a bounded out-of-band DNS/HTTP callback rather than timing alone.",
+    "pathtraver": "Fetch a known out-of-webroot file and diff it against a control path.",
+    "ssrf": "Point the fetch at a collaborator host and watch for the inbound request.",
+}
+
+
+def _assess_evidence(evidence: dict[str, Any], *, context: str) -> dict[str, Any]:
+    """Derive discriminating signals from the raw evidence, dynamically."""
+    delta = _f(evidence.get("latency_delta_ms"))
+    base = abs(_f(evidence.get("run_baseline_latency_ms")))
+    noise = max(40.0, 0.75 * base)
+    excerpt = evidence.get("response_excerpt") or ""
+    reflected = bool(evidence.get("payload_reflected_verbatim"))
+    has_error = bool(excerpt) and bool(_DB_ERROR_RE.search(excerpt))
+    ctx = (context or "").lower()
+    time_class = "time" in ctx or any(h in ctx for h in _TIME_CONTEXT_HINTS)
+    time_hit = time_class and delta >= max(750.0, noise * 5)
+    apriori = str(evidence.get("apriori_confidence") or "").upper()
+
+    signals: list[str] = []
+    if reflected:
+        signals.append("the payload is reflected verbatim in the response body")
+    if has_error:
+        signals.append("the response leaks an interpreter/database error string")
+    if time_hit:
+        signals.append(
+            f"a payload-correlated delay of ~{delta:.0f} ms far exceeds the "
+            f"~{base:.0f} ms run baseline"
+        )
+
+    within_noise = abs(delta) <= noise
+    if within_noise:
+        latency_note = (
+            f"the latency delta ({delta:+.1f} ms) sits inside run jitter "
+            f"(~±{noise:.0f} ms)"
+        )
+    else:
+        latency_note = (
+            f"the latency delta is {delta:+.1f} ms against a ~{base:.0f} ms "
+            "baseline, not a repeatable time oracle by itself"
+        )
+
+    if delta <= -noise:
+        lat_bucket = "faster"
+    elif within_noise:
+        lat_bucket = "noise"
+    elif delta < 750:
+        lat_bucket = "slower"
+    else:
+        lat_bucket = "much_slower"
+
+    return {
+        "signals": signals,
+        "discriminating": bool(signals),
+        "within_noise": within_noise,
+        "latency_note": latency_note,
+        "lat_bucket": lat_bucket,
+        "apriori": apriori,
+        "reflected": reflected,
+        "has_error": has_error,
+        "scanner_conf": str(evidence.get("scanner_confidence") or "").upper(),
+        "scanner_decision": bool(evidence.get("scanner_decision")),
+        "context": str(evidence.get("injection_context") or ""),
+    }
+
+
+def _compose_reasoning(verdict: str, a: dict[str, Any], vclass: str) -> str:
+    sig = a["signals"]
+    if verdict == "TRUE_POSITIVE":
+        if sig:
+            body = "; ".join(sig)
+            if len(sig) > 1 or not a["within_noise"]:
+                return (
+                    f"Evidence supports {vclass} injection: {body}. Separately, "
+                    f"{a['latency_note']}, but the reflection/error signal is decisive."
+                )
+            return f"Evidence supports {vclass} injection: {body}."
+        ctx = a["context"] or "the inferred"
+        return (
+            f"The scanner flagged this probe (a-priori {a['apriori'].lower() or 'unset'}, "
+            f"final {a['scanner_conf'].lower() or 'unset'}) and the {ctx} context is "
+            f"consistent with {vclass} injection; {a['latency_note']}, so impact still "
+            "needs an explicit oracle to demonstrate."
+        )
+    if verdict == "FALSE_POSITIVE":
+        tail = (
+            "" if a["apriori"] in {"", "LOW"} else
+            f" The a-priori {a['apriori'].lower()} rating is not corroborated by "
+            "the response."
+        )
+        return (
+            f"Nothing in the evidence discriminates {vclass} injection from benign "
+            f"behaviour: no verbatim reflection, no interpreter errors, and "
+            f"{a['latency_note']}.{tail}"
+        )
+    # UNCERTAIN
+    missing = []
+    if not a["reflected"]:
+        missing.append("the payload is not reflected")
+    if not a["has_error"]:
+        missing.append("no interpreter error is present")
+    return (
+        f"The evidence does not settle this {vclass} candidate: {a['latency_note']}"
+        + ((", " + ", ".join(missing)) if missing else "")
+        + f". A-priori confidence was {a['apriori'].lower() or 'unset'}."
+    )
+
+
 def build_triage_samples(
     rows: list[dict[str, Any]], oracle: Oracle, *, weak: bool
 ) -> Iterator[Sample]:
     system = load_prompt("triage_system")
     baselines = _run_baselines(rows)
+    # Reconcile by *observable* key (the anonymised prompt, latency bucketed):
+    # rows whose model-visible evidence is identical must not disagree on the
+    # label and must not straddle the train/val split. When distinct real sinks
+    # produce byte-identical evidence but conflicting ground truth, the honest
+    # label is UNCERTAIN — the evidence genuinely does not discriminate.
+    groups: dict[str, dict[str, Any]] = {}
     for row in rows:
         if not _is_probe_row(row):
             continue
@@ -534,51 +802,130 @@ def build_triage_samples(
             "run_baseline_latency_ms": round(base * 1000, 1),
             "latency_delta_ms": round((elapsed - base) * 1000, 1),
         }
-        body_ev, body_note = _reflection_evidence(row, payload)
+        body_ev, _body_note = _reflection_evidence(row, payload)
         evidence.update(body_ev)
 
-        verdict = "TRUE_POSITIVE" if truth else "FALSE_POSITIVE"
+        weak_label = label_src.startswith("weak")
+        a = _assess_evidence(evidence, context=row.get("context") or "")
+        strong_apriori = a["apriori"] in {"HIGH", "CONFIRMED"}
+        # "Grey zone": no discriminating body signal, latency inside jitter, and
+        # neither the a-priori nor the scanner's final confidence is high. These
+        # probes genuinely do not carry enough evidence to force a binary label.
+        ambiguous = (
+            not a["discriminating"]
+            and a["within_noise"]
+            and not strong_apriori
+            and a["scanner_conf"] not in {"HIGH", "CONFIRMED"}
+        )
+
+        strong_final = a["scanner_conf"] in {"HIGH", "CONFIRMED"}
+        if weak_label:
+            if a["discriminating"] or (strong_apriori and not a["within_noise"]):
+                verdict = "TRUE_POSITIVE"
+            elif ambiguous:
+                verdict = "UNCERTAIN"
+            else:
+                verdict = "FALSE_POSITIVE"
+        elif not truth:
+            # Oracle: no vulnerable sink of this class. With no corroborating
+            # body signal the benign explanation is the confident call — this is
+            # exactly the FALSE_POSITIVE the operator needs suppressed.
+            verdict = "FALSE_POSITIVE"
+        elif a["discriminating"] or strong_final or strong_apriori:
+            verdict = "TRUE_POSITIVE"
+        else:
+            # Oracle-confirmed sink, but this probe leaned on a mid-confidence
+            # heuristic with latency inside jitter and no body — it did not
+            # itself demonstrate the bug.
+            verdict = "UNCERTAIN"
+
+        endpoint = sanitize_endpoint(url)
+        gparam = generic_param(param)
         user = (
-            f"Endpoint: {url}\n"
-            f"Parameter: {param}\n"
+            f"Endpoint: {endpoint}\n"
+            f"Parameter: {gparam}\n"
             f"Suspected class: {vclass}\n"
             f"Payload sent: {payload!r}\n"
             f"Observed evidence: {json.dumps(evidence, ensure_ascii=False)}\n\n"
             "Classify this candidate as TRUE_POSITIVE, FALSE_POSITIVE or UNCERTAIN "
             "and justify from the evidence."
         )
-        if truth:
-            reasoning = (
-                f"The {vclass} sink at this endpoint is confirmed vulnerable and the "
-                "probe's context/verdict are consistent with injection rather than "
-                "benign reflection or latency noise." + body_note
-            )
-            next_step = "Replay with a differentiating oracle payload to demonstrate impact."
+
+        # Observable key: everything the model can actually see, latency bucketed.
+        obs_key = "|".join(
+            [
+                "triage", vclass, payload,
+                str(a["reflected"]), str(a["has_error"]), a["lat_bucket"],
+                str(a["apriori"]), a["scanner_conf"],
+                str(evidence.get("injection_context") or ""),
+                str(evidence.get("vector") or ""),
+            ]
+        )
+        g = groups.get(obs_key)
+        if g is None:
+            groups[obs_key] = {
+                "user": user, "vclass": vclass, "a": a, "weak": weak_label,
+                "verdicts": Counter([verdict]), "testers": {tester_id},
+                "urls": {url}, "label_src": label_src,
+            }
         else:
+            g["verdicts"][verdict] += 1
+            g["testers"].add(tester_id)
+            g["urls"].add(url)
+
+    for obs_key, g in groups.items():
+        a = g["a"]
+        vclass = g["vclass"]
+        votes = g["verdicts"]
+        conflicted = len(votes) > 1
+        verdict = "UNCERTAIN" if conflicted else next(iter(votes))
+
+        if conflicted:
             reasoning = (
-                "No corroborating vulnerable sink for this class at this endpoint. The "
-                "signal is consistent with benign reflection, a generic error page, or "
-                "normal latency variance around the run baseline."
+                f"Ground truth is split across the {len(g['urls'])} sinks that produced "
+                f"this exact evidence profile, so the model-visible signals cannot "
+                f"discriminate a real {vclass} bug here: {a['latency_note']}, "
+                f"{'a reflected payload' if a['reflected'] else 'no verbatim reflection'}, "
+                f"{'an interpreter error' if a['has_error'] else 'no interpreter error'}."
             )
+        else:
+            reasoning = _compose_reasoning(verdict, a, vclass)
+
+        if verdict == "TRUE_POSITIVE":
+            confidence = 0.9 if len(a["signals"]) >= 2 else (0.8 if a["signals"] else 0.62)
+            next_step = _NEXT_PROOF.get(
+                vclass, "Replay with a differentiating oracle payload to demonstrate impact."
+            )
+        elif verdict == "UNCERTAIN":
+            confidence = 0.5
+            next_step = (
+                "Re-probe with a repeatable oracle (paired true/false or timed "
+                "payloads) and capture the response body to separate reflection "
+                "from execution."
+            )
+        else:
+            confidence = 0.85 if a["apriori"] in {"", "LOW"} else 0.7
             next_step = "Suppress the finding and lower this endpoint's priority."
+        if g["weak"]:
+            confidence = round(confidence * 0.8, 2)
+
         assistant = json.dumps(
             {
                 "verdict": verdict,
-                "confidence": 0.9 if label_src != "weak(confidence_final)" else 0.6,
+                "confidence": confidence,
                 "reasoning": reasoning,
                 "next_step": next_step,
             },
             ensure_ascii=False,
         )
-        # No explicit _dedup key: dedup() hashes the fully-rendered
-        # (user, assistant) pair, so only *byte-identical* samples — same
-        # endpoint, payload, evidence and verdict — collapse. Two probes of
-        # different BenchmarkTest endpoints that happen to share a payload stay
-        # distinct (their URL and latency evidence differ).
+        # Dedup + split key is the observable key alone: identical model inputs
+        # can never straddle train/val, and jitter-only repeats collapse.
         yield Sample(
-            system, user, assistant,
-            meta={"url": url, "label": verdict, "label_source": label_src,
-                  "tester": tester_id},
+            system, g["user"], assistant,
+            meta={"endpoint": _GENERIC_ENDPOINT, "label": verdict,
+                  "label_source": g["label_src"], "tester": sorted(g["testers"])[0],
+                  "_url": sorted(g["urls"])[0], "conflicted": conflicted,
+                  "_dedup": hashlib.sha1(obs_key.encode("utf-8")).hexdigest()},
         )
 
 
@@ -586,6 +933,7 @@ def build_payload_samples(
     rows: list[dict[str, Any]], oracle: Oracle, *, weak: bool
 ) -> Iterator[Sample]:
     system = load_prompt("payload_system")
+    baselines = _run_baselines(rows)
     # Reconstruct each parameter's probing trajectory.
     traj: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -603,19 +951,31 @@ def build_payload_samples(
         seq.sort(key=lambda r: r.get("request_index", 0) or r.get("ts", 0))
         for prev, nxt in zip(seq, seq[1:]):
             nxt_payload = nxt.get("payload") or _payload_from_url(nxt.get("url", ""), param)
-            if not nxt_payload:
+            prev_payload = prev.get("payload") or _payload_from_url(prev.get("url", ""), param)
+            if not nxt_payload or not prev_payload:
+                continue
+            if nxt_payload == prev_payload:
+                continue
+            if is_junk_payload(nxt_payload) or is_junk_payload(prev_payload):
                 continue
             tester_id = nxt.get("tester_id", "")
-            prev_payload = prev.get("payload") or _payload_from_url(prev.get("url", ""), param)
             prev_elapsed = float(prev.get("elapsed_time", 0.0) or 0.0)
+            prev_decision = bool(prev.get("decision"))
+            prev_ctx = prev.get("context") or ""
             vclass = next(iter(_TESTER_TO_CATEGORY.get(tester_id, {"unknown"})))
+            family = payload_family(nxt_payload, tester_id)
+            endpoint = sanitize_endpoint(base_url)
+            gparam = generic_param(param)
+            prev_lat_ms = round(prev_elapsed * 1000, 1)
+            prev_base = baselines.get((prev.get("run_id", ""), tester_id), 0.0) * 1000
+            lat_state = "at baseline" if abs(prev_lat_ms - prev_base) <= max(40.0, 0.75 * abs(prev_base)) else "elevated"
             user = (
-                f"Target: {base_url}  param={param}\n"
+                f"Target: {endpoint}  param={gparam}\n"
                 f"Suspected class: {vclass}\n"
                 f"Last payload: {prev_payload!r}\n"
-                f"  -> scanner_decision={bool(prev.get('decision'))} "
-                f"context={prev.get('context')} "
-                f"latency_ms={round(prev_elapsed * 1000, 1)}\n"
+                f"  -> scanner_decision={prev_decision} "
+                f"context={prev_ctx or 'unknown'} "
+                f"latency={lat_state}\n"
                 "Propose the single most informative next payload and the signal "
                 "that would confirm the vulnerability."
             )
@@ -624,24 +984,29 @@ def build_payload_samples(
                     "payloads": [
                         {
                             "payload": nxt_payload,
-                            "rationale": (
-                                f"Escalates probe specificity for the {nxt.get('context')} "
-                                "context after the previous vector produced no decisive signal."
+                            "rationale": payload_rationale(
+                                family, prev_payload, prev_ctx,
+                                round(prev_elapsed * 1000, 1), prev_decision,
                             ),
-                            "confirm_signal": _CONFIRM_HINT.get(
-                                tester_id, "an unambiguous, payload-correlated response differential"
+                            "confirm_signal": _FAMILY_CONFIRM.get(
+                                family, _FAMILY_CONFIRM["generic"]
                             ),
-                            "score": {"LOW": 0.4, "MEDIUM": 0.6, "HIGH": 0.8, "CONFIRMED": 0.95}.get(
-                                str(nxt.get("confidence_apriori", "")).upper(), 0.5
-                            ),
+                            "score": {
+                                "LOW": 0.4, "MEDIUM": 0.6, "HIGH": 0.8, "CONFIRMED": 0.95
+                            }.get(str(nxt.get("confidence_apriori", "")).upper(), 0.5),
                         }
                     ]
                 },
                 ensure_ascii=False,
             )
+            # Dedup + split key is the observable prompt itself: two trajectory
+            # steps that present an identical history collapse to one row and
+            # can never land on opposite sides of the split.
+            key = hashlib.sha1(user.encode("utf-8")).hexdigest()
             yield Sample(
                 system, user, assistant,
-                meta={"url": base_url, "param": param, "label": vclass},
+                meta={"endpoint": endpoint, "param": gparam, "label": vclass,
+                      "_url": base_url, "_dedup": key},
             )
 
 
@@ -667,7 +1032,11 @@ def balance_classes(
     before = {k: len(v) for k, v in by_label.items()}
     if len(by_label) < 2:
         return samples, before
-    smallest = min(len(v) for v in by_label.values())
+    total = sum(before.values())
+    # Small classes (e.g. UNCERTAIN) shouldn't drive the balancing floor —
+    # balance TP vs FP and leave a genuinely rare third class intact.
+    major = [c for c in before.values() if c >= 0.05 * total]
+    smallest = min(major) if major else min(before.values())
     cap = max(smallest, int(round(smallest * ratio)))
     out: list[Sample] = []
     for grp in by_label.values():
@@ -708,9 +1077,15 @@ def write_split(
     for s in samples:
         buckets[s.meta.get("label", "_")].append(s)
 
+    # Disjointness is already guaranteed upstream: samples are de-duplicated on
+    # their *observable* key (the anonymised prompt, latency bucketed), so no two
+    # rows with model-indistinguishable inputs survive to reach this point. A
+    # plain stratified split can therefore not leak a near-duplicate across.
+    # Ordering by that key first keeps the split stable across regenerations.
     train: list[Sample] = []
     val: list[Sample] = []
     for _, grp in sorted(buckets.items()):
+        grp.sort(key=lambda s: s.meta.get("_dedup", "") or (s.user + s.assistant))
         rng.shuffle(grp)
         cut = round(len(grp) * split)
         train.extend(grp[:cut])

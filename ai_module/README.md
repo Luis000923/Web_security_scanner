@@ -109,6 +109,29 @@ python -m ai_module.dataset_generator \
 | `--split F` | stratified train/val split so val keeps both classes |
 | `--report PATH` | write the curation manifest JSON |
 
+**Anti-leak curation (always on)**
+
+- **Endpoint anonymised** — the model input only ever sees `/app/target_endpoint/`
+  and parameter `p`. The OWASP Benchmark encodes the vuln class *and* verdict in
+  the URL path, so training on it lets the model shortcut the label; that path
+  is now kept only in private (`_url`) metadata.
+- **Dynamic triage output** — the verdict / confidence / reasoning are built
+  from the actual evidence (latency delta vs. run baseline, verbatim reflection,
+  interpreter errors, a-priori & scanner confidence), not from fixed templates.
+  Non-discriminating probes get `UNCERTAIN`; endpoints whose ground truth
+  conflicts under an identical evidence profile are reconciled to `UNCERTAIN`.
+- **Junk payloads filtered** — structureless blobs >120 chars and <15-char
+  strings with no injection tokens are dropped from the payload task; rationale
+  and `confirm_signal` are keyed to the payload *family*, not a generic string.
+- **Semantic split** — dedup runs on the *observable* key (anonymised prompt +
+  latency bucketed to `faster/noise/slower/much_slower`), so millisecond jitter
+  can't leak a near-identical row across the train/val boundary.
+
+> Note: once the URL shortcut is removed, single-app (OWASP Benchmark-only)
+> telemetry collapses to a small number of genuinely-distinct triage instances.
+> A larger triage set needs response-body evidence and/or multi-target
+> telemetry; the payload task is unaffected.
+
 Without any `--benchmark-csv` / `--ground-truth` the generator falls back to
 weak labels from the scanner's own `decision` / `confidence_final` columns.
 
