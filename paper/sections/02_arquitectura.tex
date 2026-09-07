@@ -1,0 +1,188 @@
+%% 02_arquitectura.tex — Motor asíncrono, pipeline de ablación, telemetría.
+
+\section{Arquitectura y diseño}
+\label{sec:arquitectura}
+
+\herramienta se estructura en cuatro subsistemas: el núcleo HTTP asíncrono, el
+cargador de \emph{payloads}, la jerarquía de \emph{testers} de vulnerabilidad
+con su \emph{pipeline} de planificación, y la instrumentación de telemetría y
+reproducibilidad. La \cref{fig:arquitectura} resume el flujo de trabajo.
+
+% ---------------------------------------------------------------- figura ----
+\begin{figure*}[t]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[node distance=6mm and 10mm]
+    % --- entrada
+    \node[bloque] (cli) {CLI / \\ lista de objetivos};
+    \node[nucleo, right=of cli] (core) {Núcleo HTTP \\ \code{AsyncScannerCore}\\[-1pt]
+      \scriptsize sesión \code{aiohttp}, caché GET,\\[-2pt]
+      \scriptsize \emph{token bucket}, guarda SSRF};
+    \node[nucleo, right=of core] (pool) {\emph{Worker pool} \\ con contrapresión\\[-1pt]
+      \scriptsize pares $(tester, url)$};
+
+    % --- pipeline de ablación
+    \node[ablac, below=14mm of core] (load) {Cargador de \emph{payloads}\\[-2pt]
+      \scriptsize 14 categorías, corpus en disco\\[-2pt]
+      \scriptsize \code{PAYLOAD/data/*.json}};
+    \node[ablac, right=of load] (sched) {\emph{Pipeline} de planificación\\[-2pt]
+      \scriptsize \code{drop\_oob} $\to$ \textbf{entrelazado} $\to$\\[-2pt]
+      \scriptsize \textbf{priorización} $\to$ \textbf{orden} $\to$ mutación};
+    \node[ablac, right=of sched] (probe) {Sonda + \\ confirmación\\[-2pt]
+      \scriptsize reflexión / error / \\[-2pt]
+      \scriptsize \code{confirm\_time\_based} ($\tau=\SI{4}{\second}$)};
+
+    % --- artefactos
+    \node[artefacto, below=14mm of load] (tel) {\code{TelemetryWorker}\\[-2pt]
+      \scriptsize cola no bloqueante,\\[-2pt]
+      \scriptsize \code{asyncio.to\_thread} escritura};
+    \node[artefacto, right=of tel] (jsonl) {Telemetría JSONL\\[-2pt]
+      \scriptsize 1 fila / sonda de \emph{payload}};
+    \node[artefacto, right=of jsonl] (manif) {Manifiesto\\[-2pt]
+      \scriptsize SHA-256 corpus, \code{git},\\[-2pt]
+      \scriptsize semilla global};
+    \node[artefacto, right=of manif] (report) {Informe\\[-2pt]
+      \scriptsize JSON / HTML,\\[-2pt]
+      \scriptsize secretos enmascarados};
+
+    % --- flechas
+    \draw[flecha] (cli) -- (core);
+    \draw[flecha] (core) -- (pool);
+    \draw[flecha] (pool.south) to[out=-90,in=90] (probe.north);
+    \draw[flecha] (load) -- (sched);
+    \draw[flecha] (sched) -- (probe);
+    \draw[flecha] (core.south) to[out=-90,in=90] (load.north);
+    \draw[flecha] (probe.south) to[out=-90,in=90] (jsonl.north);
+    \draw[flecha] (load.south) to[out=-90,in=90] (tel.north);
+    \draw[flecha] (tel) -- (jsonl);
+    \draw[flecha] (jsonl) -- (manif);
+    \draw[flecha] (manif) -- (report);
+
+    \begin{scope}[on background layer]
+      \node[fit=(load)(sched)(probe), draw=orange!50, dashed,
+            rounded corners, inner sep=4mm,
+            label={[orange!70!black,font=\footnotesize]above:%
+            \emph{Pipeline} de ablación de \emph{payloads}}] {};
+    \end{scope}
+  \end{tikzpicture}%
+  }
+  \caption{Flujo de trabajo de \herramienta. El núcleo HTTP asíncrono
+  concentra toda la E/S de red; el \emph{worker pool} despacha pares
+  $(tester, url)$ con contrapresión. Cada \emph{tester} carga su corpus de
+  \emph{payloads} y lo hace pasar por el \emph{pipeline} de planificación
+  antes de sondear el objetivo. La etapa de confirmación reetiqueta la
+  confianza del hallazgo. El \code{TelemetryWorker} escribe una fila JSONL por
+  sonda sin bloquear el bucle de eventos; el manifiesto fija los insumos de
+  reproducibilidad.}
+  \label{fig:arquitectura}
+\end{figure*}
+
+\subsection{Núcleo HTTP asíncrono}
+\label{sec:nucleo}
+
+Todo el tráfico de red pasa por \code{AsyncScannerCore.request()}, un único
+punto de estrangulamiento construido sobre una \code{aiohttp.ClientSession}.
+Centralizar la E/S permite aplicar de forma uniforme: (a)~una caché de
+respuestas \code{GET} con código \num{200}; (b)~limitación de tasa mediante un
+\emph{token bucket}; (c)~rotación de \emph{User-Agent} sembrable; (d)~tiempos
+de espera separados para el establecimiento de conexión y la lectura de
+\emph{socket}; (e)~un tope de \SI{5}{\mebi\byte} sobre el cuerpo de la
+respuesta, con lectura fragmentada y marca de truncamiento; y (f)~una
+salvaguarda frente a \emph{Server-Side Request Forgery} que rechaza
+redirecciones hacia direcciones privadas salvo autorización explícita. El
+campo \code{elapsed} que devuelve el núcleo es monótono y abarca las
+redirecciones; para la latencia por sonda con fines científicos se mide en
+cambio \code{time.perf\_counter()} en la frontera del \emph{tester}.
+
+El despacho de trabajo emplea \code{run\_worker\_pool()}, que impone
+contrapresión mediante una cola acotada (\code{queue\_factor}) de modo que el
+descubrimiento de nuevos objetivos no pueda desbordar la memoria ni saturar el
+objetivo. La interrupción por \code{SIGINT} es ordenada: se drena la cola y se
+cierra la sesión de forma idempotente.
+
+\subsection{\emph{Pipeline} de planificación de \emph{payloads}}
+\label{sec:pipeline}
+
+Cada \emph{tester} deriva de una clase base común que resuelve la carga de
+\emph{payloads} mediante \code{load\_payloads()}. Internamente esta rutina
+aplica, en orden, las siguientes etapas, todas ellas desacoplables por
+configuración para el estudio de ablación:
+
+\begin{enumerate}
+  \item \code{\_drop\_useless\_oob}: descarta \emph{payloads} de tipo
+  \emph{out-of-band} cuando no hay un colector configurado.
+  \item \code{\_interleave\_by\_context} (\textsc{entrelazado}): reordena la
+  lista para alternar entre contextos sintácticos (HTML, atributo, JavaScript,
+  URL, SQL, \dots) en lugar de agotar un contexto antes de pasar al siguiente.
+  La intuición es que, bajo un presupuesto reducido, cubrir primero un
+  \emph{payload} representativo de cada contexto maximiza la probabilidad de
+  acierto temprano.
+  \item \code{\_prioritize} (\textsc{priorización}): ordena de forma estable
+  por una clave $(\text{confianza \emph{a priori}}, \text{severidad})$, de
+  modo que los vectores con mayor probabilidad histórica de éxito y mayor
+  impacto se prueben antes.
+  \item \code{\_apply\_payload\_order} (\textsc{orden}): política terminal
+  configurable --- \code{natural} (identidad), \code{random} (barajado
+  sembrado) o \code{freq} (grupos de contexto más poblados primero).
+  \item \code{\_apply\_runtime\_mutations}: transformaciones de evasión de WAF
+  y variación de caja aplicadas en el momento del envío.
+\end{enumerate}
+
+\subsection{Confirmación en tiempo de ejecución y confianza calibrada}
+\label{sec:confirmacion}
+
+Cada hallazgo lleva un nivel de confianza de un dominio ordenado
+$\{\textsc{low}, \textsc{medium}, \textsc{high}, \textsc{confirmed}\}$. El
+corpus asigna una confianza \emph{a priori} a cada \emph{payload}; la etapa de
+confirmación produce la confianza \emph{final}:
+
+\begin{itemize}
+  \item \textbf{Inyección SQL basada en tiempo.} Se mide la latencia base con
+  remuestreo (\code{measure\_baseline\_latency}) y se contrasta la respuesta
+  al \emph{payload} temporizado frente a un umbral $\tau = \SI{4}{\second}$
+  (\code{confirm\_time\_based}); solo si la diferencia supera el umbral el
+  hallazgo se marca \textsc{confirmed}.
+  \item \textbf{XSS.} Una reflexión cruda se refina según el contexto HTML en
+  el que aparece (\code{\_assess}), promoviendo a \textsc{high} o degradando a
+  \textsc{low}.
+  \item Bajo la condición de ablación \code{--no-runtime-confirm}, ambas ramas
+  se cortocircuitan y el hallazgo se reporta con la confianza \emph{a priori}
+  del \emph{payload}, dejando constancia (\code{verification=skipped}) en la
+  evidencia. La sonda se registra en telemetría en cualquier caso.
+\end{itemize}
+
+\subsection{Telemetría no bloqueante}
+\label{sec:telemetria}
+
+El \code{TelemetryWorker} desacopla la generación de eventos de su
+persistencia. El método \code{record()} es síncrono y no bloqueante: encola la
+fila y asigna \code{request\_index} (correlativo por ejecución), marca de
+tiempo ISO-8601 UTC y \rid. Un consumidor asíncrono agrupa las filas en lotes
+y las escribe mediante \code{asyncio.to\_thread()}, de forma que el bucle de
+eventos nunca se bloquea en disco. Si la cola se llena, las filas excedentes se
+descartan y se contabilizan (\code{dropped}), preservando la propiedad de
+contrapresión.
+
+La \textbf{granularidad} es deliberada: una fila JSONL por \emph{sonda de
+payload}, tras las heurísticas de confirmación del \emph{tester}, y no por
+escritura de \emph{socket}. Las subpeticiones de línea base y de confirmación
+no se registran individualmente. El esquema de cada fila incluye \code{run\_id,
+timestamp, tester\_id, payload\_id, context, confidence\_apriori, url, method,
+elapsed\_time, decision, confidence\_final} y \code{request\_index}. Esta traza
+es el insumo primario del análisis de coste de detección de la
+\cref{sec:resultados}.
+
+\subsection{Reproducibilidad: manifiesto por ejecución}
+\label{sec:manifiesto}
+
+Junto a la telemetría, cada ejecución instrumentada emite un manifiesto JSON
+que fija: la versión del esquema, el \rid, la marca temporal de creación, el
+\emph{commit} de \code{git} (\code{unknown} si no procede), la semilla global
+del RNG, y un bloque \code{corpus} con el \emph{hash} SHA-256 calculado sobre
+los ficheros \code{PAYLOAD/data/*.json} ordenados (el nombre de cada fichero se
+mezcla en el digesto) más la lista de ficheros y su número. Se incluye, además,
+el diccionario de configuración completo de la ejecución. El cálculo del
+\emph{hash} y la consulta a \code{git} se realizan en un hilo aparte; un fallo
+se registra y se ignora, sin abortar ni demorar el escaneo. Este artefacto
+permite verificar \emph{a posteriori} que dos ejecuciones comparten exactamente
+el mismo corpus y la misma configuración.

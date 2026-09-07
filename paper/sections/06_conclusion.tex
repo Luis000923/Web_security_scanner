@@ -1,0 +1,63 @@
+%% 06_conclusion.tex — Conclusión y trabajo futuro.
+
+\section{Conclusión y trabajo futuro}
+\label{sec:conclusion}
+
+Se ha presentado \herramienta, un motor DAST asíncrono cuya arquitectura separa
+explícitamente la planificación de \emph{payloads} y la confirmación de
+hallazgos en etapas desacoplables, junto con una metodología de evaluación
+reproducible sobre OWASP Benchmark, un oráculo independiente, un diseño RCBD y
+un manifiesto con \emph{hash} del corpus.
+
+El estudio de ablación completo —\NumCorridas{}~ejecuciones sobre la rejilla de
+cuatro presupuestos y \NumCondiciones{}~configuraciones— arroja un resultado
+honesto y, en última instancia, más útil que el que anticipaba nuestra
+hipótesis. La mayoría de las ablaciones son \emph{nulas}: el entrelazado por
+contexto, la confirmación en tiempo de ejecución y la ordenación adaptativa en
+vivo no modifican la exhaustividad, la precisión ni la FPR en este banco; la
+prueba de Friedman detecta diferencias en el \emph{orden} de las peticiones
+($p = \ValorFriedmanP{}$), pero con tamaños del efecto insignificantes
+($\lvert\delta\rvert < \num{0.02}$).
+
+El valor del trabajo se desplaza entonces hacia la \textbf{economía de
+recursos} del escaneo (\cref{sec:res-sintesis}): el $F_1$ es máximo en un
+presupuesto ajustado de \num{20}~peticiones por parámetro (\ValorFOneBVeinte{},
+exhaustividad \ValorRecallTecho{}, FPR \ValorFPRBaseline{}); ampliarlo a
+\num{50} o más no detecta \emph{ninguna} vulnerabilidad adicional pero suma
+\SaturacionFPnuevos{}~falsos positivos ($-\DeltaPrecisionSaturacion{}$ de
+precisión); y la priorización por confianza —única etapa con efecto práctico—
+solo preserva la selectividad en ese régimen de escasez
+($-\DeltaPrecisionNoPriority{}$ de precisión si se desactiva a presupuesto
+\num{20}, nada a partir de \num{50}). La conclusión operativa es que optimizar
+un DAST moderno no consiste en disparar \emph{payloads} sin límite, sino en
+\textbf{maximizar la eficiencia bajo escasez}: fijar un presupuesto ajustado y
+gastarlo en el orden correcto. La confirmación en tiempo de ejecución no
+penaliza la precisión porque en este banco los indicadores crudos ya son
+fiables.
+
+Frente a todo esto, la barrera dura es el \textbf{techo de recuperación}: los
+verdaderos positivos se estancan en \ValorTPtecho{}$/$\NumVulnerables{} y los
+\ValorFNtecho{}~falsos negativos persisten a presupuesto $\infty$. No es un
+problema de planificación —el planificador solo ordena un corpus que a
+presupuesto ilimitado se emite entero— sino de \textbf{cobertura de vectores}:
+para esas instancias el corpus no contiene ninguna carga que dispare la
+condición vulnerable bajo su contexto de salida. Romper ese techo exige
+ampliar la biblioteca de \emph{payloads}, no refinar las heurísticas de
+ordenación.
+
+\noindent\textbf{Trabajo futuro.}
+\begin{enumerate}
+  \item \textbf{Expandir la biblioteca de \emph{payloads}} para atacar las
+  \ValorFNtecho{}~instancias fuera de alcance —caracterizando sus contextos de
+  salida y codificaciones e incorporando vectores dependientes de codificación
+  y \emph{polyglots}—: es la vía con mayor rendimiento marginal esperado, por
+  encima de seguir afinando la ordenación.
+  \item Repetir el estudio sobre aplicaciones reales y bancos con señales
+  ruidosas —donde la confirmación en tiempo de ejecución debería reducir
+  falsos positivos que aquí no fueron observables— y sobre vectores
+  \code{POST}, cabeceras y \emph{cookies}.
+  \item Refinar la rejilla alrededor del punto óptimo (presupuestos
+  $\in [\num{10}, \num{30}]$) con réplicas, para localizar el máximo de $F_1$
+  con más precisión, y añadir un precalentamiento explícito de la JVM para el
+  análisis de latencia absoluta.
+\end{enumerate}

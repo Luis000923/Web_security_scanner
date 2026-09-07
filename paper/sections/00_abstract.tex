@@ -1,0 +1,60 @@
+%% 00_abstract.tex — Título, autoría, resumen y palabras clave.
+
+\title{Eficiencia del análisis dinámico de seguridad asíncrono:\\
+planificación de \emph{payloads} y confirmación en ejecución\\
+para la reducción de falsos positivos}
+
+\author{%
+\IEEEauthorblockN{Luis Ernesto Galdámez Vides}
+\IEEEauthorblockA{%
+Universidad Evangélica de El Salvador (UEES)\\
+San Salvador, El Salvador\\
+\texttt{2026010235@cvirtualuees.edu.sv}%
+}
+}
+
+\maketitle
+
+\begin{abstract}
+Los escáneres de seguridad de aplicaciones web basados en pruebas dinámicas
+(\emph{Dynamic Application Security Testing}, DAST) son ampliamente utilizados
+en las canalizaciones de integración continua, pero su adopción práctica se ve
+limitada por tres factores: la latencia acumulada de miles de peticiones
+secuenciales, el ruido generado por un elevado número de falsos positivos y la
+explosión combinatoria del espacio de \emph{payloads} por punto de inyección.
+Este trabajo presenta y evalúa \herramienta, un motor DAST construido
+íntegramente sobre \code{asyncio} que introduce (i)~un \emph{pipeline} de
+planificación de \emph{payloads} --- entrelazado por contexto, priorización por
+confianza \emph{a priori} y ordenación configurable --- y (ii)~una etapa de
+confirmación en tiempo de ejecución que reetiqueta cada hallazgo con un nivel
+de confianza calibrado antes de reportarlo. La hipótesis central es que ambas
+técnicas mejoran la relación entre detección y coste (número de peticiones)
+sin incrementar la tasa de falsos positivos. Para contrastarla se diseñó un
+banco de pruebas reproducible sobre OWASP Benchmark restringido a
+\num{338}~objetivos de parámetro \code{GET} (\num{194}~instancias vulnerables
+y \num{144}~trampas conocidas), un estudio de ablación bajo un diseño de
+bloques completos al azar (RCBD) con cuatro presupuestos de peticiones y
+cinco configuraciones, y una batería de pruebas no paramétricas (Friedman,
+post-hoc de Nemenyi, Wilcoxon pareado con corrección de Benjamini--Hochberg y
+$\delta$ de Cliff como tamaño del efecto). La reproducibilidad se garantiza
+mediante un manifiesto por ejecución que fija el \emph{hash} SHA-256 del corpus
+de \emph{payloads}, el \emph{commit} de \code{git} y la semilla global del
+generador de números aleatorios. El \emph{pipeline} completo alcanza una
+exhaustividad del \num{64}\,\% con una tasa de falsos positivos del
+\num{1.4}\,\%, y satura ya con \num{20}~peticiones por parámetro. La barrida de
+ablación resulta en su mayor parte nula (Friedman $p \ll 0{,}001$ pero
+$\lvert\delta\rvert < 0{,}02$). Los hallazgos con valor práctico son de
+\emph{economía de recursos}: el $F_1$ es máximo en un presupuesto ajustado de
+\num{20}~peticiones por parámetro; ampliarlo no detecta ninguna vulnerabilidad
+nueva pero degrada la precisión unos \num{5}~puntos al acumular falsos
+positivos; y la priorización por confianza —única etapa con efecto medible—
+solo preserva la selectividad bajo ese régimen de escasez. El techo de
+detección (\num{125} de \num{194} instancias) es una limitación de cobertura
+del corpus de \emph{payloads}, no del planificador.
+\end{abstract}
+
+\begin{IEEEkeywords}
+seguridad de aplicaciones web, DAST, análisis dinámico, programación
+asíncrona, falsos positivos, planificación de \emph{payloads}, evaluación
+reproducible, OWASP Benchmark.
+\end{IEEEkeywords}

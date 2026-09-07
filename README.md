@@ -11,6 +11,30 @@ constituir un delito.
 
 ---
 
+## Ramas del repositorio
+
+| Rama       | Contenido                                                                 |
+|------------|--------------------------------------------------------------------------|
+| `main`     | La herramienta como paquete limpio (`web_security_scanner/`, `pyproject.toml`). |
+| `research` | **(esta rama)** La herramienta + el articulo cientifico en `paper/` (fuentes LaTeX, `refs.bib`). |
+| `testbed`  | La herramienta + orquestacion y analisis experimental (`tools/`, `testbed/`). |
+
+### Rama `research`
+
+Contiene el articulo *«Eficiencia del analisis dinamico de seguridad asincrono:
+planificacion de payloads y confirmacion en ejecucion para la reduccion de
+falsos positivos»* bajo `paper/`. Compilacion (espacio de usuario):
+
+```sh
+cd paper/
+tectonic -X compile main.tex --outdir build
+```
+
+Las cifras del articulo se generan con los guiones de la rama `testbed`
+(`tools/analyze_results.py`) y viven en `paper/sections/_datos.tex`.
+
+---
+
 ## Resumen ejecutivo
 
 Web Security Scanner automatiza la fase de deteccion de un analisis de seguridad

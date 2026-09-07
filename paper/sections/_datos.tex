@@ -1,0 +1,107 @@
+%% _datos.tex — Variables de resultados (reemplazo automático desde el análisis).
+%%
+%%  Fuente: tools/analyze_results.py sobre testbed/experiment_results.csv
+%%  (20 corridas: rejilla completa de 4 presupuestos {10,20,50,inf} x 5
+%%  condiciones — baseline, no-interleave, no-priority, no-runtime-confirm y
+%%  no-adaptive-sorting). Regenerado 2026-09-07.
+%%
+%%  Convención: los porcentajes incluyen «\%»; los estadísticos van con \num{}.
+%%  Salvo indicación, los valores de exhaustividad/AUC/coste son al presupuesto
+%%  intermedio de 20 peticiones/parámetro (el punto óptimo de F1; en
+%%  presupuestos mayores la exhaustividad no crece y la precisión se degrada).
+
+% --- Parámetros fijos del experimento -------------------------------------
+\newcommand{\NumObjetivos}{338}
+\newcommand{\NumVulnerables}{194}
+\newcommand{\NumTrampas}{144}
+\newcommand{\NumCorridas}{20}
+\newcommand{\NumBloquesCompletos}{4}
+\newcommand{\NumCondiciones}{5}
+\newcommand{\UmbralTiempo}{4\,s}
+
+% --- Área bajo la curva de detección (AUC = exhaustividad media / presup.),
+%     al presupuesto intermedio de 20 peticiones/parámetro -----------------
+\newcommand{\ValorAUCBaseline}{33{,}8\%}
+\newcommand{\ValorAUCNoInterleave}{33{,}8\%}
+\newcommand{\ValorAUCNoPriority}{33{,}2\%}
+\newcommand{\ValorAUCNoRuntimeConfirm}{33{,}8\%}
+\newcommand{\ValorAUCNoAdaptive}{33{,}8\%}
+
+% --- Economía de recursos: F1 y precisión del baseline por presupuesto ---
+%     (la exhaustividad se estanca en 64,4\% para todo presupuesto >= 20) --
+\newcommand{\ValorFOneBDiez}{62{,}0\%}
+\newcommand{\ValorFOneBVeinte}{63{,}3\%}      % punto óptimo
+\newcommand{\ValorFOneBCincuenta}{60{,}5\%}
+\newcommand{\ValorFOneInf}{60{,}7\%}
+\newcommand{\ValorPrecisionBDiez}{62{,}6\%}
+\newcommand{\ValorPrecisionBVeinte}{62{,}2\%}
+\newcommand{\ValorPrecisionBCincuenta}{57{,}1\%}
+\newcommand{\ValorPrecisionInf}{57{,}3\%}
+\newcommand{\ValorRecallBDiez}{61{,}3\%}
+\newcommand{\ValorFPBVeinte}{76}
+\newcommand{\ValorFPBCincuenta}{94}
+\newcommand{\ValorFPInf}{93}
+\newcommand{\ValorTPtecho}{125}
+\newcommand{\ValorFNtecho}{69}
+% Coste de la saturación: budget 20 -> 50+ (mismos TP, más FP) -------------
+\newcommand{\DeltaFOneSaturacion}{\num{2.8}~p.p.}
+\newcommand{\DeltaPrecisionSaturacion}{\num{5.1}~p.p.}
+\newcommand{\SaturacionFPnuevos}{18}
+
+% --- Métricas agregadas del baseline (presupuesto 20, punto óptimo) ------
+\newcommand{\ValorPrecisionBaseline}{62{,}2\%}
+\newcommand{\ValorRecallBaseline}{64{,}4\%}
+\newcommand{\ValorFOneBaseline}{63{,}3\%}
+\newcommand{\ValorFPRBaseline}{1{,}4\%}
+\newcommand{\ValorRecallTecho}{64{,}4\%}      % exhaustividad de saturación (presup. >= 20)
+
+% --- Caída de exhaustividad / precisión al desactivar cada optimización
+%     respecto al baseline, al presupuesto 20 (puntos porcentuales) --------
+\newcommand{\DeltaRecallNoInterleave}{\num{0.0}~p.p.}
+\newcommand{\DeltaRecallNoPriority}{\num{3.1}~p.p.}
+\newcommand{\DeltaRecallNoRuntimeConfirm}{\num{0.0}~p.p.}
+\newcommand{\DeltaRecallNoAdaptive}{\num{0.0}~p.p.}
+\newcommand{\DeltaPrecisionNoPriority}{\num{5.8}~p.p.}
+\newcommand{\DeltaFOneNoPriority}{\num{4.5}~p.p.}
+\newcommand{\NoPriorityVulnPerdidas}{6}
+\newcommand{\NoPriorityFPnuevos}{16}
+\newcommand{\ValorPrecisionNoPriority}{56{,}4\%}
+\newcommand{\ValorFOneNoPriorityBVeinte}{58{,}8\%}
+
+% --- Coste medio de detección (índice de la primera petición que acierta,
+%     censurado; presupuesto 20) -----------------------------------------
+\newcommand{\ValorCosteBaseline}{\num{4994}}
+\newcommand{\ValorCosteNoInterleave}{\num{4992}}
+\newcommand{\ValorCosteNoPriority}{\num{4636}}
+\newcommand{\ValorCosteNoRuntimeConfirm}{\num{4986}}
+\newcommand{\ValorCosteNoAdaptive}{\num{4862}}
+
+% --- Prueba de Friedman sobre el coste de detección por instancia,
+%     bloque agrupado sobre los 4 presupuestos completos ----------------
+\newcommand{\ValorFriedmanChiSq}{\num{927.5}}
+\newcommand{\ValorFriedmanP}{\num{9.4e-201}}
+\newcommand{\ValorFriedmanN}{\num{776}}
+
+% --- Wilcoxon pareado (baseline vs ablación), p corregido por BH (pooled)
+\newcommand{\ValorWilcoxonPNoInterleave}{\num{5.0e-26}}
+\newcommand{\ValorWilcoxonPNoPriority}{\num{9.4e-97}}
+\newcommand{\ValorWilcoxonPNoRuntimeConfirm}{\num{7.6e-4}}
+
+% --- Tamaño del efecto: delta de Cliff (baseline vs ablación, pooled) ---
+\newcommand{\ValorCliffNoInterleave}{\num{-0.001}}
+\newcommand{\ValorCliffNoPriority}{\num{-0.017}}
+\newcommand{\ValorCliffNoRuntimeConfirm}{\num{0.0001}}
+\newcommand{\MagnitudCliffNoInterleave}{insignificante}
+\newcommand{\MagnitudCliffNoPriority}{insignificante}
+\newcommand{\MagnitudCliffNoRuntimeConfirm}{insignificante}
+
+% --- Post-hoc de Nemenyi (pooled): p de baseline vs cada ablación --------
+\newcommand{\ValorNemenyiNoInterleave}{\ensuremath{<}\,\num{0.001}}
+\newcommand{\ValorNemenyiNoPriority}{\ensuremath{<}\,\num{0.001}}
+\newcommand{\ValorNemenyiNoRuntimeConfirm}{\num{0.057}}
+
+% --- Contraste adaptativo (baseline) vs estático a priori
+%     (no-adaptive-sorting), coste First-TP, bloque agrupado -------------
+\newcommand{\ValorAdaptivePctLento}{1{,}2\%}
+\newcommand{\ValorAdaptiveCliff}{\num{-0.015}}
+\newcommand{\ValorAdaptiveP}{\num{1.4e-82}}
