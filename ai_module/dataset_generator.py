@@ -38,7 +38,14 @@ Curation pipeline
    confidence); genuinely non-discriminating probes are labelled ``UNCERTAIN``
    rather than forced onto a binary, and endpoints whose ground truth conflicts
    under an identical evidence profile are reconciled to ``UNCERTAIN``.
-4. **Balance + split** — optional 1:1 (``--balance-ratio``) TP/FP downsampling,
+4. **Synthesise** (``--synthetic-multiplier N`` / ``--enable-synthetic``) —
+   the base telemetry has no HTTP bodies, so this crosses each unique real
+   probe seed with a catalogue of mocked response bodies (verbatim vs. escaped
+   reflection, DBMS syntax errors, WAF blocks, blank pages, out-of-webroot file
+   reads, timing oracles) to produce a balanced TP / FP / ``UNCERTAIN`` set
+   whose reasoning cites the concrete body evidence. Every synthetic label is
+   re-checked against ``_assess_evidence`` before it is emitted.
+5. **Balance + split** — optional 1:1 (``--balance-ratio``) TP/FP downsampling,
    then a stratified train/val split (``--split 0.9``) so val keeps both
    classes.
 
@@ -70,6 +77,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import html
 import json
 import random
 import re
@@ -631,10 +639,25 @@ def _reflection_evidence(row: dict[str, Any], payload: str) -> tuple[dict[str, A
 _DB_ERROR_RE = re.compile(
     r"(SQL syntax|ORA-\d{5}|SQLSTATE|ODBC|mysql_fetch|pg_query|psql:|"
     r"Unclosed quotation mark|quoted string not properly terminated|"
+    r"unterminated quoted string|syntax error at or near|near \".+\": syntax error|"
+    r"SQLException|SQLite|psycopg2|PG::\w+Error|"
     r"System\.Data\.|Microsoft OLE DB|java\.sql\.|javax\.servlet|"
     r"org\.hibernate|Warning: |Fatal error|Traceback \(most recent call last\)|"
     r"XPathException|LDAP: error code|supplied argument is not a valid)",
     re.I,
+)
+# Contents of a file outside the web root (unix passwd, windows boot.ini, hosts).
+_FILE_DISCLOSURE_RE = re.compile(
+    r"(root:.*?:0:0:|daemon:x:1:1:|\[boot loader\]|\[fonts\]|"
+    r"# Copyright \(c\) \d{4} Microsoft Corp|"
+    r"127\.0\.0\.1\s+localhost)",
+    re.I | re.S,
+)
+# Output of an injected shell command (id / uname / ipconfig / dir).
+_CMD_OUTPUT_RE = re.compile(
+    r"(uid=\d+\([\w-]+\) gid=\d+\([\w-]+\)|"
+    r"Linux \S+ \d+\.\d+\.\d+|"
+    r"Windows IP Configuration|Volume Serial Number is [0-9A-F-]{9})",
 )
 _TIME_CONTEXT_HINTS = ("time_based", "time-based", "time_blind", "timeblind", "timing")
 
@@ -647,7 +670,9 @@ _NEXT_PROOF: dict[str, str] = {
 }
 
 
-def _assess_evidence(evidence: dict[str, Any], *, context: str) -> dict[str, Any]:
+def _assess_evidence(
+    evidence: dict[str, Any], *, context: str, vclass: str = ""
+) -> dict[str, Any]:
     """Derive discriminating signals from the raw evidence, dynamically."""
     delta = _f(evidence.get("latency_delta_ms"))
     base = abs(_f(evidence.get("run_baseline_latency_ms")))
@@ -655,16 +680,26 @@ def _assess_evidence(evidence: dict[str, Any], *, context: str) -> dict[str, Any
     excerpt = evidence.get("response_excerpt") or ""
     reflected = bool(evidence.get("payload_reflected_verbatim"))
     has_error = bool(excerpt) and bool(_DB_ERROR_RE.search(excerpt))
+    has_file = bool(excerpt) and bool(_FILE_DISCLOSURE_RE.search(excerpt))
+    has_cmd_output = bool(excerpt) and bool(_CMD_OUTPUT_RE.search(excerpt))
     ctx = (context or "").lower()
+    vc = (vclass or "").lower()
     time_class = "time" in ctx or any(h in ctx for h in _TIME_CONTEXT_HINTS)
     time_hit = time_class and delta >= max(750.0, noise * 5)
     apriori = str(evidence.get("apriori_confidence") or "").upper()
+    # Verbatim reflection only *proves* something for markup-injection classes;
+    # a reflected SQL/OS payload in an HTML body is ordinary templating.
+    reflection_is_signal = reflected and (not vc or "xss" in vc or vc == "unknown")
 
     signals: list[str] = []
-    if reflected:
+    if reflection_is_signal:
         signals.append("the payload is reflected verbatim in the response body")
     if has_error:
         signals.append("the response leaks an interpreter/database error string")
+    if has_file:
+        signals.append("the response body returns the contents of an out-of-webroot file")
+    if has_cmd_output:
+        signals.append("the response echoes the output of an injected shell command")
     if time_hit:
         signals.append(
             f"a payload-correlated delay of ~{delta:.0f} ms far exceeds the "
@@ -672,7 +707,12 @@ def _assess_evidence(evidence: dict[str, Any], *, context: str) -> dict[str, Any
         )
 
     within_noise = abs(delta) <= noise
-    if within_noise:
+    if time_hit:
+        latency_note = (
+            f"the response is ~{delta:.0f} ms slower than the ~{base:.0f} ms "
+            "baseline, tracking the injected delay"
+        )
+    elif within_noise:
         latency_note = (
             f"the latency delta ({delta:+.1f} ms) sits inside run jitter "
             f"(~±{noise:.0f} ms)"
@@ -701,6 +741,8 @@ def _assess_evidence(evidence: dict[str, Any], *, context: str) -> dict[str, Any
         "apriori": apriori,
         "reflected": reflected,
         "has_error": has_error,
+        "has_file": has_file,
+        "has_cmd_output": has_cmd_output,
         "scanner_conf": str(evidence.get("scanner_confidence") or "").upper(),
         "scanner_decision": bool(evidence.get("scanner_decision")),
         "context": str(evidence.get("injection_context") or ""),
@@ -747,6 +789,473 @@ def _compose_reasoning(verdict: str, a: dict[str, Any], vclass: str) -> str:
         + ((", " + ", ".join(missing)) if missing else "")
         + f". A-priori confidence was {a['apriori'].lower() or 'unset'}."
     )
+
+
+def _render_triage_user(
+    endpoint: str, gparam: str, vclass: str, payload: str, evidence: dict[str, Any]
+) -> str:
+    """Format one triage prompt. ``response_excerpt`` is pulled out of the JSON
+    blob and shown as its own fenced block so the model reads it as a body."""
+    ev_public = {k: v for k, v in evidence.items() if k != "response_excerpt"}
+    excerpt = evidence.get("response_excerpt")
+    block = (
+        f"Endpoint: {endpoint}\n"
+        f"Parameter: {gparam}\n"
+        f"Suspected class: {vclass}\n"
+        f"Payload sent: {payload!r}\n"
+        f"Observed evidence: {json.dumps(ev_public, ensure_ascii=False)}\n"
+    )
+    if excerpt:
+        block += f"Response body excerpt:\n---\n{excerpt}\n---\n"
+    block += (
+        "\nClassify this candidate as TRUE_POSITIVE, FALSE_POSITIVE or UNCERTAIN "
+        "and justify from the evidence."
+    )
+    return block
+
+
+def _triage_next_step(verdict: str, vclass: str) -> str:
+    if verdict == "TRUE_POSITIVE":
+        return _NEXT_PROOF.get(
+            vclass, "Replay with a differentiating oracle payload to demonstrate impact."
+        )
+    if verdict == "UNCERTAIN":
+        return (
+            "Re-probe with a repeatable oracle (paired true/false or timed "
+            "payloads) and capture the response body to separate reflection "
+            "from execution."
+        )
+    return "Suppress the finding and lower this endpoint's priority."
+
+
+# --------------------------------------------------------------------------- #
+# Synthetic triage augmentation
+# --------------------------------------------------------------------------- #
+#
+# The OWASP-Benchmark telemetry carries no HTTP bodies, so once the URL shortcut
+# is anonymised away only ~26 genuinely-distinct triage instances survive. This
+# augmenter takes the *real* probe seeds (class / payload / context / a-priori
+# confidence / run baseline latency) and crosses each one with a catalogue of
+# realistic mocked response bodies — verbatim vs. escaped reflection, DB syntax
+# errors, WAF blocks, blank pages, out-of-webroot file reads, timing oracles —
+# to synthesise a balanced TP / FP / UNCERTAIN set whose reasoning cites the
+# concrete evidence in the mocked body.
+
+_SHELL_TITLES = ("ACME Search", "Product Catalogue", "Support Portal",
+                 "Member Area", "Document Library", "Order Lookup")
+_SHELL_FILLERS = (
+    "<aside>Popular: Widgets, Gadgets, Sprockets</aside>",
+    "<div class='promo'>Free shipping over $50</div>",
+    "<section class='recent'>Recently viewed: 3 items</section>",
+    "<p class='hint'>Tip: use quotes for an exact match.</p>",
+    "",
+)
+
+
+def _shell(inner: str, rng: random.Random) -> str:
+    title = rng.choice(_SHELL_TITLES)
+    filler = rng.choice(_SHELL_FILLERS)
+    return (
+        f"<!DOCTYPE html><html><head><title>{title}</title></head><body>"
+        f"<header><nav>Home &middot; Account &middot; Help</nav></header>"
+        f"<main>{inner}{filler}</main>"
+        f"<footer>&copy; {rng.randint(2019, 2026)} ACME Corp</footer></body></html>"
+    )
+_HTML_CTX_TEMPLATES = {
+    "html_text": '<p>Results for <span class="q">{p}</span></p><ul><li>No matches</li></ul>',
+    "html_attribute": '<input type="text" name="q" value="{p}" class="search-box">',
+    "js_string": '<script>var query = "{p}"; renderResults(query);</script>',
+}
+_HTML_CTX_LABEL = {
+    "html_text": "an HTML text node",
+    "html_attribute": "a double-quoted HTML attribute",
+    "js_string": "a JavaScript string literal",
+}
+
+_SQL_ERROR_TEMPLATES = [
+    ("MySQL", "You have an error in your SQL syntax; check the manual that "
+              "corresponds to your MySQL server version for the right syntax to "
+              "use near '{f}' at line 1"),
+    ("PostgreSQL", "ERROR: unterminated quoted string at or near \"'{f}\"\n"
+                   "LINE 1: SELECT * FROM items WHERE name = '{f}"),
+    ("SQLite", "SQLSTATE[HY000]: General error: 1 near \"{f}\": syntax error"),
+    ("MS SQL Server", "System.Data.SqlClient.SqlException: Unclosed quotation "
+                      "mark after the character string '{f}'."),
+    ("Oracle", "ORA-01756: quoted string not properly terminated"),
+]
+_GENERIC_5XX_TEMPLATES = [
+    "<html><head><title>500 Internal Server Error</title></head><body>"
+    "<h1>Internal Server Error</h1><p>The server encountered an internal error "
+    "and was unable to complete your request.</p><hr>"
+    "<address>Apache/2.4.41 (Ubuntu)</address></body></html>",
+    "<html><head><title>Whitelabel Error Page</title></head><body>"
+    "<h1>Whitelabel Error Page</h1><p>This application has no explicit mapping "
+    "for /error</p><div>There was an unexpected error (type=Internal Server "
+    "Error, status=500).</div></body></html>",
+    "<h1>Oops! Something went wrong (HTTP 500)</h1>"
+    "<p>Our team has been notified. Please try again later.</p>",
+]
+_WAF_TEMPLATES = [
+    ("HTTP 403 / block page", "<html><head><title>403 Forbidden</title></head>"
+     "<body><h1>Request blocked</h1><p>The requested URL was rejected. Please "
+     "consult with your administrator. Support ID: {sid}</p></body></html>"),
+    ("Cloudflare challenge", "<!DOCTYPE html><html><head><title>Attention "
+     "Required! | Cloudflare</title></head><body>Sorry, you have been blocked."
+     "<br>Cloudflare Ray ID: {sid}</body></html>"),
+    ("ModSecurity rule", "ModSecurity: Access denied with code 403 (phase 2). "
+     "Matched phrase in ARGS:q [id \"942100\"] [msg \"SQL Injection Attack "
+     "Detected via libinjection\"] [severity \"CRITICAL\"]"),
+]
+_BLANK_TEMPLATES = [
+    "<html><head></head><body></body></html>",
+    "OK",
+    "{\"status\":\"ok\",\"results\":[]}",
+]
+_PASSWD_BODY = (
+    "root:x:0:0:root:/root:/bin/bash\n"
+    "daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\n"
+    "www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\n"
+)
+_CMD_OUTPUT_BODY = (
+    "uid=33(www-data) gid=33(www-data) groups=33(www-data)\n"
+    "Linux web-01 5.15.0-91-generic #101-Ubuntu SMP x86_64 GNU/Linux\n"
+)
+
+
+def _win(text: str, needle: str, span: int = 70) -> str:
+    """Short window of ``text`` around ``needle`` for quoting in reasoning."""
+    i = text.find(needle)
+    if i == -1:
+        return text[:span].strip()
+    lo, hi = max(0, i - span // 2), min(len(text), i + len(needle) + span // 2)
+    return ("…" if lo else "") + text[lo:hi].strip() + ("…" if hi < len(text) else "")
+
+
+@dataclass
+class _Scenario:
+    name: str
+    classes: set[str]          # suspected vclass this applies to; {"*"} = any
+    verdict: str
+    latency: str               # "noise" | "slower" | "much_slower" | "faster"
+    # build(payload, ctx, rng) -> (excerpt, reflected_verbatim, reason, ctx_override)
+    build: Any
+    confidence: float
+
+
+def _sc_xss_verbatim(payload, ctx, rng):
+    ctx = ctx if ctx in _HTML_CTX_TEMPLATES else rng.choice(list(_HTML_CTX_TEMPLATES))
+    inner = _HTML_CTX_TEMPLATES[ctx].format(p=payload)
+    body = _shell(inner, rng)
+    reason = (
+        f"The payload is reflected unescaped into {_HTML_CTX_LABEL[ctx]} of the "
+        f"response body ({_win(body, payload)!r}); the browser parses the "
+        f"injected markup, so this is an exploitable reflected XSS."
+    )
+    return body, True, reason, ctx
+
+
+def _sc_xss_escaped(payload, ctx, rng):
+    ctx = ctx if ctx in _HTML_CTX_TEMPLATES else rng.choice(list(_HTML_CTX_TEMPLATES))
+    esc = html.escape(payload, quote=True)
+    inner = _HTML_CTX_TEMPLATES[ctx].format(p=esc)
+    body = _shell(inner, rng)
+    reason = (
+        f"The payload appears in the body but HTML-entity-encoded "
+        f"({_win(body, esc[:20])!r}), so it renders as inert text rather than "
+        f"markup. Output encoding neutralises the vector — false positive."
+    )
+    return body, False, reason, ctx
+
+
+def _sc_xss_stripped(payload, ctx, rng):
+    shown = re.sub(r"[<>\"'();]", "", payload)
+    inner = _HTML_CTX_TEMPLATES["html_text"].format(p=shown)
+    body = _shell(inner, rng)
+    reason = (
+        f"The response reflects the value with the angle brackets and quotes "
+        f"removed ({shown!r}); the sanitiser strips the characters needed to "
+        f"break out, but the exact filter and any downstream sink are unknown, "
+        f"so execution can be neither confirmed nor ruled out from this evidence."
+    )
+    return body, False, reason, "html_text"
+
+
+def _sc_sql_error(payload, ctx, rng):
+    dbms, tmpl = rng.choice(_SQL_ERROR_TEMPLATES)
+    frag = payload.strip()[:24]
+    err = tmpl.format(f=frag)
+    body = _shell(f"<pre class=\"error\">{err}</pre>", rng)
+    reason = (
+        f"The response body contains a verbatim {dbms} error triggered by the "
+        f"quote in the payload ({_win(err, frag) or err[:60]!r}) — the input "
+        f"reaches the SQL parser unsanitised, confirming injection."
+    )
+    return body, False, reason, "error_based"
+
+
+def _sc_sql_time(payload, ctx, rng):
+    body = _shell("<p>Your request has been processed.</p>", rng)
+    reason = (
+        "No error string or reflection, but the request is delayed far beyond "
+        "the run baseline in a way that tracks the injected time function; a "
+        "repeatable payload-correlated delay is a time-based blind SQLi oracle."
+    )
+    return body, False, reason, "time_based_blind"
+
+
+def _sc_sql_generic_500(payload, ctx, rng):
+    rid = "".join(rng.choice("0123456789abcdef") for _ in range(12))
+    body = rng.choice(_GENERIC_5XX_TEMPLATES) + f"<!-- trace-id: {rid} -->"
+    reason = (
+        "The body is a generic framework 500 page with no SQL error text, no "
+        "reflected payload and latency within noise; a 500 fires for many "
+        "malformed inputs and is not by itself evidence of injection."
+    )
+    return body, False, reason, ctx or "error_based"
+
+
+def _sc_waf_block(payload, ctx, rng):
+    label, tmpl = rng.choice(_WAF_TEMPLATES)
+    sid = "".join(rng.choice("0123456789abcdef") for _ in range(16))
+    body = tmpl.format(sid=sid)
+    reason = (
+        f"The response is a WAF/CDN block ({label}); the payload was filtered "
+        f"before reaching the application, so there is no application-level "
+        f"vulnerability here — only a proxy rule that fired."
+    )
+    return body, False, reason, ctx or "generic"
+
+
+def _sc_blank(payload, ctx, rng):
+    rid = "".join(rng.choice("0123456789abcdef") for _ in range(12))
+    base = rng.choice(_BLANK_TEMPLATES)
+    body = base.replace("</body>", f"<!-- {rid} --></body>") if "</body>" in base else base
+    reason = (
+        "The response is an essentially empty 200 with the payload absent from "
+        "the body and latency at baseline — indistinguishable from normal "
+        "handling of an unexpected parameter value."
+    )
+    return body, False, reason, ctx or "generic"
+
+
+def _sc_path_file(payload, ctx, rng):
+    body = _PASSWD_BODY if "passwd" in payload or rng.random() < 0.7 else (
+        "[boot loader]\ntimeout=30\ndefault=multi(0)disk(0)rdisk(0)partition(1)\\WINDOWS\n"
+    )
+    reason = (
+        f"The response body returns the contents of a system file outside the "
+        f"web root ({_win(body, 'root:') or body[:50]!r}); the traversal "
+        f"sequence is honoured by the file read — confirmed path traversal."
+    )
+    return body, False, reason, "file_read"
+
+
+def _sc_cmd_output(payload, ctx, rng):
+    body = _shell(f"<pre>{_CMD_OUTPUT_BODY}</pre>", rng)
+    reason = (
+        f"The response echoes the output of an injected shell command "
+        f"({_win(_CMD_OUTPUT_BODY, 'uid=')!r}); the parameter is passed to a "
+        f"command interpreter — confirmed OS command injection."
+    )
+    return body, False, reason, "shell"
+
+
+def _sc_echo_nonexec(payload, ctx, rng):
+    inner = f"<title>Search: {payload}</title><p>0 results.</p>"
+    body = _shell(inner, rng)
+    reason = (
+        "The value is echoed back into the page title, but the suspected class "
+        "is not XSS — reflection here is ordinary templating. There is no "
+        "SQL/interpreter error and no timing signal, so the hypothesis is "
+        "unsupported yet not disproven."
+    )
+    return body, True, reason, "html_text"
+
+
+def _sc_boolean_weak(payload, ctx, rng):
+    n = rng.randint(1180, 1240)
+    body = _shell(f"<p>Showing {n} of many products.</p>", rng)
+    reason = (
+        "The true/false payloads produce only a small content-length delta that "
+        "is within the range of caching and rotating content; without a stable, "
+        "repeated differential this boolean probe is inconclusive."
+    )
+    return body, False, reason, "boolean_blind"
+
+
+_SCENARIOS: list[_Scenario] = [
+    _Scenario("xss_verbatim_reflection", {"xss"}, "TRUE_POSITIVE", "noise", _sc_xss_verbatim, 0.9),
+    _Scenario("sql_error_disclosure", {"sqli"}, "TRUE_POSITIVE", "noise", _sc_sql_error, 0.93),
+    _Scenario("sql_time_oracle", {"sqli"}, "TRUE_POSITIVE", "much_slower", _sc_sql_time, 0.85),
+    _Scenario("path_traversal_file_read", {"pathtraver"}, "TRUE_POSITIVE", "noise", _sc_path_file, 0.93),
+    _Scenario("cmd_injection_output", {"cmdi"}, "TRUE_POSITIVE", "noise", _sc_cmd_output, 0.93),
+    _Scenario("xss_output_encoded", {"xss"}, "FALSE_POSITIVE", "noise", _sc_xss_escaped, 0.9),
+    _Scenario("generic_500_page", {"sqli", "cmdi", "unknown"}, "FALSE_POSITIVE", "noise", _sc_sql_generic_500, 0.8),
+    _Scenario("waf_block_page", {"*"}, "FALSE_POSITIVE", "noise", _sc_waf_block, 0.9),
+    _Scenario("blank_response", {"*"}, "FALSE_POSITIVE", "noise", _sc_blank, 0.82),
+    _Scenario("xss_partial_filter", {"xss"}, "UNCERTAIN", "noise", _sc_xss_stripped, 0.5),
+    _Scenario("reflection_irrelevant_to_class", {"sqli", "cmdi", "ldapi", "xpathi"}, "UNCERTAIN", "noise", _sc_echo_nonexec, 0.5),
+    _Scenario("weak_boolean_differential", {"sqli"}, "UNCERTAIN", "noise", _sc_boolean_weak, 0.5),
+]
+_SCENARIOS_BY_VERDICT: dict[str, list[_Scenario]] = defaultdict(list)
+for _sc in _SCENARIOS:
+    _SCENARIOS_BY_VERDICT[_sc.verdict].append(_sc)
+
+_VERDICTS = ("TRUE_POSITIVE", "FALSE_POSITIVE", "UNCERTAIN")
+
+
+def _scenario_applies(sc: _Scenario, vclass: str) -> bool:
+    return "*" in sc.classes or vclass in sc.classes
+
+
+def _synth_latency(bucket: str, base_ms: float, rng: random.Random) -> float:
+    noise = max(40.0, 0.75 * abs(base_ms))
+    if bucket == "noise":
+        return round(rng.uniform(-0.55 * noise, 0.55 * noise), 1)
+    if bucket == "slower":
+        return round(rng.uniform(noise * 1.4, 690.0), 1)
+    if bucket == "much_slower":
+        return round(rng.uniform(3500.0, 9000.0), 1)
+    if bucket == "faster":
+        return round(-rng.uniform(noise * 1.3, noise * 3.0), 1)
+    return 0.0
+
+
+def _triage_seeds(
+    rows: list[dict[str, Any]], oracle: Oracle, *, weak: bool
+) -> list[dict[str, Any]]:
+    """Unique (class, payload, context) probe seeds for synthetic augmentation."""
+    baselines = _run_baselines(rows)
+    seen: set[tuple[str, str, str]] = set()
+    seeds: list[dict[str, Any]] = []
+    for row in rows:
+        if not _is_probe_row(row):
+            continue
+        decision = bool(row.get("decision"))
+        conf_final = row.get("confidence_final")
+        if not (decision or (weak and conf_final not in (None, "", "LOW"))):
+            continue
+        tester_id = row.get("tester_id", "")
+        vclass = (row.get("type") or row.get("vuln_class") or "").lower()
+        if not vclass:
+            cats = _TESTER_TO_CATEGORY.get(tester_id)
+            vclass = next(iter(cats)) if cats else "unknown"
+        url = row.get("url", "")
+        param = row.get("param", row.get("parameter", "")) or ""
+        payload = row.get("payload") or _payload_from_url(url, param)
+        if not payload or is_junk_payload(payload):
+            continue
+        ctx = row.get("context") or ""
+        key = (vclass, payload, ctx)
+        if key in seen:
+            continue
+        seen.add(key)
+        seeds.append({
+            "vclass": vclass,
+            "payload": payload,
+            "context": ctx,
+            "vector": row.get("vector") or "getparam",
+            "apriori": str(row.get("confidence_apriori") or "MEDIUM").upper(),
+            "scanner_conf": str(conf_final or "MEDIUM").upper(),
+            "base_latency_ms": round(
+                baselines.get((row.get("run_id", ""), tester_id), 0.02) * 1000, 1
+            ) or 20.0,
+            "tester_id": tester_id,
+        })
+    return seeds
+
+
+def synthesize_triage_samples(
+    seeds: list[dict[str, Any]], *, multiplier: int, seed: int
+) -> Iterator[Sample]:
+    """Yield ``~len(seeds) * multiplier`` body-enriched triage samples with a
+    balanced TP / FP / UNCERTAIN split. Deterministic for a given ``seed``."""
+    if not seeds or multiplier <= 0:
+        return
+    system = load_prompt("triage_system")
+    rng = random.Random(seed ^ 0x5717)
+    target = len(seeds) * multiplier
+    produced: Counter[str] = Counter()
+    emitted: set[str] = set()
+
+    attempts = 0
+    while sum(produced.values()) < target and attempts < target * 40:
+        attempts += 1
+        # Drive toward balance: fill the currently-thinnest verdict.
+        verdict = min(_VERDICTS, key=lambda v: (produced[v], _VERDICTS.index(v)))
+        sc = rng.choice(_SCENARIOS_BY_VERDICT[verdict])
+        candidates = [s for s in seeds if _scenario_applies(sc, s["vclass"])]
+        if not candidates:
+            continue
+        sd = rng.choice(candidates)
+        vclass = sd["vclass"]
+        payload = sd["payload"]
+
+        excerpt, reflected, reason, ctx_override = sc.build(
+            payload, sd["context"], rng
+        )
+        excerpt = normalize_body(excerpt, payload, max_bytes=_MAX_BODY_BYTES)
+        injection_context = ctx_override or sd["context"] or "generic"
+        base_ms = float(sd["base_latency_ms"])
+        delta_ms = _synth_latency(sc.latency, base_ms, rng)
+        evidence: dict[str, Any] = {
+            "scanner_decision": True,
+            "scanner_confidence": sd["scanner_conf"],
+            "apriori_confidence": sd["apriori"],
+            "injection_context": injection_context,
+            "vector": sd["vector"],
+            "latency_ms": round(base_ms + delta_ms, 1),
+            "run_baseline_latency_ms": round(base_ms, 1),
+            "latency_delta_ms": round(delta_ms, 1),
+            "response_excerpt": excerpt,
+            "payload_reflected_verbatim": reflected,
+            "response_truncated": False,
+        }
+
+        a = _assess_evidence(evidence, context=injection_context, vclass=vclass)
+        # Guard: never emit a sample whose intended label contradicts what the
+        # shared assessor would read out of the evidence we just built.
+        if sc.verdict == "TRUE_POSITIVE" and not a["discriminating"]:
+            continue
+        if sc.verdict == "FALSE_POSITIVE" and a["discriminating"]:
+            continue
+        if sc.verdict == "UNCERTAIN" and (a["discriminating"] or not a["within_noise"]):
+            continue
+
+        # Reasoning = scenario-specific body citation + the shared latency read.
+        reasoning = reason
+        if sc.latency in {"slower", "much_slower", "faster"} or not a["signals"]:
+            reasoning = f"{reason} Latency-wise, {a['latency_note']}."
+        assistant = json.dumps(
+            {
+                "verdict": sc.verdict,
+                "confidence": sc.confidence,
+                "reasoning": reasoning,
+                "next_step": _triage_next_step(sc.verdict, vclass),
+            },
+            ensure_ascii=False,
+        )
+        user = _render_triage_user(_GENERIC_ENDPOINT, "p", vclass, payload, evidence)
+
+        obs_key = "|".join([
+            "triage-synth", vclass, payload, sc.name, str(reflected),
+            str(a["has_error"] or a["has_file"] or a["has_cmd_output"]),
+            a["lat_bucket"], sd["apriori"], sd["scanner_conf"], injection_context,
+            hashlib.sha1(excerpt.encode("utf-8")).hexdigest()[:10],
+        ])
+        key = hashlib.sha1(obs_key.encode("utf-8")).hexdigest()
+        if key in emitted:
+            continue
+        emitted.add(key)
+        produced[sc.verdict] += 1
+        yield Sample(
+            system, user, assistant,
+            meta={
+                "label": sc.verdict, "label_source": "synthetic", "synthetic": True,
+                "scenario": sc.name, "suspected_class": vclass,
+                "tester": sd["tester_id"], "_dedup": key, "_evidence": evidence,
+            },
+        )
 
 
 def build_triage_samples(
@@ -806,7 +1315,7 @@ def build_triage_samples(
         evidence.update(body_ev)
 
         weak_label = label_src.startswith("weak")
-        a = _assess_evidence(evidence, context=row.get("context") or "")
+        a = _assess_evidence(evidence, context=row.get("context") or "", vclass=vclass)
         strong_apriori = a["apriori"] in {"HIGH", "CONFIRMED"}
         # "Grey zone": no discriminating body signal, latency inside jitter, and
         # neither the a-priori nor the scanner's final confidence is high. These
@@ -841,15 +1350,7 @@ def build_triage_samples(
 
         endpoint = sanitize_endpoint(url)
         gparam = generic_param(param)
-        user = (
-            f"Endpoint: {endpoint}\n"
-            f"Parameter: {gparam}\n"
-            f"Suspected class: {vclass}\n"
-            f"Payload sent: {payload!r}\n"
-            f"Observed evidence: {json.dumps(evidence, ensure_ascii=False)}\n\n"
-            "Classify this candidate as TRUE_POSITIVE, FALSE_POSITIVE or UNCERTAIN "
-            "and justify from the evidence."
-        )
+        user = _render_triage_user(endpoint, gparam, vclass, payload, evidence)
 
         # Observable key: everything the model can actually see, latency bucketed.
         obs_key = "|".join(
@@ -1114,6 +1615,21 @@ def _run_task(
     samples = list(BUILDERS[task](rows, oracle, weak=weak))
     report["samples_built"] = len(samples)
 
+    mult = getattr(args, "synthetic_multiplier", 0)
+    if task == "triage" and mult > 0:
+        seeds = _triage_seeds(rows, oracle, weak=weak)
+        synth = list(synthesize_triage_samples(seeds, multiplier=mult, seed=args.seed))
+        report["synthetic"] = {
+            "seeds": len(seeds),
+            "multiplier": mult,
+            "built": len(synth),
+            "class_counts": dict(Counter(s.meta.get("label", "?") for s in synth)),
+            "scenario_counts": dict(Counter(s.meta.get("scenario", "?") for s in synth)),
+        }
+        samples.extend(synth)
+        report["samples_with_synthetic"] = len(samples)
+        print(f"[{task}] +{len(synth)} synthetic (from {len(seeds)} seeds)", file=sys.stderr)
+
     if not args.no_dedup:
         samples, removed = dedup(samples)
         report["deduped_removed"] = removed
@@ -1174,7 +1690,17 @@ def main(argv: list[str] | None = None) -> int:
                     help="response-body truncation budget for evidence (default 2048)")
     ap.add_argument("--report", type=Path, default=None,
                     help="write a JSON cleaning/curation manifest to this path")
+    ap.add_argument("--synthetic-multiplier", type=int, default=0, metavar="N",
+                    help="augment triage with ~N body-enriched synthetic samples "
+                         "per unique real probe seed (mocked HTTP bodies: verbatim/"
+                         "escaped reflection, SQL errors, WAF blocks, file reads, "
+                         "timing oracles). Balanced across TP/FP/UNCERTAIN. 0 = off")
+    ap.add_argument("--enable-synthetic", action="store_true",
+                    help="shortcut for --synthetic-multiplier 20 when no explicit "
+                         "multiplier is given")
     args = ap.parse_args(argv)
+    if args.enable_synthetic and args.synthetic_multiplier == 0:
+        args.synthetic_multiplier = 20
 
     _MAX_BODY_BYTES = max(256, args.max_body_bytes)
 
@@ -1206,6 +1732,7 @@ def main(argv: list[str] | None = None) -> int:
             "balance": args.balance, "balance_ratio": args.balance_ratio,
             "dedup": not args.no_dedup, "drop_noise": not args.keep_noise,
             "max_body_bytes": _MAX_BODY_BYTES,
+            "synthetic_multiplier": args.synthetic_multiplier,
         },
         "tasks": [],
     }

@@ -73,7 +73,7 @@ python -m ai_module.dataset_generator \
     --telemetry testbed/results \
     --benchmark-csv testbed/.cache/benchmark/expectedresults-1.2.csv \
     --task both --format alpaca \
-    --balance --balance-ratio 1.0 --split 0.9 \
+    --split 0.9 --synthetic-multiplier 40 \
     --out data/sft.jsonl --report data/curation.json
 
 # triage only, keeping noisy rows for inspection, bigger evidence budget
@@ -128,9 +128,38 @@ python -m ai_module.dataset_generator \
   can't leak a near-identical row across the train/val boundary.
 
 > Note: once the URL shortcut is removed, single-app (OWASP Benchmark-only)
-> telemetry collapses to a small number of genuinely-distinct triage instances.
-> A larger triage set needs response-body evidence and/or multi-target
-> telemetry; the payload task is unaffected.
+> telemetry collapses to ~26 genuinely-distinct triage instances (no HTTP
+> bodies in the base telemetry). Use `--synthetic-multiplier` to lift that.
+
+**Synthetic body-enriched triage (`--synthetic-multiplier N` / `--enable-synthetic`)**
+
+Takes each unique real probe *seed* (class / payload / context / a-priori
+confidence / run baseline latency) and crosses it with a catalogue of mocked
+HTTP response bodies to synthesise ~`N` samples per seed, driven to a balanced
+**TP / FP / UNCERTAIN** split:
+
+| scenario | body | verdict |
+|---|---|---|
+| `xss_verbatim_reflection` | payload unescaped in an HTML/JS context | TP |
+| `sql_error_disclosure` | MySQL/PG/SQLite/MSSQL/Oracle syntax error | TP |
+| `sql_time_oracle` | normal page + latency far over baseline | TP |
+| `path_traversal_file_read` | `/etc/passwd` / `boot.ini` contents | TP |
+| `cmd_injection_output` | `uid=…` / `uname` output | TP |
+| `xss_output_encoded` | payload HTML-entity-escaped | FP |
+| `generic_500_page` | framework 500 / Whitelabel page | FP |
+| `waf_block_page` | 403 / Cloudflare / ModSecurity block | FP |
+| `blank_response` | empty 200 | FP |
+| `xss_partial_filter` | payload reflected with `<>"'` stripped | UNCERTAIN |
+| `reflection_irrelevant_to_class` | non-XSS payload echoed in `<title>` | UNCERTAIN |
+| `weak_boolean_differential` | tiny, unstable content-length delta | UNCERTAIN |
+
+`response_excerpt` is rendered as its own fenced block in the prompt, and each
+sample's `reasoning` cites the concrete body evidence (the specific DBMS error,
+the entity-encoding, the block-page marker, the timing delta). Every synthetic
+label is cross-checked against the same `_assess_evidence()` the real path uses,
+so an intended TP with no discriminating signal (or an FP that does discriminate)
+is dropped rather than mislabelled. Synthetic rows carry
+`meta.synthetic=true` + `meta.scenario` for filtering/traceability.
 
 Without any `--benchmark-csv` / `--ground-truth` the generator falls back to
 weak labels from the scanner's own `decision` / `confidence_final` columns.

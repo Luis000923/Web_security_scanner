@@ -17,22 +17,46 @@
     "balance_ratio": 1.0,
     "dedup": true,
     "drop_noise": true,
-    "max_body_bytes": 2048
+    "max_body_bytes": 2048,
+    "synthetic_multiplier": 40
   },
   "tasks": [
     {
       "task": "triage",
       "samples_built": 26,
+      "synthetic": {
+        "seeds": 20,
+        "multiplier": 40,
+        "built": 800,
+        "class_counts": {
+          "TRUE_POSITIVE": 267,
+          "FALSE_POSITIVE": 267,
+          "UNCERTAIN": 266
+        },
+        "scenario_counts": {
+          "sql_time_oracle": 91,
+          "generic_500_page": 65,
+          "reflection_irrelevant_to_class": 96,
+          "xss_verbatim_reflection": 91,
+          "blank_response": 55,
+          "weak_boolean_differential": 95,
+          "waf_block_page": 78,
+          "xss_partial_filter": 75,
+          "sql_error_disclosure": 85,
+          "xss_output_encoded": 69
+        }
+      },
+      "samples_with_synthetic": 826,
       "deduped_removed": 0,
-      "after_dedup": 26,
+      "after_dedup": 826,
       "class_counts": {
-        "FALSE_POSITIVE": 17,
-        "UNCERTAIN": 7,
-        "TRUE_POSITIVE": 2
+        "FALSE_POSITIVE": 284,
+        "UNCERTAIN": 273,
+        "TRUE_POSITIVE": 269
       },
       "split": {
-        "train": 23,
-        "val": 3
+        "train": 744,
+        "val": 82
       },
       "out": "data/sft.triage.jsonl"
     },
