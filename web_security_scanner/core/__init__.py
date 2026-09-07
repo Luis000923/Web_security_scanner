@@ -14,12 +14,14 @@ from .scanner_core_async import (
     TokenBucket,
     worker_pool,
 )
+from .telemetry_async import TelemetryWorker
 
 __all__ = [
     'AsyncScannerCore',
     'AsyncResponseCache',
     'ScanConfig',
     'SSRFRedirectError',
+    'TelemetryWorker',
     'TokenBucket',
     'worker_pool',
 ]

@@ -21,6 +21,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+browser = [
+    "playwright>=1.40",
+]
+experiments = [
+    "rich>=13.0",
+]
 dev = [
     "pytest",
     "pytest-asyncio",

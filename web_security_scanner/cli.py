@@ -8,7 +8,9 @@ Single entrypoint replacing the old GUI/launcher. Usage:
 
 import argparse
 import asyncio
+import json
 import logging
+import random
 import sys
 from pathlib import Path
 
@@ -84,6 +86,16 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="Mine endpoints from .js bundles (default: on).")
     scan.add_argument("--no-parse-js", dest="parse_js", action="store_false",
                       help="Disable JavaScript endpoint mining.")
+    # --- Phase 4: headless-browser recon (SPA + DOM-XSS) ---
+    scan.add_argument("--browser", dest="use_browser", action="store_true",
+                      help="Run a headless-browser recon pass (Playwright): execute "
+                           "client JS, intercept XHR/fetch for SPA endpoints, and "
+                           "trace DOM-XSS source->sink flows. No-op if Playwright "
+                           "is not installed.")
+    scan.add_argument("--browser-nav-timeout", type=float, default=15.0,
+                      help="Per-page navigation timeout for --browser (seconds).")
+    scan.add_argument("--browser-max-pages", type=int, default=6,
+                      help="Max page navigations for the --browser recon pass.")
     scan.add_argument("--proxy", default=None,
                       help="Route all traffic through a proxy "
                            "(http://host:port or socks5://host:port).")
@@ -96,6 +108,44 @@ def _build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--lang", choices=["en", "es"], default="en",
                       help="Output language (default: en).")
     scan.add_argument("-v", "--verbose", action="store_true", help="Verbose logging.")
+
+    # --- Phase 2: experiment control / ablation toggles ---
+    exp = scan.add_argument_group(
+        "experiment controls",
+        "Feature flags for empirical evaluation / ablation studies.",
+    )
+    exp.add_argument("--telemetry-dir", default=None, metavar="PATH",
+                     help="Enable per-probe telemetry and write the JSONL run log "
+                          "into this directory.")
+    exp.add_argument("--no-interleave", dest="interleave", action="store_false",
+                     help="Ablation: skip _interleave_by_context() in the payload "
+                          "pipeline (payloads stay in corpus order per context).")
+    exp.add_argument("--no-priority", dest="priority", action="store_false",
+                     help="Ablation: skip _prioritize() (no confidence/severity sort).")
+    exp.add_argument("--payload-order", choices=["natural", "random", "freq"],
+                     default="natural",
+                     help="Payload injection order strategy (default: natural / "
+                          "corpus order). 'random' shuffles via the stdlib RNG; "
+                          "'freq' leads with the most populous context groups.")
+    exp.add_argument("--no-runtime-confirm", dest="runtime_confirm",
+                     action="store_false",
+                     help="Ablation: disable two-stage validation. Testers report "
+                          "with the a-priori payload confidence and skip second-"
+                          "opinion checks like confirm_time_based().")
+    exp.add_argument("--no-adaptive-sorting", dest="adaptive_sorting",
+                     action="store_false",
+                     help="Ablation: disable Phase 3 live heuristic ordering. "
+                          "Payload order stays fixed to the a-priori pipeline "
+                          "instead of being re-sorted per injection point as "
+                          "anomaly signals accumulate.")
+    exp.add_argument("--target-list", default=None, metavar="FILE.json",
+                     help="JSON file with an array of {url, param, method} objects. "
+                          "Populates the Phase 2 target queue directly and skips "
+                          "the crawler/recon phase entirely.")
+    exp.add_argument("--global-seed", type=int, default=None, metavar="INT",
+                     help="Seed random.seed() at startup for full reproducibility "
+                          "of random payload order, User-Agent rotation and "
+                          "payload mutations.")
     return parser
 
 
@@ -197,6 +247,13 @@ def _build_config(args) -> dict:
         "waf_bypass_transforms": [
             t.strip() for t in getattr(args, "waf_bypass_transforms", "").split(",") if t.strip()
         ],
+        # Phase 2 ablation toggles (consumed by VulnerabilityTester).
+        "interleave": getattr(args, "interleave", True),
+        "priority": getattr(args, "priority", True),
+        "payload_order": getattr(args, "payload_order", "natural"),
+        "runtime_confirm": getattr(args, "runtime_confirm", True),
+        # Phase 3 live heuristic ordering (adaptive feedback loop).
+        "adaptive_sorting": getattr(args, "adaptive_sorting", True),
     }
     recon = {
         "max_urls": args.max_urls,
@@ -204,8 +261,44 @@ def _build_config(args) -> dict:
         "jitter": args.jitter,
         "parse_js": args.parse_js,
         "use_sitemap": args.sitemap,
+        "use_browser": getattr(args, "use_browser", False),
+        "browser_nav_timeout": getattr(args, "browser_nav_timeout", 15.0),
+        "browser_max_pages": getattr(args, "browser_max_pages", 6),
     }
-    return {"core": core, "testers": testers, "recon": recon}
+    config: dict = {"core": core, "testers": testers, "recon": recon}
+    # Phase 3: carried through so the scanner can stamp the reproducibility
+    # manifest with the exact seed this run was launched with (or None).
+    config["global_seed"] = getattr(args, "global_seed", None)
+    if getattr(args, "telemetry_dir", None):
+        telemetry = {"enabled": True, "dir": args.telemetry_dir}
+        if getattr(args, "global_seed", None) is not None:
+            # Pin the run id so a seeded run is trivially re-identifiable.
+            telemetry["run_id"] = f"seed{args.global_seed}"
+        config["telemetry"] = telemetry
+    return config
+
+
+def _load_target_list(path: str) -> list[dict]:
+    """Parse a --target-list JSON file into a list of target dicts.
+
+    Expected shape: a JSON array of objects, each with at least ``url`` and
+    optionally ``param`` and ``method`` (``method`` defaults to GET; the testers
+    are GET-oriented today so it is advisory). Raises ``ValueError`` on a
+    malformed file so the CLI can report and exit cleanly.
+    """
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(raw, list):
+        raise ValueError("target-list must be a JSON array of objects")
+    out: list[dict] = []
+    for i, entry in enumerate(raw):
+        if not isinstance(entry, dict) or not entry.get("url"):
+            raise ValueError(f"target-list entry {i} is missing a 'url' field")
+        out.append({
+            "url": str(entry["url"]),
+            "param": entry.get("param"),
+            "method": str(entry.get("method", "GET")).upper(),
+        })
+    return out
 
 
 async def _run_scan(args) -> int:
@@ -214,6 +307,16 @@ async def _run_scan(args) -> int:
     except InvalidTargetError as e:
         print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {e}", file=sys.stderr)
         return 2
+
+    target_list = None
+    if getattr(args, "target_list", None):
+        try:
+            target_list = _load_target_list(args.target_list)
+        except (OSError, ValueError, json.JSONDecodeError) as e:
+            print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} --target-list: {e}", file=sys.stderr)
+            return 2
+        print(f"{Fore.GREEN}[*] Loaded {len(target_list)} static target(s); "
+              f"recon phase will be skipped.{Style.RESET_ALL}")
 
     scanner = WebSecurityScanner(_build_config(args))
     progress = ProgressReporter(enabled=not args.verbose)
@@ -232,6 +335,7 @@ async def _run_scan(args) -> int:
         max_duration=args.max_duration,
         max_depth=args.max_depth,
         max_urls=args.max_urls,
+        target_list=target_list,
     )
 
     progress.clear()
@@ -264,6 +368,13 @@ def main() -> int:
 
     i18n.load_languages(str(LANGUAGES_FILE))
     i18n.set_language(getattr(args, "lang", "en"))
+
+    # Phase 2: pin every RNG stream (payload order, UA rotation, mutations)
+    # before any scanner object is built so a run is bit-for-bit reproducible.
+    seed = getattr(args, "global_seed", None)
+    if seed is not None:
+        random.seed(seed)
+        logging.getLogger("web_security_scanner").info("Global RNG seed = %d", seed)
 
     if args.command == "scan":
         print_banner()

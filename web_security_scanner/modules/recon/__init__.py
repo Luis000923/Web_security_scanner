@@ -15,6 +15,13 @@ scanner:
   the discovered URLs and parameters to the vulnerability testers.
 """
 
+from .browser_engine import (
+    DOM_XSS_CANARY,
+    MONITORED_SINKS,
+    BrowserRecon,
+    BrowserReconResult,
+    DomXssFinding,
+)
 from .js_miner import extract_js_endpoints
 from .recon_engine import ReconConfig, ReconEngine, ReconResult
 from .robots_async import AsyncRobotsPolicy
@@ -30,6 +37,11 @@ from .sitemap import parse_sitemap
 
 __all__ = [
     "AsyncRobotsPolicy",
+    "BrowserRecon",
+    "BrowserReconResult",
+    "DOM_XSS_CANARY",
+    "DomXssFinding",
+    "MONITORED_SINKS",
     "ReconConfig",
     "ReconEngine",
     "ReconResult",

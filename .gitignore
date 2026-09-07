@@ -16,6 +16,27 @@ logs/
 reports/
 config.yaml
 
+# LaTeX / paper build artifacts (research branch)
+paper/build/
+paper/main.bbl
+paper/*.aux
+paper/*.log
+paper/*.blg
+paper/*.out
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.synctex.gz
+paper/*.run.xml
+submission.zip
+
+# Experiment orchestration output (testbed branch)
+testbed/results/
+testbed/analysis/
+testbed/.cache/
+
+# Local working context (not part of any branch deliverable)
+docs_context/
+
 # OS / editor
 .DS_Store
 .idea/

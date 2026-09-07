@@ -4,6 +4,7 @@ import ipaddress
 import logging
 import random
 import socket
+import ssl
 import time
 import urllib.parse
 from collections.abc import Awaitable, Callable, Iterable
@@ -187,12 +188,39 @@ class AsyncResponseCache:
         self.ttl = ttl
         self.access_times: dict[str, float] = {}
 
-    def _generate_key(self, url: str, method: str, data: Any) -> str:
-        key_data = f"{url}-{method}-{str(data)}"
+    @staticmethod
+    def _normalize_mapping(mapping: Any) -> str:
+        """Order-independent, canonical string for a headers/cookies mapping.
+
+        ``{"B": "2", "a": "1"}`` and ``{"a": "1", "B": "2"}`` produce the same
+        token so identical requests still hit the cache, while an injected
+        header/cookie value changes it. Header names are matched
+        case-insensitively (HTTP semantics); non-mapping / empty inputs collapse
+        to ``""``.
+        """
+        if not mapping:
+            return ""
+        try:
+            items = mapping.items()
+        except AttributeError:
+            return ""
+        pairs = sorted((str(k).lower(), str(v)) for k, v in items)
+        return ";".join(f"{k}={v}" for k, v in pairs)
+
+    def _generate_key(self, url: str, method: str, data: Any,
+                      headers: Any = None, cookies: Any = None) -> str:
+        key_data = "-".join((
+            url,
+            method.upper(),
+            str(data),
+            self._normalize_mapping(headers),
+            self._normalize_mapping(cookies),
+        ))
         return hashlib.md5(key_data.encode()).hexdigest()
 
-    def get(self, url: str, method: str, data: Any = None) -> dict | None:
-        key = self._generate_key(url, method, data)
+    def get(self, url: str, method: str, data: Any = None,
+            headers: Any = None, cookies: Any = None) -> dict | None:
+        key = self._generate_key(url, method, data, headers, cookies)
         if key in self.cache:
             if time.time() - self.access_times.get(key, 0) < self.ttl:
                 return self.cache[key]
@@ -200,11 +228,12 @@ class AsyncResponseCache:
                 self._remove(key)
         return None
 
-    def put(self, url: str, method: str, data: Any, response_data: dict):
+    def put(self, url: str, method: str, data: Any, response_data: dict,
+            headers: Any = None, cookies: Any = None):
         if len(self.cache) >= self.max_size:
             self._evict_old_entries()
 
-        key = self._generate_key(url, method, data)
+        key = self._generate_key(url, method, data, headers, cookies)
         self.cache[key] = response_data
         self.access_times[key] = time.time()
 
@@ -246,10 +275,43 @@ class AsyncScannerCore:
         self._logger = logging.getLogger(__name__)
         # host -> {ip, ...}; avoids re-resolving on every redirect check.
         self._resolve_cache: dict[str, set] = {}
+        # One-shot guard so the "TLS verification disabled" warning is logged
+        # once per scanner, not once per connector rebuild.
+        self._ssl_notice_emitted = False
 
     def _is_socks_proxy(self) -> bool:
         proxy = (self.config.proxy or "").lower()
         return proxy.startswith(_SOCKS_SCHEMES)
+
+    def _ssl_param(self) -> "bool | ssl.SSLContext":
+        """SSL argument for the aiohttp connector.
+
+        ``verify_ssl=True``  -> ``True``: aiohttp uses its default verifying
+        context (normal production behaviour).
+
+        ``verify_ssl=False`` -> an explicit permissive ``SSLContext`` with
+        ``check_hostname=False`` and ``verify_mode=CERT_NONE``. This is stronger
+        and more predictable than the bare ``ssl=False`` shortcut: it neutralises
+        *both* certificate-chain and hostname checks in one object, behaves
+        identically across aiohttp releases, and is required for local test
+        benches that serve HTTPS with a self-signed cert (e.g. the OWASP
+        Benchmark container on :8443). Without it aiohttp raises
+        ``SSLCertVerificationError`` and every probe silently degrades to
+        ``status_code=0``.
+        """
+        if self.config.verify_ssl:
+            return True
+        if not self._ssl_notice_emitted:
+            self._logger.warning(
+                "TLS certificate verification is DISABLED (verify_ssl=False). "
+                "Self-signed / invalid certs will be accepted. Use only against "
+                "systems you are authorized to test."
+            )
+            self._ssl_notice_emitted = True
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return ctx
 
     def _build_connector(self) -> "aiohttp.BaseConnector":
         """TCP connector, or a SOCKS connector when a socks proxy is configured.
@@ -267,12 +329,12 @@ class AsyncScannerCore:
                     "run `pip install aiohttp_socks` or use an http(s):// proxy."
                 ) from exc
             return ProxyConnector.from_url(
-                self.config.proxy, ssl=self.config.verify_ssl,
+                self.config.proxy, ssl=self._ssl_param(),
                 limit=self.config.max_concurrency,
             )
         return aiohttp.TCPConnector(
             limit=self.config.max_concurrency,
-            ssl=self.config.verify_ssl,
+            ssl=self._ssl_param(),
         )
 
     async def start(self):
@@ -396,10 +458,22 @@ class AsyncScannerCore:
 
     # ---- request -----------------------------------------------------
 
-    async def request(self, method: str, url: str, **kwargs) -> dict[str, Any]:
+    async def request(self, method: str, url: str, *,
+                      use_cache: bool = True, **kwargs) -> dict[str, Any]:
         """
         Execute an HTTP request with caching, rate limiting, UA rotation and
         SSRF-safe redirect following.
+
+        ``use_cache`` (default ``True``): when ``False`` both the cache read and
+        the cache write are skipped, forcing a fresh round-trip. Advanced-vector
+        probes (``header`` / ``cookie`` injection, adaptive-latency sampling)
+        pass ``use_cache=False`` so a benign response can never mask a mutated
+        request.
+
+        The cache key covers URL + method + body + a normalized (order- and
+        case-insensitive) digest of the outgoing headers and cookies, so a
+        payload injected into a header or cookie no longer collides with the
+        benign baseline for the same URL.
 
         Returns a dict: {status_code, text, headers, url, elapsed[, error]}.
         Raises :class:`SSRFRedirectError` if a redirect points somewhere
@@ -408,13 +482,15 @@ class AsyncScannerCore:
         if not self.session:
             await self.start()
 
-        data = kwargs.get("data") or kwargs.get("json")
-        cached = self.cache.get(url, method, data)
-        if cached:
-            return cached
-
         follow_redirects = kwargs.pop("allow_redirects", True)
         caller_headers = kwargs.pop("headers", None)
+
+        data = kwargs.get("data") or kwargs.get("json")
+        cookies = kwargs.get("cookies")
+        if use_cache:
+            cached = self.cache.get(url, method, data, caller_headers, cookies)
+            if cached:
+                return cached
 
         # Rate gate BEFORE taking a concurrency slot: waiting for a token must
         # not hold a semaphore permit (that serialised everything before).
@@ -432,14 +508,45 @@ class AsyncScannerCore:
             raise
         except Exception as e:
             self._logger.debug(f"Request failed: {url} - {e}")
+            self._warn_if_tls_verification_error(e)
             return {
                 "status_code": 0, "text": "", "headers": {},
                 "url": url, "elapsed": 0.0, "truncated": False, "error": str(e),
             }
 
-        if method.upper() == "GET" and result.get("status_code") == 200:
-            self.cache.put(url, method, data, result)
+        if use_cache and method.upper() == "GET" and result.get("status_code") == 200:
+            self.cache.put(url, method, data, result, caller_headers, cookies)
         return result
+
+    def _warn_if_tls_verification_error(self, exc: BaseException) -> None:
+        """Surface a self-signed / untrusted-cert failure loudly, once.
+
+        Without ``--no-verify-ssl`` a bench serving HTTPS with a self-signed
+        certificate makes *every* probe fail at the TLS handshake; the request
+        layer swallows that into ``status_code=0`` and the scan looks like it
+        "ran" while detecting nothing. Rather than let that stay silent at DEBUG
+        level, emit a single actionable WARNING the first time it happens.
+        """
+        if self.config.verify_ssl is False or self._ssl_notice_emitted:
+            return
+        cause: BaseException | None = exc
+        seen = 0
+        while cause is not None and seen < 6:
+            if isinstance(cause, ssl.SSLCertVerificationError) or (
+                isinstance(cause, ssl.SSLError)
+                and "CERTIFICATE_VERIFY_FAILED" in str(cause)
+            ):
+                self._logger.warning(
+                    "TLS certificate verification failed (%s). The target is "
+                    "likely using a self-signed certificate. Re-run with "
+                    "--no-verify-ssl to accept it — otherwise every request "
+                    "degrades to status_code=0 and no vulnerability is found.",
+                    type(cause).__name__,
+                )
+                self._ssl_notice_emitted = True
+                return
+            cause = cause.__cause__ or cause.__context__
+            seen += 1
 
     async def _request_following(
         self, method: str, url: str, follow_redirects: bool,

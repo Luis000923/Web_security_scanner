@@ -1,8 +1,12 @@
 import asyncio
 import logging
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
+from .core.manifest_async import write_manifest
 from .core.scanner_core_async import AsyncScannerCore, ScanConfig, SSRFRedirectError
+from .core.telemetry_async import TelemetryWorker
 from .events.event_emitter import ScanEventEmitter, ScanEventType
 from .modules.recon import ReconConfig, ReconEngine
 from .modules.registry import TesterRegistry
@@ -48,6 +52,9 @@ class WebSecurityScanner:
         self._logger = logging.getLogger(__name__)
         # Accumulated findings for the current scan
         self.vulnerabilities: list[dict[str, Any]] = []
+        # Phase 1 telemetry sink; created per-scan in ``run_scan`` when
+        # ``config['telemetry']['enabled']`` is set.
+        self.telemetry: TelemetryWorker | None = None
 
         # Subscribe mapper to vulnerabilities
         self.event_emitter.on(ScanEventType.VULNERABILITY_FOUND, self._on_vulnerability_found)
@@ -78,13 +85,19 @@ class WebSecurityScanner:
 
     async def run_scan(self, target_url: str, profile: str = "balanced",
                        generate_map: bool = True, max_duration: float | None = None,
-                       max_depth: int | None = None, max_urls: int | None = None) -> dict[str, Any]:
+                       max_depth: int | None = None, max_urls: int | None = None,
+                       target_list: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         """
         Run the full scan against the target URL.
 
         Returns a results dict: {target, profile, vulnerabilities, statistics,
         map_report}. Honors an optional global ``max_duration`` (seconds) that
         caps total tester time even if individual testers wait on slow payloads.
+
+        ``target_list`` (Phase 2): when provided, a list of ``{url, param,
+        method}`` dicts is used to populate the Phase 2 target queue directly and
+        the reconnaissance/crawler phase is skipped entirely (see
+        ``_targets_from_list``).
         """
         if not self.testers:
             await self.initialize()
@@ -97,6 +110,14 @@ class WebSecurityScanner:
         await self.event_emitter.emit(ScanEventType.SCAN_START, url=target_url)
         await self.core.start()
 
+        # Phase 1: spin up the telemetry worker (needs the running loop) and
+        # hand it to every tester before any payload is fired.
+        await self._start_telemetry()
+
+        # Phase 3: snapshot the reproducibility manifest (corpus hash, RNG
+        # seed, full config, git commit) before Phase 1/2 probing starts.
+        await self._write_manifest()
+
         map_report = None
         map_data = {}
         technologies = {}
@@ -105,8 +126,19 @@ class WebSecurityScanner:
 
             scan_targets: list[str] = [target_url]
 
+            # --- Phase 2 bridge: static target list bypasses recon entirely -
+            if target_list:
+                scan_targets = self._targets_from_list(target_list) or [target_url]
+                msg = (f"Phase 1 recon skipped (--target-list): "
+                       f"{len(scan_targets)} static target(s) queued.")
+                self._logger.info(msg)
+                await self.event_emitter.emit(ScanEventType.LOG_MESSAGE, message=msg)
+                await self.event_emitter.emit(
+                    ScanEventType.PROGRESS_UPDATE, message=msg
+                )
+
             # --- Phase 1: Recon (route-mapper core) -------------------------
-            if generate_map:
+            elif generate_map:
                 self._logger.info("Phase 1: reconnaissance (crawl / JS mining / sitemap)...")
                 await self.event_emitter.emit(
                     ScanEventType.PROGRESS_UPDATE, message="Phase 1: reconnaissance..."
@@ -120,6 +152,7 @@ class WebSecurityScanner:
                 recon_result = await self.recon.run(target_url)
                 map_data = recon_result.map_data
                 scan_targets = recon_result.targets or [target_url]
+                await self._handle_dom_xss(recon_result)
                 if self.mapper.limit_reached:
                     msg = (f"Crawler abortado preventivamente por límite max_urls "
                            f"({self.mapper.max_urls}) / spider-trap; mapa parcial.")
@@ -160,6 +193,18 @@ class WebSecurityScanner:
             self._logger.error(f"Scan failed: {e}")
             await self.event_emitter.emit(ScanEventType.ERROR, error=str(e))
         finally:
+            # Flush + await the telemetry writer BEFORE the session/loop go away
+            # so no queued rows are lost.
+            if self.telemetry is not None:
+                try:
+                    await self.telemetry.stop()
+                    self._logger.info(
+                        "Telemetry: %d row(s) written to %s (%d dropped)",
+                        self.telemetry.written, self.telemetry.path,
+                        self.telemetry.dropped,
+                    )
+                except Exception as e:  # pragma: no cover - defensive
+                    self._logger.warning(f"Error stopping telemetry worker: {e}")
             try:
                 await self.core.close()
             except Exception as e:
@@ -183,7 +228,126 @@ class WebSecurityScanner:
                 "total_technologies": sum(len(v) for v in technologies.values()),
             },
             "map_report": map_report,
+            "telemetry": self.telemetry.summary() if self.telemetry is not None else None,
         }
+
+    @staticmethod
+    def _targets_from_list(entries: list[dict[str, Any]]) -> list[str]:
+        """Turn ``[{url, param, method}, ...]`` into a deduped list of scan URLs.
+
+        The vulnerability testers discover injectable parameters from the query
+        string (``get_query_params``), so an entry that names a ``param`` is
+        folded into the URL as ``?param=<probe>`` here. Entries with no ``param``
+        pass through untouched. ``method`` is currently advisory (the testers
+        issue GETs); a non-GET method is kept in the log for traceability.
+        """
+        seen: set[str] = set()
+        out: list[str] = []
+        for entry in entries or []:
+            url = (entry or {}).get("url")
+            if not url:
+                continue
+            param = entry.get("param")
+            if param:
+                url = VulnerabilityTester.inject_param(url, str(param), "1")
+            if url not in seen:
+                seen.add(url)
+                out.append(url)
+        return out
+
+    async def _start_telemetry(self) -> None:
+        """Create + start the JSONL telemetry worker and attach it to testers.
+
+        Controlled by ``config['telemetry']``:
+            enabled  -> bool (default False; no-op when unset)
+            path     -> explicit .jsonl file (default: <dir>/telemetry_<ts>_<run>.jsonl)
+            dir      -> directory for the default filename (default: 'reports/telemetry')
+            run_id   -> pin the run id (else a fresh uuid4 hex)
+        """
+        conf = self.config.get("telemetry", {}) or {}
+        if not conf.get("enabled"):
+            return
+        run_id = conf.get("run_id")
+        path = conf.get("path")
+        if not path:
+            out_dir = Path(conf.get("dir", "reports/telemetry"))
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            short = (run_id or "")[:8] or "run"
+            path = out_dir / f"telemetry_{stamp}_{short}.jsonl"
+        worker = TelemetryWorker(path, run_id=run_id)
+        await worker.start()
+        self.telemetry = worker
+        for tester in self.testers:
+            tester.telemetry = worker
+        self._logger.info(
+            "Telemetry enabled: run_id=%s -> %s", worker.run_id, worker.path
+        )
+        await self.event_emitter.emit(
+            ScanEventType.LOG_MESSAGE,
+            message=f"Telemetry: recording probes to {worker.path} (run_id={worker.run_id})",
+        )
+
+    async def _handle_dom_xss(self, recon_result: Any) -> None:
+        """Turn Phase 4 browser DOM-XSS findings into vulns + telemetry rows.
+
+        Each source->sink flow observed by the headless-browser instrumentation
+        is reported through the same ``VULNERABILITY_FOUND`` bus as every other
+        tester and, when telemetry is enabled, appended to the JSONL run log in
+        the canonical probe-row schema (``vector='domsink'``, ``decision=True``).
+        """
+        findings = list(getattr(recon_result, "dom_xss_findings", []) or [])
+        if not findings:
+            return
+        msg = f"Phase 4: {len(findings)} DOM-XSS source->sink flow(s) observed in-browser."
+        self._logger.info(msg)
+        await self.event_emitter.emit(ScanEventType.LOG_MESSAGE, message=msg)
+        for finding in findings:
+            vuln = finding.to_vulnerability()
+            await self.event_emitter.emit(
+                ScanEventType.VULNERABILITY_FOUND,
+                vulnerability=vuln,
+                tester="BrowserDomXss",
+            )
+            if self.telemetry is not None:
+                self.telemetry.record({
+                    "tester_id": "BrowserDomXss",
+                    "payload_id": f"domxss:{finding.sink}",
+                    "context": "dom_xss",
+                    "confidence_apriori": "HIGH",
+                    "url": finding.url,
+                    "method": "GET",
+                    "param": finding.param or finding.source,
+                    "vector": "domsink",
+                    "elapsed_time": 0.0,
+                    "decision": True,
+                    "confidence_final": "HIGH",
+                })
+
+    async def _write_manifest(self) -> None:
+        """Persist the Phase 3 reproducibility manifest, if telemetry is on.
+
+        The manifest (corpus SHA-256, ``--global-seed``, full run config, git
+        commit) is only meaningful alongside a telemetry run, so it is written
+        into the same directory as the JSONL log and shares its ``run_id``.
+        A hashing/git/disk failure is logged and swallowed — it must never
+        abort or delay the scan itself.
+        """
+        if self.telemetry is None:
+            return
+        try:
+            path = await write_manifest(
+                self.telemetry.path.parent,
+                run_id=self.telemetry.run_id,
+                config=self.config,
+                global_seed=self.config.get("global_seed"),
+            )
+        except Exception as exc:  # pragma: no cover - defensive, disk errors
+            self._logger.warning("Failed to write reproducibility manifest: %s", exc)
+            return
+        self._logger.info("Reproducibility manifest written: %s", path)
+        await self.event_emitter.emit(
+            ScanEventType.LOG_MESSAGE, message=f"Manifest: {path}"
+        )
 
     async def _detect_technologies(self, target_url: str) -> dict[str, list]:
         """
