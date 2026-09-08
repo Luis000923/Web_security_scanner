@@ -38,7 +38,11 @@ ai = [
     "datasets>=2.19.0",
     "accelerate>=1.3.0",
     "peft>=0.14.0",
-    "trl>=0.13.0",
+    # train_qlora.py filters kwargs against the installed SFTConfig/SFTTrainer
+    # signature, but keep an upper bound so a major TRL rewrite is an explicit
+    # opt-in rather than a surprise on the workstation.
+    "trl>=0.13.0,<0.24",
+    # >=0.45 ships the CUDA 12.4+ / Blackwell (sm_120) kernels the RTX 5090 needs.
     "bitsandbytes>=0.45.0",
     "sentencepiece>=0.2.0",
     "safetensors>=0.4.5",

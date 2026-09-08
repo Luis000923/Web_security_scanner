@@ -41,3 +41,6 @@ docs_context/
 .DS_Store
 .idea/
 .vscode/
+
+# QLoRA training outputs
+runs/

@@ -6,11 +6,26 @@ Tuned for a single NVIDIA RTX 5090 (Blackwell, sm_120, 32 GB GDDR7):
 
   * 4-bit NF4 base weights (bitsandbytes) + bf16 LoRA adapters
   * Tensor-core friendly: bf16 compute, TF32 matmul, packed sequences
-  * Unsloth kernels when available (2x throughput, ~40% less VRAM); the code
-    falls back to plain `transformers` + `peft` + `trl` otherwise.
+  * Attention: PyTorch SDPA by default (no extra wheels). FlashAttention-2 is
+    strictly opt-in (``--flash-attn``) because ``flash-attn`` wheels for
+    sm_120 / CUDA 12.8 are new and a missing wheel aborts the whole run.
+  * Unsloth kernels are **opt-in** (``--use-unsloth``): its Triton kernels and
+    pinned bitsandbytes often lag a brand-new GPU arch. The default path is
+    plain ``transformers`` + ``peft`` + ``trl``; if Unsloth is requested but
+    fails to import *or* fails to build its kernels at runtime
+    (``RuntimeError`` / ``NotImplementedError``), we fall back automatically.
 
 The heavy imports are done lazily inside `main()` so `--help` and unit tests
 work without the ML stack installed.
+
+TRL compatibility
+-----------------
+Training args are passed through ``trl.SFTConfig`` (not the bare
+``transformers.TrainingArguments``); ``max_seq_length`` / ``packing`` /
+``dataset_text_field`` live there. Because TRL renamed a few of these across
+0.13 → 0.2x, every kwarg is filtered against the installed class signature
+before construction, and the trainer takes ``processing_class`` (falling back
+to ``tokenizer=`` only on older TRL).
 
 Example
 -------
@@ -32,10 +47,12 @@ Example
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -65,9 +82,35 @@ class TrainConfig:
     bf16: bool = True
     packing: bool = True
     gradient_checkpointing: bool = True
-    use_unsloth: bool = True
+    # Blackwell / sm_120 safe defaults: SDPA attention, no Unsloth.
+    attn_impl: str = "sdpa"           # "sdpa" | "flash_attention_2" | "eager"
+    use_unsloth: bool = False
     merge_adapter: bool = False
     seed: int = 1337
+    dataset_text_field: str = "text"
+
+
+# --------------------------------------------------------------------------- #
+# kwarg filtering — tolerate TRL / transformers renames across versions
+# --------------------------------------------------------------------------- #
+
+def _supported_kwargs(target: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Keep only the kwargs ``target`` (a class / callable) actually accepts.
+
+    If the signature exposes ``**kwargs`` we pass everything through. Used so a
+    newer/older ``SFTConfig`` or ``SFTTrainer`` never blows up on a renamed or
+    removed argument (``tokenizer`` -> ``processing_class``, ``max_seq_length``
+    -> ``max_length`` ...).
+    """
+    try:
+        sig = inspect.signature(target)
+    except (TypeError, ValueError):
+        return dict(kwargs)
+    params = sig.parameters.values()
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params):
+        return dict(kwargs)
+    allowed = {p.name for p in params}
+    return {k: v for k, v in kwargs.items() if k in allowed}
 
 
 def _tune_cuda_for_blackwell() -> None:
@@ -87,31 +130,61 @@ def _tune_cuda_for_blackwell() -> None:
         print(f"warn: could not tune CUDA backend: {exc}")
 
 
-def _load_dataset(path: Path):
+def _tensorboard_available() -> bool:
+    try:
+        import tensorboard  # noqa: F401
+    except Exception:
+        return False
+    return True
+
+
+_ROLE = {"system": "system", "human": "user", "user": "user",
+         "gpt": "assistant", "assistant": "assistant"}
+
+
+def _row_to_messages(row: dict[str, Any]) -> list[dict[str, str]]:
+    # Accept chatml ({"messages": [...]}), sharegpt ({"conversations": [...]})
+    # and alpaca ({"instruction","input","output"}) schemas.
+    if row.get("messages"):
+        return list(row["messages"])
+    if row.get("conversations"):
+        return [
+            {"role": _ROLE.get(t.get("from"), "user"), "content": t.get("value", "")}
+            for t in row["conversations"]
+        ]
+    return [
+        {"role": "system", "content": row.get("instruction", "")},
+        {"role": "user", "content": row.get("input", "")},
+        {"role": "assistant", "content": row.get("output", "")},
+    ]
+
+
+def _render_messages(messages: list[dict[str, str]], tokenizer: Any) -> str:
+    """Render a conversation to a single training string.
+
+    Uses the tokenizer's chat template when it has one; otherwise a plain
+    ``ROLE: content`` join so a bare base-model tokenizer still trains.
+    """
+    tmpl = getattr(tokenizer, "chat_template", None)
+    if tmpl:
+        try:
+            return tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=False
+            )
+        except Exception:  # pragma: no cover - malformed template / roles
+            pass
+    return "\n".join(f"{m['role']}: {m['content']}" for m in messages)
+
+
+def _load_dataset(path: Path, tokenizer: Any, text_field: str):
     from datasets import load_dataset
 
     ds = load_dataset("json", data_files=str(path), split="train")
 
-    _ROLE = {"system": "system", "human": "user", "user": "user",
-             "gpt": "assistant", "assistant": "assistant"}
-
     def _to_text(row):
-        # Accept chatml ({"messages": [...]}), sharegpt ({"conversations": [...]})
-        # and alpaca ({"instruction","input","output"}) schemas.
-        if row.get("messages"):
-            return {"messages": row["messages"]}
-        if row.get("conversations"):
-            return {"messages": [
-                {"role": _ROLE.get(t.get("from"), "user"), "content": t.get("value", "")}
-                for t in row["conversations"]
-            ]}
-        return {"messages": [
-            {"role": "system", "content": row.get("instruction", "")},
-            {"role": "user", "content": row.get("input", "")},
-            {"role": "assistant", "content": row.get("output", "")},
-        ]}
+        return {text_field: _render_messages(_row_to_messages(row), tokenizer)}
 
-    return ds.map(_to_text, remove_columns=[c for c in ds.column_names if c != "messages"])
+    return ds.map(_to_text, remove_columns=list(ds.column_names))
 
 
 def _build_model_unsloth(cfg: TrainConfig):
@@ -150,11 +223,12 @@ def _build_model_hf(cfg: TrainConfig):
     tokenizer = AutoTokenizer.from_pretrained(cfg.base_model)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"  # required for training with bnb / SDPA / FA2
     model = AutoModelForCausalLM.from_pretrained(
         cfg.base_model,
         quantization_config=bnb,
         torch_dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2",
+        attn_implementation=cfg.attn_impl,
         device_map="auto",
     )
     model = prepare_model_for_kbit_training(
@@ -169,6 +243,62 @@ def _build_model_hf(cfg: TrainConfig):
         target_modules=cfg.target_modules,
     )
     return get_peft_model(model, lora), tokenizer
+
+
+def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
+    """Construct ``trl.SFTConfig``, filtering renamed kwargs for the installed TRL."""
+    from trl import SFTConfig
+
+    report_to = []
+    if not smoke and _tensorboard_available():
+        report_to = ["tensorboard"]
+
+    candidate: dict[str, Any] = dict(
+        output_dir=str(cfg.output_dir),
+        num_train_epochs=cfg.epochs,
+        max_steps=cfg.max_steps if smoke else -1,
+        per_device_train_batch_size=cfg.batch_size,
+        gradient_accumulation_steps=cfg.grad_accum,
+        learning_rate=cfg.lr,
+        warmup_ratio=0.0 if smoke else cfg.warmup_ratio,
+        weight_decay=cfg.weight_decay,
+        lr_scheduler_type="constant" if smoke else "cosine",
+        bf16=cfg.bf16,
+        tf32=True,
+        logging_steps=1 if smoke else 10,
+        save_strategy="no" if smoke else "epoch",
+        eval_strategy="epoch" if (have_eval and not smoke) else "no",
+        optim="paged_adamw_8bit",
+        gradient_checkpointing=cfg.gradient_checkpointing,
+        report_to=report_to,
+        seed=cfg.seed,
+        # --- SFT-specific (TRL) ---
+        packing=cfg.packing,
+        dataset_text_field=cfg.dataset_text_field,
+        # TRL <0.20 calls this max_seq_length; newer calls it max_length. Pass
+        # both keys and let _supported_kwargs drop whichever is absent.
+        max_seq_length=cfg.max_seq_len,
+        max_length=cfg.max_seq_len,
+    )
+    return SFTConfig(**_supported_kwargs(SFTConfig, candidate))
+
+
+def _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds):
+    from trl import SFTTrainer
+
+    candidate: dict[str, Any] = dict(
+        model=model,
+        args=sft_config,
+        train_dataset=train_ds,
+        eval_dataset=eval_ds,
+        processing_class=tokenizer,  # TRL >= 0.16
+        tokenizer=tokenizer,         # TRL < 0.16
+    )
+    allowed = _supported_kwargs(SFTTrainer.__init__, candidate)
+    # Never pass both — prefer the modern name.
+    if "processing_class" in allowed:
+        allowed.pop("tokenizer", None)
+    return SFTTrainer(**allowed)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -190,8 +320,14 @@ def main(argv: list[str] | None = None) -> int:
                          "--max-steps 5 for a quick CUDA / bitsandbytes smoke test")
     ap.add_argument("--lora-r", type=int, default=TrainConfig.lora_r)
     ap.add_argument("--lora-alpha", type=int, default=TrainConfig.lora_alpha)
-    ap.add_argument("--no-unsloth", action="store_true", help="force transformers/peft path")
+    ap.add_argument("--use-unsloth", action="store_true",
+                    help="opt in to Unsloth fused kernels (off by default on "
+                         "Blackwell / sm_120; auto-falls back to transformers/peft "
+                         "if the kernels fail to import or build)")
     ap.add_argument("--no-packing", action="store_true")
+    ap.add_argument("--flash-attn", action="store_true",
+                    help="use FlashAttention-2 instead of SDPA (needs a flash-attn "
+                         "wheel built for your CUDA / GPU arch)")
     ap.add_argument("--merge-adapter", action="store_true",
                     help="also write a merged fp16 model next to the adapter "
                          "(ready to serve with vLLM / transformers)")
@@ -214,7 +350,8 @@ def main(argv: list[str] | None = None) -> int:
         lora_r=args.lora_r,
         lora_alpha=args.lora_alpha,
         packing=not args.no_packing,
-        use_unsloth=not args.no_unsloth,
+        attn_impl="flash_attention_2" if args.flash_attn else "sdpa",
+        use_unsloth=args.use_unsloth,
         merge_adapter=args.merge_adapter,
         seed=args.seed,
     )
@@ -228,53 +365,26 @@ def main(argv: list[str] | None = None) -> int:
 
     _tune_cuda_for_blackwell()
 
-    from transformers import TrainingArguments
-    from trl import SFTTrainer
-
     build = _build_model_unsloth if cfg.use_unsloth else _build_model_hf
     try:
         model, tokenizer = build(cfg)
-    except ImportError as exc:
+    except (ImportError, RuntimeError, NotImplementedError) as exc:
         if cfg.use_unsloth:
-            print(f"unsloth unavailable ({exc}); falling back to transformers/peft")
+            print(f"unsloth path failed ({type(exc).__name__}: {exc}); "
+                  f"falling back to transformers/peft")
             model, tokenizer = _build_model_hf(cfg)
         else:
             raise
 
-    train_ds = _load_dataset(cfg.train)
-    eval_ds = _load_dataset(cfg.eval) if cfg.eval else None
-
-    smoke = cfg.max_steps and cfg.max_steps > 0
-    targs = TrainingArguments(
-        output_dir=str(cfg.output_dir),
-        num_train_epochs=cfg.epochs,
-        max_steps=cfg.max_steps if smoke else -1,
-        per_device_train_batch_size=cfg.batch_size,
-        gradient_accumulation_steps=cfg.grad_accum,
-        learning_rate=cfg.lr,
-        warmup_ratio=0.0 if smoke else cfg.warmup_ratio,
-        weight_decay=cfg.weight_decay,
-        lr_scheduler_type="constant" if smoke else "cosine",
-        bf16=cfg.bf16,
-        tf32=True,
-        logging_steps=1 if smoke else 10,
-        save_strategy="no" if smoke else "epoch",
-        eval_strategy="epoch" if (eval_ds is not None and not smoke) else "no",
-        optim="paged_adamw_8bit",
-        gradient_checkpointing=cfg.gradient_checkpointing,
-        report_to=[] if smoke else ["tensorboard"],
-        seed=cfg.seed,
+    smoke = bool(cfg.max_steps and cfg.max_steps > 0)
+    train_ds = _load_dataset(cfg.train, tokenizer, cfg.dataset_text_field)
+    eval_ds = (
+        _load_dataset(cfg.eval, tokenizer, cfg.dataset_text_field)
+        if cfg.eval and not smoke else None
     )
 
-    trainer = SFTTrainer(
-        model=model,
-        tokenizer=tokenizer,
-        args=targs,
-        train_dataset=train_ds,
-        eval_dataset=eval_ds,
-        max_seq_length=cfg.max_seq_len,
-        packing=cfg.packing,
-    )
+    sft_config = _build_sft_config(cfg, smoke=smoke, have_eval=eval_ds is not None)
+    trainer = _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds)
     trainer.train()
 
     if smoke:

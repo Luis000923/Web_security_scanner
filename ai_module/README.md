@@ -54,9 +54,12 @@ pip install -e ".[ai,ai-unsloth]"      # optional: fused kernels (~2x, less VRAM
 pip install -e ".[ai,ai-serve]"        # optional: vLLM for the OpenAI-compatible endpoint
 ```
 
-If `unsloth` resolution fights the pinned deps, skip `ai-unsloth` and pass
-`--no-unsloth` to the trainer — the `transformers + peft + trl` path is fully
-supported.
+Unsloth is **off by default** on Blackwell / `sm_120` (its Triton kernels and
+pinned bitsandbytes tend to lag a new GPU arch). Once `ai-unsloth` is installed
+and validated, opt in with `--use-unsloth`; if its kernels fail to import or
+build the trainer auto-falls back to the `transformers + peft + trl` path.
+Attention defaults to PyTorch **SDPA**; pass `--flash-attn` only if a
+`flash-attn` wheel for CUDA 12.8 / `sm_120` is installed.
 
 ### 3. Build & curate the training set from our telemetry
 
@@ -190,8 +193,9 @@ python -m ai_module.train_qlora \
 ```
 
 The Blackwell knobs (bf16 compute, TF32 matmul, NF4 + double-quant, paged
-8-bit AdamW, flash-attention-2, expandable CUDA segments) are applied
-automatically. Output:
+8-bit AdamW, SDPA attention, expandable CUDA segments) are applied
+automatically; add `--flash-attn` / `--use-unsloth` to opt in to those.
+Output:
 
 - `runs/triage-qlora/adapter/` — LoRA adapter (small, for the `transformers` backend)
 - `runs/triage-qlora/merged/` — merged fp16 model (`--merge-adapter`, for vLLM)
