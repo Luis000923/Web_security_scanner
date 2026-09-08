@@ -35,12 +35,22 @@ environment (creating/syncing it from `uv.lock` on demand), so no manual
 `activate` is needed.
 
 **One-shot orchestrator.** Steps 0–5 below are automated by `run_pipeline.sh`
-in the repo root: it verifies the uv environment, (optionally) regenerates the
-datasets, runs the QLoRA smoke test and then the full fine-tune, aborting in red
-on any failure and printing the total wall-clock time.
+in the repo root:
+
+- refuses to run as root / under `sudo` (would create `.venv` and the HF cache
+  with the wrong owner) — override with `--allow-root`;
+- verifies the uv environment and, if the ML stack is only *missing*
+  (`verify_uv_env.sh` exit 3), **auto-installs** it — `uv pip install torch
+  --index-url $TORCH_INDEX_URL` (default cu128) then `uv pip install -e ".[ai]"`
+  — aborting only if that fails (`--no-install` to opt out);
+- (optionally) regenerates the datasets (`--regen-data`, synthetic ×40);
+- pre-downloads the base model into the HF cache so the trainer never stalls
+  mid-run (`ai_module/ensure_base_model.py`; `--skip-model-dl` to opt out);
+- runs the QLoRA smoke test and then the full fine-tune, aborting in red on any
+  failure and printing the total wall-clock time.
 
 ```bash
-./run_pipeline.sh                 # verify env → smoke test → full triage fine-tune
+./run_pipeline.sh                 # verify/install env → fetch model → smoke → full triage fine-tune
 ./run_pipeline.sh --regen-data    # + regenerate datasets first (synthetic x40)
 ./run_pipeline.sh --task payload --epochs 3
 ./run_pipeline.sh --help

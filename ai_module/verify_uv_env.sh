@@ -8,7 +8,11 @@
 #   4. the critical GPU deps (torch, trl, peft, bitsandbytes) are installed in
 #      that environment *and* pinned in uv.lock.
 #
-# Exit 0 = environment is uv-managed and complete; non-zero = something to fix.
+# Exit codes:
+#   0  environment is uv-managed and the ML stack is complete
+#   1  hard problem (no uv, stale/missing lock, wrong interpreter, unmanaged pkg)
+#   3  environment is otherwise fine, but critical ML deps are only missing
+#      (pinned in uv.lock, not installed) — an orchestrator may auto-install
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -16,10 +20,12 @@ cd "$ROOT" || exit 2
 LOCK="$ROOT/uv.lock"
 CRITICAL=(torch trl peft bitsandbytes)
 fail=0
+deps_missing=0
 
 say()  { printf '%s %s\n' "$1" "$2"; }
 ok()   { say "  [ OK ]" "$1"; }
 bad()  { say "  [FAIL]" "$1"; fail=1; }
+miss() { say "  [MISS]" "$1"; deps_missing=1; }
 
 echo "uv environment audit  ($ROOT)"
 
@@ -62,7 +68,7 @@ for pkg in "${CRITICAL[@]}"; do
     if [[ -n "$inst" && "$locked" == yes ]]; then
         ok "$pkg $inst  (installed, pinned in uv.lock)"
     elif [[ -z "$inst" && "$locked" == yes ]]; then
-        bad "$pkg pinned in uv.lock but not installed — run 'uv pip install -e \".[ai]\"'"
+        miss "$pkg pinned in uv.lock but not installed — run 'uv pip install -e \".[ai]\"'"
     elif [[ -n "$inst" ]]; then
         bad "$pkg $inst installed but NOT in uv.lock — not managed by uv"
     else
@@ -71,9 +77,13 @@ for pkg in "${CRITICAL[@]}"; do
 done
 
 echo
-if [[ "$fail" -eq 0 ]]; then
-    echo "RESULT: environment is uv-managed and the ML stack is complete."
-else
+if [[ "$fail" -ne 0 ]]; then
     echo "RESULT: issues found — see [FAIL] lines above."
+    exit 1
+elif [[ "$deps_missing" -ne 0 ]]; then
+    echo "RESULT: environment OK, but critical ML deps are not installed (see [MISS])."
+    exit 3
+else
+    echo "RESULT: environment is uv-managed and the ML stack is complete."
+    exit 0
 fi
-exit "$fail"
