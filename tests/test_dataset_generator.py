@@ -229,3 +229,164 @@ def test_end_to_end_triage_with_benchmark_oracle(tmp_path):
     manifest = json.loads((tmp_path / "manifest.json").read_text())
     assert manifest["clean_stats"]["noise:network_error"] == 1
     assert manifest["cleaned_rows"] == 2
+
+
+# --------------------------------------------------------------------------- #
+# Standalone Path-Traversal / Command-Injection seeds
+# --------------------------------------------------------------------------- #
+
+def _suspected_class(sample) -> str:
+    for line in sample.user.splitlines():
+        if line.startswith("Suspected class:"):
+            return line.split(":", 1)[1].strip()
+    return "?"
+
+
+def test_standalone_seeds_cover_pathtraver_and_cmdi():
+    seeds = dg._standalone_triage_seeds()
+    by_class = {}
+    for s in seeds:
+        by_class.setdefault(s["vclass"], []).append(s)
+    assert {"pathtraver", "cmdi"} <= set(by_class)
+    for vclass in ("pathtraver", "cmdi"):
+        assert len(by_class[vclass]) >= 8
+        for s in by_class[vclass]:
+            # same shape as _triage_seeds() output
+            assert {"vclass", "payload", "context", "vector", "apriori",
+                    "scanner_conf", "base_latency_ms", "tester_id"} <= set(s)
+            assert s["standalone_seed"] is True
+    payloads = " ".join(s["payload"] for s in by_class["pathtraver"])
+    assert "../" in payloads and "%2f" in payloads and "%00" in payloads
+    assert "/etc/passwd" in payloads              # absolute path
+    cmd_payloads = [s["payload"] for s in by_class["cmdi"]]
+    assert "; id" in cmd_payloads and "`id`" in cmd_payloads
+    assert any("%0a" in p for p in cmd_payloads)  # newline injection
+
+
+def test_every_class_has_a_scenario_in_all_three_verdicts():
+    for vclass in ("pathtraver", "cmdi"):
+        buckets = {
+            v: [sc.name for sc in dg._SCENARIOS
+                if sc.verdict == v and dg._scenario_applies(sc, vclass)]
+            for v in dg._VERDICTS
+        }
+        for v, names in buckets.items():
+            assert names, f"{vclass} has no {v} scenario"
+
+
+def test_synthesis_from_standalone_seeds_only_is_balanced_and_consistent():
+    seeds = dg._standalone_triage_seeds()
+    out = list(dg.synthesize_triage_samples(seeds, multiplier=40, seed=7))
+    assert len(out) >= 400
+
+    verdicts = {}
+    cls_verdict = {}
+    for s in out:
+        verdicts[s.meta["label"]] = verdicts.get(s.meta["label"], 0) + 1
+        key = (s.meta["suspected_class"], s.meta["label"])
+        cls_verdict[key] = cls_verdict.get(key, 0) + 1
+
+    assert set(verdicts) == {"TRUE_POSITIVE", "FALSE_POSITIVE", "UNCERTAIN"}
+    lo, hi = min(verdicts.values()), max(verdicts.values())
+    assert hi - lo <= 2                                  # driven to balance
+
+    # both new classes get non-trivial coverage in every verdict
+    for vclass in ("pathtraver", "cmdi"):
+        for v in dg._VERDICTS:
+            assert cls_verdict.get((vclass, v), 0) >= 5, (vclass, v)
+
+    # labels never contradict the shared assessor
+    for s in out:
+        ev = s.meta["_evidence"]
+        a = dg._assess_evidence(
+            ev, context=ev.get("injection_context", ""),
+            vclass=s.meta["suspected_class"],
+        )
+        verdict = json.loads(s.assistant)["verdict"]
+        if verdict == "TRUE_POSITIVE":
+            assert a["discriminating"], s.meta["scenario"]
+        elif verdict == "FALSE_POSITIVE":
+            assert not a["discriminating"], s.meta["scenario"]
+        else:
+            assert not a["discriminating"] and a["within_noise"], s.meta["scenario"]
+
+    # the mocked bodies carry the concrete disclosure / command-output evidence
+    by_scen = {}
+    for s in out:
+        by_scen.setdefault(s.meta["scenario"], s)
+    assert "root:" in by_scen["path_traversal_file_read"].user
+    assert json.loads(
+        by_scen["path_traversal_file_read"].assistant)["verdict"] == "TRUE_POSITIVE"
+    cmd_out = by_scen["cmd_injection_output"].user
+    assert "uid=" in cmd_out or "Windows IP Configuration" in cmd_out
+
+
+def test_cli_injects_standalone_classes_when_telemetry_lacks_them(tmp_path):
+    # telemetry has ONLY sqli + xss rows (the real-world situation)
+    tele = tmp_path / "telemetry_run.jsonl"
+    tele.write_text(
+        "\n".join(
+            json.dumps(r) for r in [
+                _native_row(url="https://t/BenchmarkTest00001?name=%3Cscript%3E",
+                            payload="<script>alert(1)</script>"),
+                _native_row(request_index=2, tester_id="SQLInjectionTester",
+                            url="https://t/BenchmarkTest00002?q=%27",
+                            payload="' OR '1'='1", context="boolean_blind",
+                            confidence_final="MEDIUM"),
+            ]
+        )
+    )
+    csv = tmp_path / "expectedresults-1.2.csv"
+    csv.write_text(
+        "# name, category, real, cwe\n"
+        "BenchmarkTest00001,xss,true,79\n"
+        "BenchmarkTest00002,sqli,false,89\n"
+    )
+    out = tmp_path / "triage.jsonl"
+    rc = dg.main([
+        "--telemetry", str(tele), "--benchmark-csv", str(csv),
+        "--task", "triage", "--format", "alpaca", "--out", str(out),
+        "--split", "0.9", "--synthetic-multiplier", "30",
+        "--report", str(tmp_path / "m.json"),
+    ])
+    assert rc == 0
+    manifest = json.loads((tmp_path / "m.json").read_text())
+    syn = manifest["tasks"][0]["synthetic"]
+    assert syn["telemetry_seed_classes"] == {"xss": 1, "sqli": 1}
+    assert syn["seed_classes"].get("pathtraver", 0) >= 8
+    assert syn["seed_classes"].get("cmdi", 0) >= 8
+    assert syn["standalone_seeds"] >= 16
+    assert syn["suspected_class_counts"].get("pathtraver", 0) > 0
+    assert syn["suspected_class_counts"].get("cmdi", 0) > 0
+
+    recs = [json.loads(x) for x in
+            (tmp_path / "triage.train.jsonl").read_text().splitlines()
+            + (tmp_path / "triage.val.jsonl").read_text().splitlines()]
+    classes = {_suspected_class(dg.Sample("", r["input"], "")) for r in recs}
+    assert {"pathtraver", "cmdi"} <= classes
+
+    ins_train = {json.loads(x)["input"]
+                 for x in (tmp_path / "triage.train.jsonl").read_text().splitlines()}
+    ins_val = {json.loads(x)["input"]
+               for x in (tmp_path / "triage.val.jsonl").read_text().splitlines()}
+    assert ins_train.isdisjoint(ins_val)             # split stays disjoint
+
+
+def test_cli_no_standalone_seeds_flag_opts_out(tmp_path):
+    tele = tmp_path / "telemetry_run.jsonl"
+    tele.write_text(json.dumps(
+        _native_row(url="https://t/BenchmarkTest00001?name=%3Cscript%3E",
+                    payload="<script>alert(1)</script>")))
+    csv = tmp_path / "expectedresults-1.2.csv"
+    csv.write_text("# name, category, real, cwe\nBenchmarkTest00001,xss,true,79\n")
+    rc = dg.main([
+        "--telemetry", str(tele), "--benchmark-csv", str(csv),
+        "--task", "triage", "--format", "alpaca", "--out", str(tmp_path / "t.jsonl"),
+        "--split", "0.9", "--synthetic-multiplier", "20", "--no-standalone-seeds",
+        "--report", str(tmp_path / "m.json"),
+    ])
+    assert rc == 0
+    syn = json.loads((tmp_path / "m.json").read_text())["tasks"][0]["synthetic"]
+    assert "pathtraver" not in syn["seed_classes"]
+    assert "cmdi" not in syn["seed_classes"]
+    assert syn["standalone_seeds"] == 0

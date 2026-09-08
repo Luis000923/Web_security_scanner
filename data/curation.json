@@ -18,45 +18,71 @@
     "dedup": true,
     "drop_noise": true,
     "max_body_bytes": 2048,
-    "synthetic_multiplier": 40
+    "synthetic_multiplier": 40,
+    "standalone_seeds": true,
+    "standalone_all_seeds": false
   },
   "tasks": [
     {
       "task": "triage",
       "samples_built": 26,
       "synthetic": {
-        "seeds": 20,
+        "seeds": 44,
+        "telemetry_seed_classes": {
+          "sqli": 17,
+          "xss": 3
+        },
+        "seed_classes": {
+          "sqli": 17,
+          "xss": 3,
+          "pathtraver": 12,
+          "cmdi": 12
+        },
+        "standalone_seeds": 24,
         "multiplier": 40,
-        "built": 800,
+        "built": 1760,
         "class_counts": {
-          "TRUE_POSITIVE": 267,
-          "FALSE_POSITIVE": 267,
-          "UNCERTAIN": 266
+          "TRUE_POSITIVE": 587,
+          "FALSE_POSITIVE": 587,
+          "UNCERTAIN": 586
+        },
+        "suspected_class_counts": {
+          "sqli": 505,
+          "cmdi": 535,
+          "xss": 322,
+          "pathtraver": 398
         },
         "scenario_counts": {
-          "sql_time_oracle": 91,
-          "generic_500_page": 65,
-          "reflection_irrelevant_to_class": 96,
-          "xss_verbatim_reflection": 91,
-          "blank_response": 55,
-          "weak_boolean_differential": 95,
-          "waf_block_page": 78,
-          "xss_partial_filter": 75,
-          "sql_error_disclosure": 85,
-          "xss_output_encoded": 69
+          "sql_time_oracle": 113,
+          "waf_block_page": 100,
+          "cmd_injection_echoed_arg": 110,
+          "xss_output_encoded": 86,
+          "weak_boolean_differential": 119,
+          "path_traversal_file_read": 91,
+          "generic_500_page": 107,
+          "xss_verbatim_reflection": 104,
+          "cmd_injection_output": 96,
+          "reflection_irrelevant_to_class": 116,
+          "cmd_injection_filtered": 121,
+          "xss_partial_filter": 123,
+          "sql_error_disclosure": 105,
+          "path_traversal_blocked": 92,
+          "path_traversal_within_root": 118,
+          "blank_response": 81,
+          "cmd_injection_time_oracle": 78
         }
       },
-      "samples_with_synthetic": 826,
+      "samples_with_synthetic": 1786,
       "deduped_removed": 0,
-      "after_dedup": 826,
+      "after_dedup": 1786,
       "class_counts": {
-        "FALSE_POSITIVE": 284,
-        "UNCERTAIN": 273,
-        "TRUE_POSITIVE": 269
+        "FALSE_POSITIVE": 604,
+        "UNCERTAIN": 593,
+        "TRUE_POSITIVE": 589
       },
       "split": {
-        "train": 744,
-        "val": 82
+        "train": 1608,
+        "val": 178
       },
       "out": "data/sft.triage.jsonl"
     },

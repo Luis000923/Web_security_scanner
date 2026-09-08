@@ -916,9 +916,40 @@ _PASSWD_BODY = (
     "daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\n"
     "www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\n"
 )
+_WIN_INI_BODY = (
+    "; for 16-bit app support\n"
+    "[fonts]\n"
+    "[extensions]\n"
+    "[mci extensions]\n"
+    "[files]\n"
+    "[Mail]\nMAPI=1\n"
+)
+_HOSTS_BODY = (
+    "127.0.0.1\tlocalhost\n"
+    "255.255.255.255\tbroadcasthost\n"
+    "::1\tlocalhost\n"
+    "10.0.0.7\tinternal-db\n"
+)
+# Out-of-webroot file bodies keyed by the token that proves the disclosure
+# (must stay matched by ``_FILE_DISCLOSURE_RE``).
+_FILE_DISCLOSURE_BODIES: tuple[tuple[str, str, str], ...] = (
+    ("passwd", _PASSWD_BODY, "root:"),
+    ("win.ini", _WIN_INI_BODY, "[fonts]"),
+    ("hosts", _HOSTS_BODY, "127.0.0.1"),
+)
 _CMD_OUTPUT_BODY = (
     "uid=33(www-data) gid=33(www-data) groups=33(www-data)\n"
     "Linux web-01 5.15.0-91-generic #101-Ubuntu SMP x86_64 GNU/Linux\n"
+)
+# Stdout of an injected OS command (each stays matched by ``_CMD_OUTPUT_RE``).
+_CMD_OUTPUT_BODIES: tuple[str, ...] = (
+    _CMD_OUTPUT_BODY,
+    "uid=0(root) gid=0(root) groups=0(root)\n",
+    "uid=1000(app) gid=1000(app) groups=1000(app),27(sudo)\n"
+    "Linux app-node-3 6.1.0-18-amd64 #1 SMP x86_64 GNU/Linux\n",
+    "Windows IP Configuration\n\n"
+    "   Host Name . . . . . . . . . . . . : WEB01\n"
+    "   Primary Dns Suffix  . . . . . . . : corp.local\n",
 )
 
 
@@ -1038,26 +1069,143 @@ def _sc_blank(payload, ctx, rng):
     return body, False, reason, ctx or "generic"
 
 
+def _path_encoding_note(payload: str) -> str:
+    """One clause describing which traversal encoding layer the read honoured."""
+    p = payload.lower()
+    if "%25" in payload:
+        return " The double-URL-encoded separators survived a single decode pass."
+    if "%00" in payload or "\x00" in payload or "%2500" in payload:
+        return " A trailing NUL byte truncated the appended extension before the open."
+    if "..%c0%af" in p or "%c0%ae" in p or "%e0%80%ae" in p:
+        return " The overlong-UTF-8 encoded dots were folded back to '..' on decode."
+    if "%2e" in p or "%2f" in p or "%5c" in p:
+        return " The percent-encoded path separators were decoded before the file open."
+    if "....//" in payload or "....\\" in payload:
+        return " The doubled 'dot-dot-slash' sequence collapsed past the filter into '../'."
+    if payload.startswith("/") or payload.startswith("file:"):
+        return " The parameter is treated as an absolute path, skipping the intended base directory."
+    return ""
+
+
+_PASSWD_EXTRA_LINES = (
+    "bin:x:2:2:bin:/bin:/usr/sbin/nologin\n",
+    "sys:x:3:3:sys:/dev:/usr/sbin/nologin\n",
+    "sync:x:4:65534:sync:/bin:/bin/sync\n",
+    "mysql:x:106:113:MySQL Server,,,:/nonexistent:/bin/false\n",
+    "sshd:x:110:65534::/run/sshd:/usr/sbin/nologin\n",
+    "postgres:x:114:120:PostgreSQL administrator,,,:/var/lib/postgresql:/bin/bash\n",
+)
+
+
 def _sc_path_file(payload, ctx, rng):
-    body = _PASSWD_BODY if "passwd" in payload or rng.random() < 0.7 else (
-        "[boot loader]\ntimeout=30\ndefault=multi(0)disk(0)rdisk(0)partition(1)\\WINDOWS\n"
-    )
+    p = payload.lower()
+    if "win.ini" in p or "boot.ini" in p or "windows" in p or "%5cwindows" in p:
+        needle, body, mark = "win.ini", _WIN_INI_BODY, "[fonts]"
+    elif "hosts" in p:
+        needle, body, mark = "hosts", _HOSTS_BODY, "127.0.0.1"
+    elif "passwd" in p:
+        needle, mark = "passwd", "root:"
+        extra = "".join(
+            rng.sample(_PASSWD_EXTRA_LINES, rng.randint(0, len(_PASSWD_EXTRA_LINES)))
+        )
+        body = _PASSWD_BODY + extra
+    else:
+        needle, body, mark = rng.choice(_FILE_DISCLOSURE_BODIES)
+    frame = rng.randint(0, 2)
+    if frame == 1:
+        body = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{body}"
+    elif frame == 2:
+        body = _shell(f"<pre>{body}</pre>", rng)
     reason = (
         f"The response body returns the contents of a system file outside the "
-        f"web root ({_win(body, 'root:') or body[:50]!r}); the traversal "
-        f"sequence is honoured by the file read — confirmed path traversal."
+        f"web root ({_win(body, mark) or body[:50]!r}); the traversal sequence "
+        f"is honoured by the file read — confirmed path traversal."
+        + _path_encoding_note(payload)
+    )
+    return body, False, reason, "file_read"
+
+
+def _sc_path_blocked(payload, ctx, rng):
+    leaf = re.split(r"[\\/]", payload)[-1][:48] or payload[:48]
+    body = _shell(
+        f"<h1>File not found</h1><p>The requested document "
+        f"<code>{html.escape(leaf)}</code> could not be located. "
+        f"Check the name and try again.</p>",
+        rng,
+    )
+    reason = (
+        "The application rejects the traversal: the response is a generic "
+        "'file not found' page with no out-of-webroot file contents, the path "
+        "sequence is not honoured, and latency sits at the run baseline. Nothing "
+        "in this evidence discriminates a real path traversal from a mistyped "
+        "filename."
+    )
+    return body, False, reason, "file_read"
+
+
+def _sc_path_within_root(payload, ctx, rng):
+    body = _shell(
+        "<h2>Image gallery</h2><ul><li>logo.png</li><li>banner.jpg</li>"
+        "<li>icon.svg</li></ul><p>3 files in /assets/img.</p>",
+        rng,
+    )
+    reason = (
+        "The traversal sequence is normalised away and the handler returns a "
+        "normal in-webroot asset listing: no system-file contents, no error, "
+        "latency at baseline. The evidence neither confirms nor rules out a "
+        "traversal that would only bite on a different target path."
     )
     return body, False, reason, "file_read"
 
 
 def _sc_cmd_output(payload, ctx, rng):
-    body = _shell(f"<pre>{_CMD_OUTPUT_BODY}</pre>", rng)
+    out = rng.choice(_CMD_OUTPUT_BODIES)
+    body = _shell(f"<pre>{out}</pre>", rng)
+    needle = "uid=" if out.startswith("uid=") else out.split("\n", 1)[0][:18]
     reason = (
         f"The response echoes the output of an injected shell command "
-        f"({_win(_CMD_OUTPUT_BODY, 'uid=')!r}); the parameter is passed to a "
-        f"command interpreter — confirmed OS command injection."
+        f"({_win(out, needle)!r}); the parameter is passed to a command "
+        f"interpreter — confirmed OS command injection."
     )
     return body, False, reason, "shell"
+
+
+def _sc_cmd_time(payload, ctx, rng):
+    body = _shell("<p>Your request has been queued for processing.</p>", rng)
+    reason = (
+        "No command output is echoed and nothing is reflected, but the response "
+        "is delayed far beyond the run baseline in a way that tracks an injected "
+        "`sleep`/`ping -c` delay; a repeatable payload-correlated delay is a "
+        "blind OS command-injection oracle."
+    )
+    return body, False, reason, "time_based_blind"
+
+
+def _sc_cmd_filtered(payload, ctx, rng):
+    stripped = re.sub(r"[;&|`$()<>\n\r]", "", payload).strip() or "query"
+    body = _shell(
+        f"<p>Looking up '<b>{html.escape(stripped)}</b>'&hellip; 0 records found.</p>",
+        rng,
+    )
+    reason = (
+        f"The shell metacharacters are stripped before the value is used — only "
+        f"{stripped!r} survives — and the response is an ordinary lookup with no "
+        f"command output and baseline latency. The input never reaches a command "
+        f"interpreter, so this is not command injection."
+    )
+    return body, False, reason, "shell"
+
+
+def _sc_cmd_echoed_arg(payload, ctx, rng):
+    inner = f"<p>Report generated for: {payload}</p><p>Status: queued.</p>"
+    body = _shell(inner, rng)
+    reason = (
+        "The value is echoed back into the page as a literal argument, but there "
+        "is no command output, no interpreter error and no timing delta. "
+        "Reflection of an OS payload in an HTML body is ordinary templating, so "
+        "execution can be neither confirmed nor ruled out from this evidence."
+    )
+    return body, True, reason, "shell"
 
 
 def _sc_echo_nonexec(payload, ctx, rng):
@@ -1089,11 +1237,16 @@ _SCENARIOS: list[_Scenario] = [
     _Scenario("sql_time_oracle", {"sqli"}, "TRUE_POSITIVE", "much_slower", _sc_sql_time, 0.85),
     _Scenario("path_traversal_file_read", {"pathtraver"}, "TRUE_POSITIVE", "noise", _sc_path_file, 0.93),
     _Scenario("cmd_injection_output", {"cmdi"}, "TRUE_POSITIVE", "noise", _sc_cmd_output, 0.93),
+    _Scenario("cmd_injection_time_oracle", {"cmdi"}, "TRUE_POSITIVE", "much_slower", _sc_cmd_time, 0.8),
     _Scenario("xss_output_encoded", {"xss"}, "FALSE_POSITIVE", "noise", _sc_xss_escaped, 0.9),
-    _Scenario("generic_500_page", {"sqli", "cmdi", "unknown"}, "FALSE_POSITIVE", "noise", _sc_sql_generic_500, 0.8),
+    _Scenario("generic_500_page", {"sqli", "cmdi", "pathtraver", "unknown"}, "FALSE_POSITIVE", "noise", _sc_sql_generic_500, 0.8),
+    _Scenario("path_traversal_blocked", {"pathtraver"}, "FALSE_POSITIVE", "noise", _sc_path_blocked, 0.9),
+    _Scenario("cmd_injection_filtered", {"cmdi"}, "FALSE_POSITIVE", "noise", _sc_cmd_filtered, 0.88),
     _Scenario("waf_block_page", {"*"}, "FALSE_POSITIVE", "noise", _sc_waf_block, 0.9),
     _Scenario("blank_response", {"*"}, "FALSE_POSITIVE", "noise", _sc_blank, 0.82),
     _Scenario("xss_partial_filter", {"xss"}, "UNCERTAIN", "noise", _sc_xss_stripped, 0.5),
+    _Scenario("path_traversal_within_root", {"pathtraver"}, "UNCERTAIN", "noise", _sc_path_within_root, 0.5),
+    _Scenario("cmd_injection_echoed_arg", {"cmdi"}, "UNCERTAIN", "noise", _sc_cmd_echoed_arg, 0.5),
     _Scenario("reflection_irrelevant_to_class", {"sqli", "cmdi", "ldapi", "xpathi"}, "UNCERTAIN", "noise", _sc_echo_nonexec, 0.5),
     _Scenario("weak_boolean_differential", {"sqli"}, "UNCERTAIN", "noise", _sc_boolean_weak, 0.5),
 ]
@@ -1119,6 +1272,110 @@ def _synth_latency(bucket: str, base_ms: float, rng: random.Random) -> float:
     if bucket == "faster":
         return round(-rng.uniform(noise * 1.3, noise * 3.0), 1)
     return 0.0
+
+
+# --------------------------------------------------------------------------- #
+# Standalone (telemetry-independent) probe seeds
+# --------------------------------------------------------------------------- #
+#
+# The base telemetry sweep only exercised the SQLi and XSS testers, so classes
+# such as Path Traversal and OS Command Injection produced *zero* real probe
+# seeds and their synthetic scenarios never fired. These hardcoded seeds give
+# the augmenter a robust base of realistic GET-parameter payloads (relative and
+# absolute traversal, several URL-encoding layers, NUL-byte truncation; shell
+# metacharacter / newline / backtick / subshell command injection) so those
+# classes get balanced TP / FP / UNCERTAIN coverage even when the telemetry has
+# no trace of the corresponding tester.
+
+_STANDALONE_SEED_SPECS: dict[str, dict[str, Any]] = {
+    "pathtraver": {
+        "tester_id": "PathTraversalTester",
+        "context": "file_read",
+        "payloads": [
+            "../../../../etc/passwd",
+            "../../../../../../etc/passwd",
+            "....//....//....//....//etc/passwd",
+            "..%2f..%2f..%2f..%2fetc%2fpasswd",
+            "%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+            "..%252f..%252f..%252fetc%252fpasswd",
+            "../../../../etc/passwd%00.png",
+            "/etc/passwd",
+            "file:///etc/passwd",
+            "..\\..\\..\\..\\windows\\win.ini",
+            "..%5c..%5c..%5c..%5cwindows%5cwin.ini",
+            "../../../../etc/hosts",
+        ],
+    },
+    "cmdi": {
+        "tester_id": "CommandInjectionTester",
+        "context": "shell",
+        "payloads": [
+            "; id",
+            "| id",
+            "| uname -a",
+            "`id`",
+            "$(id)",
+            "& whoami",
+            "&& cat /etc/passwd",
+            "%0aid",
+            "%0a/usr/bin/id",
+            "; sleep 5",
+            "| ping -c 5 127.0.0.1",
+            "| nslookup wsscanary.example.com",
+        ],
+    },
+}
+
+
+def _standalone_triage_seeds(
+    classes: Iterable[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Hardcoded probe seeds in the same shape as :func:`_triage_seeds` output.
+
+    ``classes`` filters which vuln classes to emit; ``None`` emits all of them.
+    """
+    want = set(classes) if classes is not None else set(_STANDALONE_SEED_SPECS)
+    seeds: list[dict[str, Any]] = []
+    for vclass, spec in _STANDALONE_SEED_SPECS.items():
+        if vclass not in want:
+            continue
+        for i, payload in enumerate(spec["payloads"]):
+            seeds.append(
+                {
+                    "vclass": vclass,
+                    "payload": payload,
+                    "context": spec["context"],
+                    "vector": "getparam",
+                    "apriori": "MEDIUM",
+                    "scanner_conf": "HIGH" if i % 2 == 0 else "MEDIUM",
+                    "base_latency_ms": 16.0 + (i % 5) * 3.0,
+                    "tester_id": spec["tester_id"],
+                    "standalone_seed": True,
+                }
+            )
+    return seeds
+
+
+def _merge_standalone_seeds(
+    seeds: list[dict[str, Any]], *, force_all: bool = False
+) -> list[dict[str, Any]]:
+    """Append hardcoded seeds for any standalone class not already represented
+    (or, with ``force_all``, for every standalone class), de-duplicating on the
+    ``(vclass, payload, context)`` key the rest of the pipeline joins on."""
+    covered = {s["vclass"] for s in seeds}
+    wanted = (
+        list(_STANDALONE_SEED_SPECS)
+        if force_all
+        else [c for c in _STANDALONE_SEED_SPECS if c not in covered]
+    )
+    if not wanted:
+        return seeds
+    have = {(s["vclass"], s["payload"], s.get("context") or "") for s in seeds}
+    merged = list(seeds)
+    for s in _standalone_triage_seeds(wanted):
+        if (s["vclass"], s["payload"], s["context"]) not in have:
+            merged.append(s)
+    return merged
 
 
 def _triage_seeds(
@@ -1618,12 +1875,23 @@ def _run_task(
     mult = getattr(args, "synthetic_multiplier", 0)
     if task == "triage" and mult > 0:
         seeds = _triage_seeds(rows, oracle, weak=weak)
+        telemetry_seed_classes = dict(Counter(s["vclass"] for s in seeds))
+        if not getattr(args, "no_standalone_seeds", False):
+            seeds = _merge_standalone_seeds(
+                seeds, force_all=getattr(args, "standalone_all_seeds", False)
+            )
         synth = list(synthesize_triage_samples(seeds, multiplier=mult, seed=args.seed))
         report["synthetic"] = {
             "seeds": len(seeds),
+            "telemetry_seed_classes": telemetry_seed_classes,
+            "seed_classes": dict(Counter(s["vclass"] for s in seeds)),
+            "standalone_seeds": sum(1 for s in seeds if s.get("standalone_seed")),
             "multiplier": mult,
             "built": len(synth),
             "class_counts": dict(Counter(s.meta.get("label", "?") for s in synth)),
+            "suspected_class_counts": dict(
+                Counter(s.meta.get("suspected_class", "?") for s in synth)
+            ),
             "scenario_counts": dict(Counter(s.meta.get("scenario", "?") for s in synth)),
         }
         samples.extend(synth)
@@ -1698,6 +1966,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--enable-synthetic", action="store_true",
                     help="shortcut for --synthetic-multiplier 20 when no explicit "
                          "multiplier is given")
+    ap.add_argument("--no-standalone-seeds", action="store_true",
+                    help="do not inject the hardcoded Path-Traversal / Command-"
+                         "Injection probe seeds for classes missing from the "
+                         "telemetry (synthetic augmentation only)")
+    ap.add_argument("--standalone-all-seeds", action="store_true",
+                    help="inject the hardcoded standalone seeds for every "
+                         "supported class even when the telemetry already covers it")
     args = ap.parse_args(argv)
     if args.enable_synthetic and args.synthetic_multiplier == 0:
         args.synthetic_multiplier = 20
@@ -1733,6 +2008,8 @@ def main(argv: list[str] | None = None) -> int:
             "dedup": not args.no_dedup, "drop_noise": not args.keep_noise,
             "max_body_bytes": _MAX_BODY_BYTES,
             "synthetic_multiplier": args.synthetic_multiplier,
+            "standalone_seeds": not args.no_standalone_seeds,
+            "standalone_all_seeds": args.standalone_all_seeds,
         },
         "tasks": [],
     }

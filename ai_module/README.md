@@ -146,15 +146,32 @@ HTTP response bodies to synthesise ~`N` samples per seed, driven to a balanced
 | `xss_verbatim_reflection` | payload unescaped in an HTML/JS context | TP |
 | `sql_error_disclosure` | MySQL/PG/SQLite/MSSQL/Oracle syntax error | TP |
 | `sql_time_oracle` | normal page + latency far over baseline | TP |
-| `path_traversal_file_read` | `/etc/passwd` / `boot.ini` contents | TP |
-| `cmd_injection_output` | `uid=…` / `uname` output | TP |
+| `path_traversal_file_read` | `/etc/passwd` / `win.ini` / `hosts` contents (encoding-aware note) | TP |
+| `cmd_injection_output` | `uid=…` / `uname` / `ipconfig` output | TP |
+| `cmd_injection_time_oracle` | normal page + injected `sleep`/`ping` delay over baseline | TP |
 | `xss_output_encoded` | payload HTML-entity-escaped | FP |
 | `generic_500_page` | framework 500 / Whitelabel page | FP |
+| `path_traversal_blocked` | generic "file not found", traversal not honoured | FP |
+| `cmd_injection_filtered` | shell metacharacters stripped, ordinary lookup | FP |
 | `waf_block_page` | 403 / Cloudflare / ModSecurity block | FP |
 | `blank_response` | empty 200 | FP |
 | `xss_partial_filter` | payload reflected with `<>"'` stripped | UNCERTAIN |
+| `path_traversal_within_root` | traversal normalised away, in-webroot listing returned | UNCERTAIN |
+| `cmd_injection_echoed_arg` | OS payload echoed as a literal HTML argument, no execution | UNCERTAIN |
 | `reflection_irrelevant_to_class` | non-XSS payload echoed in `<title>` | UNCERTAIN |
 | `weak_boolean_differential` | tiny, unstable content-length delta | UNCERTAIN |
+
+**Standalone seeds (`--no-standalone-seeds` to opt out).** The base testbed
+sweep only exercised the SQLi and XSS testers, so Path Traversal and OS Command
+Injection had *zero* real probe seeds and their scenarios never fired. The
+generator now injects a hardcoded catalogue of realistic GET-parameter payloads
+for any standalone class the telemetry doesn't cover — relative/absolute
+traversal across several URL-encoding layers plus NUL-byte truncation, and
+shell-metacharacter / newline / backtick / `$()` command injection — so those
+classes always get balanced TP / FP / UNCERTAIN coverage. `--standalone-all-seeds`
+adds them even for classes the telemetry already covers. The curation manifest
+records `synthetic.telemetry_seed_classes`, `synthetic.seed_classes`,
+`synthetic.standalone_seeds` and `synthetic.suspected_class_counts`.
 
 `response_excerpt` is rendered as its own fenced block in the prompt, and each
 sample's `reasoning` cites the concrete body evidence (the specific DBMS error,
