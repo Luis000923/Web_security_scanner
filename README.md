@@ -164,20 +164,20 @@ escapan con `html.escape`.
 
 - Python 3.10 o superior (el proyecto declara `requires-python >= 3.9`; el
   entorno de desarrollo y CI usa 3.12).
-- Gestor de paquetes [`uv`](https://docs.astral.sh/uv/) recomendado.
+- Gestor de paquetes [`uv`](https://docs.astral.sh/uv/) **obligatorio**. El
+  proyecto se gestiona exclusivamente con `uv`; no se usa `pip` ni
+  `python -m venv` de forma directa.
 
 ```bash
-# Con uv (crea el entorno y resuelve dependencias desde uv.lock)
-uv sync
-
-# Alternativa con pip
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+uv venv                    # crea .venv con el interprete fijado
+uv sync                    # resuelve e instala las dependencias desde uv.lock
+# subsistema de IA (pesado, orientado a GPU): ver ai_module/README.md
+uv pip install -e ".[ai]"
 ```
 
-Dependencias de ejecucion: `aiohttp`, `beautifulsoup4`, `colorama`, `pyyaml`,
-`dnspython`.
+`uv run <comando>` ejecuta dentro del entorno del proyecto sin necesidad de
+activarlo. Dependencias de ejecucion: `aiohttp`, `beautifulsoup4`, `colorama`,
+`pyyaml`, `dnspython`.
 
 ---
 
@@ -185,8 +185,8 @@ Dependencias de ejecucion: `aiohttp`, `beautifulsoup4`, `colorama`, `pyyaml`,
 
 ```bash
 uv run webscanner scan <URL> [opciones]
-# o, sin uv:
-python -m web_security_scanner.cli scan <URL> [opciones]
+# equivalente:
+uv run python -m web_security_scanner.cli scan <URL> [opciones]
 ```
 
 ### Opciones

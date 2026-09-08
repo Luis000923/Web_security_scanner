@@ -29,29 +29,44 @@ test suite work with only the core scanner installed.
 
 Blackwell / `sm_120` needs **CUDA 12.8+** wheels. Copy-paste in order.
 
+The whole flow is driven by [`uv`](https://docs.astral.sh/uv/) — do **not** use
+`pip` or `python -m venv` directly. `uv run` executes inside the project
+environment (creating/syncing it from `uv.lock` on demand), so no manual
+`activate` is needed.
+
 ### 0. Clone this branch
 
 ```bash
 git clone -b ai-agent https://github.com/Luis000923/Web_security_scanner.git
 cd Web_security_scanner
-python3.12 -m venv .venv && source .venv/bin/activate
-python -m pip install -U pip wheel
+uv venv                       # creates .venv with the pinned interpreter
+source .venv/bin/activate     # optional; uv run works without it
+uv sync                       # core scanner deps + dev group, from uv.lock
 ```
 
 ### 1. PyTorch with CUDA 12.8
 
+The Blackwell build lives on a dedicated index, so install it explicitly into
+the uv environment before the rest of the ML stack:
+
 ```bash
-pip install torch --index-url https://download.pytorch.org/whl/cu128
-python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+uv pip install torch --index-url https://download.pytorch.org/whl/cu128
+uv run python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 # expect: 2.x.x+cu128  True  NVIDIA GeForce RTX 5090
 ```
 
 ### 2. Project + ML stack
 
 ```bash
-pip install -e ".[ai]"                 # transformers, peft, trl, bitsandbytes, datasets…
-pip install -e ".[ai,ai-unsloth]"      # optional: fused kernels (~2x, less VRAM)
-pip install -e ".[ai,ai-serve]"        # optional: vLLM for the OpenAI-compatible endpoint
+uv pip install -e ".[ai]"              # transformers, peft, trl, bitsandbytes, datasets…
+uv pip install -e ".[ai,ai-unsloth]"   # optional: fused kernels (~2x, less VRAM)
+uv pip install -e ".[ai,ai-serve]"     # optional: vLLM for the OpenAI-compatible endpoint
+```
+
+Then confirm the environment is uv-managed and the critical deps are resolved:
+
+```bash
+bash ai_module/verify_uv_env.sh
 ```
 
 Unsloth is **off by default** on Blackwell / `sm_120` (its Triton kernels and
@@ -72,7 +87,7 @@ balance+stratified split**.
 ```bash
 # one shot: both tasks, oracle-labelled, 1:1 balanced triage, 90/10 split,
 # + a JSON curation manifest (rows dropped, dedup count, class balance, sizes)
-python -m ai_module.dataset_generator \
+uv run python -m ai_module.dataset_generator \
     --telemetry testbed/results \
     --benchmark-csv testbed/.cache/benchmark/expectedresults-1.2.csv \
     --task both --format alpaca \
@@ -80,7 +95,7 @@ python -m ai_module.dataset_generator \
     --out data/sft.jsonl --report data/curation.json
 
 # triage only, keeping noisy rows for inspection, bigger evidence budget
-python -m ai_module.dataset_generator \
+uv run python -m ai_module.dataset_generator \
     --telemetry testbed/results reports/telemetry \
     --benchmark-csv testbed/.cache/benchmark/expectedresults-1.2.csv \
     --task triage --format chatml --balance \
@@ -88,7 +103,7 @@ python -m ai_module.dataset_generator \
     --out data/triage.jsonl --split 0.9 --report data/triage.clean.json
 
 # payload synthesis: trajectory-reconstructed, weak-labelled (no oracle needed)
-python -m ai_module.dataset_generator \
+uv run python -m ai_module.dataset_generator \
     --telemetry testbed/results \
     --task payload --format alpaca \
     --out data/payload.jsonl --split 0.95
@@ -190,18 +205,18 @@ Runs a real 5-step optimisation loop — validates CUDA, bitsandbytes 4-bit,
 LoRA attach and the data pipeline before you commit hours to a full run.
 
 ```bash
-python -m ai_module.train_qlora \
+uv run python -m ai_module.train_qlora \
     --dataset data/triage.train.jsonl \
     --output-dir runs/_smoke --max-steps 5
 # -> "smoke test OK — NVIDIA GeForce RTX 5090 (sm_120) ... adapter not saved"
 ```
 
-`--dry-run` prints the resolved config without importing torch at all.
+`uv run python -m ai_module.train_qlora --dry-run` prints the resolved config without importing torch at all.
 
 ### 5. Full fine-tune
 
 ```bash
-python -m ai_module.train_qlora \
+uv run python -m ai_module.train_qlora \
     --base-model unsloth/Qwen2.5-7B-Instruct-bnb-4bit \
     --dataset data/triage.train.jsonl --eval data/triage.val.jsonl \
     --output-dir runs/triage-qlora \
@@ -231,7 +246,7 @@ Repeat step 3–5 with `--task payload` for the payload-synthesis adapter.
 ### 6. Serve the adapter (OpenAI-compatible)
 
 ```bash
-python -m vllm.entrypoints.openai.api_server \
+uv run python -m vllm.entrypoints.openai.api_server \
     --model runs/triage-qlora/merged \
     --served-model-name local-security-agent \
     --port 8000
@@ -250,7 +265,7 @@ export AI_AGENT_BACKEND=openai
 export AI_AGENT_BASE_URL=http://127.0.0.1:8000/v1
 export AI_AGENT_MODEL=local-security-agent
 
-python -m web_security_scanner.cli scan https://target.example \
+uv run python -m web_security_scanner.cli scan https://target.example \
     --ai-fp-threshold 0.75 \
     --telemetry-dir reports/telemetry
 ```
@@ -281,6 +296,6 @@ Opting out:
 Quick offline check without a model server (in-process stub):
 
 ```bash
-python -m web_security_scanner.cli scan https://target.example --ai-backend echo
-python -m ai_module.agent_inference        # echo-backend smoke test
+uv run python -m web_security_scanner.cli scan https://target.example --ai-backend echo
+uv run python -m ai_module.agent_inference   # echo-backend smoke test
 ```

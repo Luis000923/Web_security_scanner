@@ -28,10 +28,10 @@ experiments = [
     "rich>=13.0",
 ]
 # Agentic AI subsystem (ai_module/). Heavy, GPU-oriented; install explicitly:
-#   pip install -e ".[ai]"
+#   uv pip install -e ".[ai]"
 # Tuned for a single NVIDIA RTX 5090 (Blackwell / sm_120). As of early 2026 the
 # Blackwell wheels need CUDA 12.8+; install a matching torch build first, e.g.
-#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+#   uv pip install torch --index-url https://download.pytorch.org/whl/cu128
 ai = [
     "torch>=2.6.0",
     "transformers>=4.48.0",
@@ -50,7 +50,7 @@ ai = [
 ]
 # Optional: Unsloth fused kernels (~2x throughput, lower VRAM). Kept separate
 # because its pinned deps can conflict; install alongside the `ai` extra:
-#   pip install -e ".[ai,ai-unsloth]"
+#   uv pip install -e ".[ai,ai-unsloth]"
 ai-unsloth = [
     "unsloth>=2025.1.1",
     "unsloth-zoo>=2025.1.1",
@@ -82,6 +82,12 @@ dev = [
 
 [project.scripts]
 webscanner = "web_security_scanner.cli:main"
+
+# The project is managed exclusively with `uv` (see README.md / ai_module/README.md).
+# Do not use `pip` or `python -m venv` directly.
+[tool.uv]
+required-version = ">=0.5"
+default-groups = ["dev"]
 
 [tool.setuptools.packages.find]
 include = ["web_security_scanner*", "ai_module*"]
