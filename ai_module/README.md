@@ -188,13 +188,22 @@ python -m ai_module.train_qlora \
     --base-model unsloth/Qwen2.5-7B-Instruct-bnb-4bit \
     --dataset data/triage.train.jsonl --eval data/triage.val.jsonl \
     --output-dir runs/triage-qlora \
-    --epochs 2 --batch-size 8 --grad-accum 2 --max-seq-len 4096 \
+    --epochs 3 --batch-size 8 --grad-accum 2 --max-seq-len 2048 \
     --merge-adapter
 ```
 
 The Blackwell knobs (bf16 compute, TF32 matmul, NF4 + double-quant, paged
 8-bit AdamW, SDPA attention, expandable CUDA segments) are applied
 automatically; add `--flash-attn` / `--use-unsloth` to opt in to those.
+
+The defaults above are already the small-dataset recipe (~800 examples of
+~700 tokens): 3 epochs, 2048-token sequences, `lora_alpha = 2 * --lora-r`,
+`--lora-dropout 0.05`. Passing `--eval` also turns on per-epoch validation,
+`load_best_model_at_end` on `eval_loss`, `--save-total-limit 2` and an early
+stop after `--early-stopping-patience 2` evals without improvement — so the
+saved adapter is the best checkpoint, not the last one. Without `--eval` there
+is no metric to select on and both are off; `--early-stopping-patience 0`
+disables the callback explicitly.
 Output:
 
 - `runs/triage-qlora/adapter/` — LoRA adapter (small, for the `transformers` backend)

@@ -35,7 +35,7 @@ Example
         --dataset data/triage.train.jsonl \
         --eval  data/triage.val.jsonl \
         --output-dir runs/triage-qlora \
-        --epochs 2 --batch-size 8 --grad-accum 2 --max-seq-len 4096
+        --epochs 3 --batch-size 8 --grad-accum 2 --max-seq-len 2048
 
     # smoke test on arrival at the workstation (validates CUDA + bnb + adapters)
     python -m ai_module.train_qlora --dataset data/triage.train.jsonl \
@@ -43,6 +43,16 @@ Example
 
 ``--dry-run`` resolves and prints the config without importing the ML stack;
 ``--max-steps N`` runs a real but tiny optimisation loop and then exits.
+
+Small-dataset defaults
+----------------------
+The synthetic triage corpus is ~800 examples of ~700 tokens, so the defaults
+are tuned against overfitting rather than throughput: 3 epochs, 2048-token
+sequences, ``lora_alpha = 2 * r`` with 5% LoRA dropout, per-epoch validation,
+and ``load_best_model_at_end`` on ``eval_loss`` with an
+``EarlyStoppingCallback`` (patience 2). Pass ``--eval FILE.jsonl`` to arm the
+validation half — without it there is no metric to select on, so best-checkpoint
+selection and early stopping stay off.
 """
 from __future__ import annotations
 
@@ -61,23 +71,30 @@ class TrainConfig:
     train: Path = Path("data/triage.train.jsonl")
     eval: Path | None = None
     output_dir: Path = Path("runs/qlora")
-    # LoRA
+    # LoRA — standard recipe: alpha = 2 * r, small dropout for regularisation
+    # on a small (~800 sample) synthetic corpus.
     lora_r: int = 32
-    lora_alpha: int = 32
-    lora_dropout: float = 0.0
+    lora_alpha: int | None = None  # None -> 2 * lora_r (resolved in __post_init__)
+    lora_dropout: float = 0.05
     target_modules: list[str] = field(default_factory=lambda: [
         "q_proj", "k_proj", "v_proj", "o_proj",
         "gate_proj", "up_proj", "down_proj",
     ])
     # Optimisation
-    epochs: float = 2.0
+    epochs: float = 3.0
     batch_size: int = 8
     grad_accum: int = 2
     lr: float = 2e-4
     warmup_ratio: float = 0.03
     weight_decay: float = 0.01
-    max_seq_len: int = 4096
+    # Our triage/synthesis examples are ~700 tokens; 2048 leaves headroom while
+    # cutting padding/attention cost versus the old 4096 default.
+    max_seq_len: int = 2048
     max_steps: int = -1  # >0 overrides epochs (quick hardware/CUDA validation)
+    # Validation / checkpoint selection (small-dataset overfit guard)
+    save_total_limit: int = 2
+    early_stopping_patience: int = 2
+    early_stopping_threshold: float = 0.0
     # RTX 5090 knobs
     bf16: bool = True
     packing: bool = True
@@ -88,6 +105,11 @@ class TrainConfig:
     merge_adapter: bool = False
     seed: int = 1337
     dataset_text_field: str = "text"
+
+    def __post_init__(self) -> None:
+        # Standard LoRA scaling: alpha = 2 * r unless explicitly overridden.
+        if self.lora_alpha is None:
+            self.lora_alpha = 2 * self.lora_r
 
 
 # --------------------------------------------------------------------------- #
@@ -253,11 +275,19 @@ def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
     if not smoke and _tensorboard_available():
         report_to = ["tensorboard"]
 
+    # Per-epoch validation is what makes early stopping / best-checkpoint
+    # selection possible; without an eval set both are silently disabled
+    # (``load_best_model_at_end`` requires eval_strategy == save_strategy).
+    evaluate = have_eval and not smoke
+    eval_strategy = "epoch" if evaluate else "no"
+    save_strategy = "no" if smoke else "epoch"
+
     candidate: dict[str, Any] = dict(
         output_dir=str(cfg.output_dir),
         num_train_epochs=cfg.epochs,
         max_steps=cfg.max_steps if smoke else -1,
         per_device_train_batch_size=cfg.batch_size,
+        per_device_eval_batch_size=cfg.batch_size,
         gradient_accumulation_steps=cfg.grad_accum,
         learning_rate=cfg.lr,
         warmup_ratio=0.0 if smoke else cfg.warmup_ratio,
@@ -266,8 +296,15 @@ def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
         bf16=cfg.bf16,
         tf32=True,
         logging_steps=1 if smoke else 10,
-        save_strategy="no" if smoke else "epoch",
-        eval_strategy="epoch" if (have_eval and not smoke) else "no",
+        save_strategy=save_strategy,
+        save_total_limit=cfg.save_total_limit,
+        # TRL/transformers renamed this in 4.46; pass both names and let
+        # _supported_kwargs drop whichever the installed version lacks.
+        eval_strategy=eval_strategy,
+        evaluation_strategy=eval_strategy,
+        load_best_model_at_end=evaluate,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
         optim="paged_adamw_8bit",
         gradient_checkpointing=cfg.gradient_checkpointing,
         report_to=report_to,
@@ -283,7 +320,7 @@ def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
     return SFTConfig(**_supported_kwargs(SFTConfig, candidate))
 
 
-def _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds):
+def _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds, cfg=None):
     from trl import SFTTrainer
 
     candidate: dict[str, Any] = dict(
@@ -298,7 +335,29 @@ def _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds):
     # Never pass both — prefer the modern name.
     if "processing_class" in allowed:
         allowed.pop("tokenizer", None)
-    return SFTTrainer(**allowed)
+    trainer = SFTTrainer(**allowed)
+    _attach_early_stopping(trainer, cfg, have_eval=eval_ds is not None)
+    return trainer
+
+
+def _attach_early_stopping(trainer, cfg, *, have_eval: bool) -> None:
+    """Stop training once eval_loss stops improving (small-dataset overfit guard).
+
+    A no-op without an eval set (nothing to monitor) or when the patience is
+    disabled with ``--early-stopping-patience 0``.
+    """
+    if cfg is None or not have_eval or cfg.early_stopping_patience <= 0:
+        return
+    if not getattr(trainer.args, "load_best_model_at_end", False):
+        return
+    from transformers import EarlyStoppingCallback
+
+    trainer.add_callback(EarlyStoppingCallback(
+        early_stopping_patience=cfg.early_stopping_patience,
+        early_stopping_threshold=cfg.early_stopping_threshold,
+    ))
+    print(f"early stopping enabled: patience={cfg.early_stopping_patience} "
+          f"eval rounds on eval_loss")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -319,7 +378,19 @@ def main(argv: list[str] | None = None) -> int:
                     help="cap optimiser steps (>0 overrides --epochs); use "
                          "--max-steps 5 for a quick CUDA / bitsandbytes smoke test")
     ap.add_argument("--lora-r", type=int, default=TrainConfig.lora_r)
-    ap.add_argument("--lora-alpha", type=int, default=TrainConfig.lora_alpha)
+    ap.add_argument("--lora-alpha", type=int, default=None,
+                    help="LoRA scaling (default: 2 * --lora-r)")
+    ap.add_argument("--lora-dropout", type=float, default=TrainConfig.lora_dropout,
+                    help="LoRA dropout; regularises small synthetic corpora")
+    ap.add_argument("--save-total-limit", type=int, default=TrainConfig.save_total_limit,
+                    help="checkpoints to keep on disk (best one is always kept)")
+    ap.add_argument("--early-stopping-patience", type=int,
+                    default=TrainConfig.early_stopping_patience,
+                    help="stop after N evals without an eval_loss improvement "
+                         "(0 disables; needs --eval)")
+    ap.add_argument("--early-stopping-threshold", type=float,
+                    default=TrainConfig.early_stopping_threshold,
+                    help="minimum eval_loss delta that counts as an improvement")
     ap.add_argument("--use-unsloth", action="store_true",
                     help="opt in to Unsloth fused kernels (off by default on "
                          "Blackwell / sm_120; auto-falls back to transformers/peft "
@@ -348,7 +419,11 @@ def main(argv: list[str] | None = None) -> int:
         max_seq_len=args.max_seq_len,
         max_steps=args.max_steps,
         lora_r=args.lora_r,
-        lora_alpha=args.lora_alpha,
+        lora_alpha=args.lora_alpha,  # None -> 2 * lora_r
+        lora_dropout=args.lora_dropout,
+        save_total_limit=args.save_total_limit,
+        early_stopping_patience=args.early_stopping_patience,
+        early_stopping_threshold=args.early_stopping_threshold,
         packing=not args.no_packing,
         attn_impl="flash_attention_2" if args.flash_attn else "sdpa",
         use_unsloth=args.use_unsloth,
@@ -384,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     sft_config = _build_sft_config(cfg, smoke=smoke, have_eval=eval_ds is not None)
-    trainer = _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds)
+    trainer = _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds, cfg)
     trainer.train()
 
     if smoke:
