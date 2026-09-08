@@ -34,6 +34,20 @@ The whole flow is driven by [`uv`](https://docs.astral.sh/uv/) — do **not** us
 environment (creating/syncing it from `uv.lock` on demand), so no manual
 `activate` is needed.
 
+**One-shot orchestrator.** Steps 0–5 below are automated by `run_pipeline.sh`
+in the repo root: it verifies the uv environment, (optionally) regenerates the
+datasets, runs the QLoRA smoke test and then the full fine-tune, aborting in red
+on any failure and printing the total wall-clock time.
+
+```bash
+./run_pipeline.sh                 # verify env → smoke test → full triage fine-tune
+./run_pipeline.sh --regen-data    # + regenerate datasets first (synthetic x40)
+./run_pipeline.sh --task payload --epochs 3
+./run_pipeline.sh --help
+```
+
+The manual steps below are still the reference for what each phase does.
+
 ### 0. Clone this branch
 
 ```bash
