@@ -241,7 +241,22 @@ def _build_model_hf(cfg: TrainConfig):
         bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True,
         bnb_4bit_compute_dtype=torch.bfloat16,
+        # Never silently spill the quantized model to CPU/disk: a partial
+        # dispatch makes Accelerate raise "Some modules are dispatched on the
+        # CPU or the disk" instead of OOMing loudly. QLoRA needs every base
+        # weight resident on the GPU anyway.
+        llm_int8_enable_fp32_cpu_offload=False,
     )
+
+    # Pin the whole quantized model onto a single CUDA device. ``device_map=
+    # "auto"`` lets Accelerate place layers on CPU/disk when its VRAM estimate
+    # is conservative, which is exactly the failure we hit. Only fall back to
+    # "auto" when there is no visible GPU (CPU smoke runs / CI).
+    if torch.cuda.is_available():
+        gpu_index = torch.cuda.current_device()
+        device_map: Any = {"": gpu_index}
+    else:
+        device_map = "auto"
     tokenizer = AutoTokenizer.from_pretrained(cfg.base_model)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -251,7 +266,7 @@ def _build_model_hf(cfg: TrainConfig):
         quantization_config=bnb,
         torch_dtype=torch.bfloat16,
         attn_implementation=cfg.attn_impl,
-        device_map="auto",
+        device_map=device_map,
     )
     model = prepare_model_for_kbit_training(
         model, use_gradient_checkpointing=cfg.gradient_checkpointing
