@@ -45,7 +45,12 @@ in the repo root:
   — aborting only if that fails (`--no-install` to opt out);
 - (optionally) regenerates the datasets (`--regen-data`, synthetic ×40);
 - pre-downloads the base model into the HF cache so the trainer never stalls
-  mid-run (`ai_module/ensure_base_model.py`; `--skip-model-dl` to opt out);
+  mid-run (`ai_module/ensure_base_model.py`; `--skip-model-dl` to opt out).
+  Flaky transfers (network drops, Xet / `CAS Client Error` reconstruction
+  faults, socket timeouts) are retried with exponential backoff; before each
+  retry the partial / corrupt blobs are purged from the cache and the Xet
+  accelerator is disabled so the retry falls back to plain HTTPS. Tune with
+  `--model-retries N`; force plain HTTPS from the start with `--no-xet`;
 - runs the QLoRA smoke test and then the full fine-tune, aborting in red on any
   failure and printing the total wall-clock time.
 

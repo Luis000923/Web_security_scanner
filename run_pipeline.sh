@@ -26,6 +26,9 @@
 #   --no-cuda-torch         when auto-installing, skip the explicit CUDA 12.8
 #                           torch wheel (use whatever ".[ai]" resolves)
 #   --skip-model-dl         do not pre-download the base model
+#   --model-retries N       base-model download attempts (default: 3)
+#   --no-xet                fetch the base model over plain HTTPS from the start
+#                           (disable the Xet accelerator — use on flaky links)
 #   --skip-smoke            skip the smoke test (not recommended)
 #   --skip-train            stop after the smoke test
 #   --no-verify             skip bash ai_module/verify_uv_env.sh (not recommended)
@@ -81,6 +84,8 @@ BASE_MODEL="unsloth/Qwen2.5-7B-Instruct-bnb-4bit"
 NO_INSTALL=0
 NO_CUDA_TORCH=0
 SKIP_MODEL_DL=0
+MODEL_RETRIES=3
+NO_XET=0
 SKIP_SMOKE=0
 SKIP_TRAIN=0
 NO_VERIFY=0
@@ -96,11 +101,13 @@ while [[ $# -gt 0 ]]; do
         --no-install)     NO_INSTALL=1; shift ;;
         --no-cuda-torch)  NO_CUDA_TORCH=1; shift ;;
         --skip-model-dl)  SKIP_MODEL_DL=1; shift ;;
+        --model-retries)  MODEL_RETRIES="${2:?}"; shift 2 ;;
+        --no-xet)         NO_XET=1; shift ;;
         --skip-smoke)     SKIP_SMOKE=1; shift ;;
         --skip-train)     SKIP_TRAIN=1; shift ;;
         --no-verify)      NO_VERIFY=1; shift ;;
         --allow-root)     ALLOW_ROOT=1; shift ;;
-        -h|--help)        sed -n '3,37p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)        sed -n '3,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)                die "unknown option: $1  (try --help)" ;;
     esac
 done
@@ -251,10 +258,19 @@ elif [[ "$SKIP_SMOKE" -eq 1 && "$SKIP_TRAIN" -eq 1 ]]; then
     info "no training step scheduled — skipping model download"
 else
     info "ensuring '${BASE_MODEL}' is in the Hugging Face cache …"
-    uv run python -m ai_module.ensure_base_model "$BASE_MODEL" \
-        || die "could not obtain the base model '${BASE_MODEL}' — check the repo \
-id / network / 'uv run huggingface-cli login' for gated repos"
-    ok "base model ready in the local cache"
+    info "  (flaky transfers are retried with backoff + cache cleanup — this step"
+    info "   may pause and re-try before it either succeeds or aborts; that is normal)"
+    ebm_args=(--retries "$MODEL_RETRIES")
+    [[ "$NO_XET" -eq 1 ]] && ebm_args+=(--no-xet)
+    if uv run python -m ai_module.ensure_base_model "$BASE_MODEL" "${ebm_args[@]}"; then
+        ok "base model ready in the local cache"
+    else
+        die "could not obtain the base model '${BASE_MODEL}' after ${MODEL_RETRIES} \
+attempts — the partial cache has been purged. Check network / \
+'uv run huggingface-cli login' for gated repos, then re-run; a manual \
+'HF_HUB_DISABLE_XET=1 uv run python -m ai_module.ensure_base_model ${BASE_MODEL}' \
+often gets past Xet/CAS errors."
+    fi
 fi
 
 # ---------------------------------------------------------------------------
