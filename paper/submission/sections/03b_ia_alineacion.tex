@@ -1,0 +1,222 @@
+%% 03b_ia_alineacion.tex — Metodología de fine-tuning y alineación del agente
+%% de triaje. Estructura modular en tres fases (dataset, QLoRA, validación).
+%%
+%% Cifras del conjunto de datos: sections/_datos.tex (fuente:
+%% data/curation.json). Hiperparámetros: ai_module/train_qlora.py.
+%% Neutralidad de hardware: todo entorno de cómputo se describe en términos
+%% metodológicos abstractos (memoria disponible, escalado de parámetros).
+
+\section{Metodología de \emph{fine-tuning} y alineación del agente de triaje}
+\label{sec:ia-metodologia}
+
+El agente de triaje de la \cref{sec:agente} no es un modelo de propósito general
+consultado mediante ingeniería de \emph{prompts}, sino un modelo de lenguaje
+abierto (\emph{open-weight}) especializado en la taxonomía de ciberseguridad del
+escáner. Su construcción se formaliza como un ciclo de entrenamiento modular en
+\textbf{tres fases metodológicas} secuenciales ---preparación del conjunto de
+datos, alineación y cuantización, y validación de seguridad---, cada una con un
+artefacto verificable y un criterio de aceptación explícito. El objetivo de
+diseño es doble y asimétrico: maximizar la supresión de falsos positivos
+heurísticos minimizando, por encima de todo, el falso \emph{negativo} ---que un
+juicio del modelo descarte una vulnerabilidad real.
+
+Toda la metodología es agnóstica a la plataforma de ejecución. El
+entrenamiento se realiza sobre infraestructura de aceleración de \emph{hardware}
+estándar con un mecanismo de \textbf{escalado dinámico de parámetros} que
+selecciona la capacidad del modelo base y la ruta de cuantización en función de
+la memoria de cómputo disponible en el entorno, sin dependencias de una
+arquitectura, un fabricante ni un modelo de acelerador concretos. Esta
+abstracción permite reproducir el ciclo sobre entornos de cómputo heterogéneos
+sin modificar la metodología.
+
+\subsection{Fase 1: Preparación y saneamiento del conjunto de datos}
+\label{sec:ia-dataset}
+
+La primera fase transforma la telemetría cruda del escáner (una fila JSONL por
+sonda, \cref{sec:telemetria}) en un conjunto de instrucciones supervisadas,
+curado y balanceado. La curación se organiza como una tubería de cuatro etapas
+---ingesta y enriquecimiento, limpieza, estructuración, y balanceo con partición
+estratificada--- y produce \textbf{\IADatasetTriaje{}~instancias de triaje} que
+cubren las \IAClasesTaxonomia{}~clases de vulnerabilidad de mayor incidencia:
+inyección SQL (SQLi), inyección de comandos (\emph{command injection}),
+\emph{cross-site scripting} (XSS) y \emph{path traversal}. La composición
+final, deliberadamente equilibrada entre los \IAVeredictos{}~veredictos de la
+taxonomía, se resume en la \cref{tab:ia-dataset}.
+
+\begin{table}[t]
+  \centering
+  \caption{Composición del conjunto de datos de triaje tras el saneamiento
+  (fuente: manifiesto de curación \code{data/curation.json}).}
+  \label{tab:ia-dataset}
+  \footnotesize
+  \begin{tabular}{lr}
+    \toprule
+    Veredicto / partición & Instancias \\
+    \midrule
+    \textsc{true\_positive}   & \IATriajeTP{}  \\
+    \textsc{false\_positive}  & \IATriajeFP{}  \\
+    \textsc{uncertain}        & \IATriajeUNC{} \\
+    \midrule
+    Entrenamiento (\IATriajeSplit{})      & \IATriajeTrain{} \\
+    Validación                            & \IATriajeVal{}   \\
+    \midrule
+    \textbf{Total}            & \textbf{\IADatasetTriaje{}} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+El saneamiento aplica tres salvaguardas contra el aprendizaje espurio, todas
+registradas en el manifiesto de curación para su auditoría:
+
+\begin{itemize}
+  \item \textbf{Depuración semántica de parámetros.} El motor de semántica de
+  parámetros (\code{param\_semantics.py}) identifica los puntos de inyección
+  cuya función es de control de flujo ---parámetros de redirección o de destino
+  de URL como \code{next}, \code{redirect\_uri} o \code{return\_to}. Sobre esos
+  parámetros, la aplicación valida el valor antes de usarlo, de modo que
+  cualquier divergencia de respuesta que no vaya acompañada de evidencia dura
+  (una firma de error del intérprete, un oráculo temporal confirmado o una
+  ejecución observada) se explica por esa validación y no por una inyección. El
+  etiquetado fuerza tales casos a \textsc{false\_positive}, eliminando la clase
+  de falso positivo heurístico ---\emph{la etiqueta es errónea mientras la
+  evidencia parece plausible}--- que más contamina a un clasificador
+  descendente.
+  \item \textbf{Anonimización anti-fuga.} La entrada que ve el modelo expone
+  únicamente un \emph{endpoint} y un nombre de parámetro genéricos: la ruta
+  original ---que en el banco de referencia codifica la clase y el veredicto---
+  se conserva solo en metadatos privados, evitando que el modelo aprenda un
+  atajo hacia la etiqueta. La deduplicación opera sobre la clave
+  \emph{observable} (entrada anonimizada más la latencia discretizada en
+  cubetas), de modo que la variación de milisegundos no filtre una instancia
+  casi idéntica a través de la frontera de entrenamiento y validación.
+  \item \textbf{Balanceo y partición estratificada.} La clase mayoritaria se
+  submuestrea hasta un equilibrio $1{:}1{:}1$ entre veredictos, y la partición
+  \IATriajeSplit{} es estratificada para que la validación conserve las tres
+  clases. Cada veredicto sintetizado se contrasta contra el mismo evaluador de
+  evidencia que emplea la ruta real, descartando ---en lugar de mal etiquetar---
+  todo caso cuya evidencia no discrimine su etiqueta pretendida.
+\end{itemize}
+
+\subsection{Fase 2: Alineación y cuantización (QLoRA)}
+\label{sec:ia-qlora}
+
+La segunda fase especializa un modelo base \emph{open-weight} sobre la taxonomía
+mediante \emph{fine-tuning} eficiente en parámetros, evitando el coste de un
+ajuste completo. Se combina la cuantización de la matriz de pesos base con la
+adaptación de bajo rango (QLoRA~\cite{dettmers2023qlora}): el modelo base se
+carga con cuantización de \textbf{\IACuantBits{}~bits} en el tipo de dato
+\emph{NormalFloat} (NF4) con doble cuantización, y el gradiente actualiza
+únicamente adaptadores de bajo rango (LoRA~\cite{hu2022lora}) sobre los pesos
+congelados. Este esquema preserva la estabilidad numérica ---el cómputo se
+realiza en precisión de punto flotante extendida mientras el almacenamiento se
+mantiene cuantizado--- y reduce la huella de memoria en un factor suficiente
+para que el ciclo completo quepa en el presupuesto de memoria seleccionado
+dinámicamente por el entorno.
+
+Los adaptadores se insertan sobre las \textbf{\IALoraModulos{}~proyecciones
+lineales} del bloque \emph{transformer} ---las cuatro proyecciones de atención
+(\emph{query}, \emph{key}, \emph{value}, \emph{output}) y las tres del bloque de
+proyección \emph{feed-forward} (\emph{gate}, \emph{up}, \emph{down})--- es decir,
+el conjunto completo de módulos objetivo, y no solo la atención. Los
+hiperparámetros de la adaptación se fijaron para un corpus reducido y
+especializado, priorizando la regularización sobre el rendimiento
+(\cref{tab:ia-qlora}): un rango $r = \IALoraR{}$ con escala
+$\alpha = \IALoraAlpha{}$ (razón estándar $\alpha = 2r$) y una tasa de
+\emph{dropout} de \IALoraDropout{} sobre los adaptadores.
+
+\begin{table}[t]
+  \centering
+  \caption{Configuración de la adaptación eficiente en parámetros (QLoRA).}
+  \label{tab:ia-qlora}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{ll}
+    \toprule
+    Componente & Valor \\
+    \midrule
+    Cuantización de pesos base   & NF4 \IACuantBits{}~bits + doble cuant. \\
+    Rango de la adaptación ($r$) & \IALoraR{} \\
+    Escala ($\alpha$)            & \IALoraAlpha{} \ ($\alpha = 2r$) \\
+    \emph{Dropout} de LoRA       & \IALoraDropout{} \\
+    Módulos objetivo             & \IALoraModulos{} (atención + MLP) \\
+    Selección del modelo base    & escalado dinámico por memoria \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+La alineación no se limita a enseñar la taxonomía: incluye un paso de
+\textbf{restricción de dominio} que inyecta una minoría (${\approx}\,
+\IARuidoCognitivo{}$) de instancias de ruido conversacional ---peticiones ajenas
+al análisis de seguridad--- cuya salida objetivo es un centinela de rechazo
+fijo. Tras el ajuste, cualquier entrada que no sea un hallazgo de triaje o una
+petición de síntesis de \emph{payloads} colapsa a ese centinela, que la capa de
+inferencia interpreta como un veredicto \textsc{restricted} y descarta. El
+efecto es un agente que conserva su competencia analítica dentro del dominio y
+carece de la superficie de comportamiento de asistente general, reduciendo el
+espacio de entradas capaces de inducir una respuesta fuera de la taxonomía.
+
+\subsection{Fase 3: Validación y evaluación de seguridad}
+\label{sec:ia-validacion}
+
+La tercera fase somete al adaptador resultante a una evaluación de aceptación
+independiente del entrenamiento, orientada a la mitigación de alucinaciones. Se
+apoya en tres pilares:
+
+\paragraph{Conjunto de validación disjunto (\emph{Golden Set})}
+La evaluación se realiza sobre un conjunto curado a mano, \emph{disjunto} del
+corpus de entrenamiento, de vulnerabilidades políglotas (verdaderos positivos)
+y de escenarios adversarios de falso positivo ---páginas de bloqueo de WAF,
+reflexión codificada como entidades, \emph{jitter} de latencia, respuestas
+cacheadas o páginas de error independientes de la entrada. A diferencia de la
+validación en línea durante el entrenamiento, esta evaluación se conduce con el
+mismo cliente asíncrono que el escáner usa en producción, de modo que mide el
+comportamiento desplegado y no el ajuste al corpus.
+
+\paragraph{Decodificación estructurada}
+Para que ninguna sección del análisis dependa de que el modelo respete el
+formato por convención, la generación se restringe a un esquema tipado ---la
+misma fuente única de verdad que define las etiquetas de entrenamiento y las
+restricciones del servidor. Con enmascaramiento de \emph{logits} guiado por
+gramática el modelo no puede emitir un token no conforme; cuando esa
+restricción no está disponible, la salida se valida y repara contra el esquema
+y, si resulta irreparable, se adopta el veredicto seguro \textsc{uncertain} en
+lugar de propagar una respuesta malformada.
+
+\paragraph{Métricas estrictas por clase}
+Dado que la métrica de pérdida por entropía cruzada no informa sobre si el
+modelo pasaría por alto una vulnerabilidad real, la evaluación reporta métricas
+de seguridad explícitas por clase (\cref{tab:ia-metricas}). La cantidad
+gobernante es la \textbf{tasa de falsos negativos} (FNR): la probabilidad de que
+un verdadero positivo se clasifique como falso positivo, es decir, el coste
+asimétrico que debe minimizarse. Se acompaña de la \emph{tasa de degradación}
+(un verdadero positivo sobre el que el modelo se abstiene con \textsc{uncertain}
+en vez de confirmarlo), de la \emph{cobertura de la clase falso positivo} (su
+capacidad de suprimir ruido genuino) y de la \emph{exactitud de rechazo} sobre
+las instancias de ruido conversacional. Los errores de inferencia
+(agotamiento de tiempo, respuesta malformada tras reintentos) se contabilizan
+por separado y nunca se pliegan en las métricas de clasificación, para que un
+\emph{backend} inestable no pueda enmascararse como un buen FNR. El adaptador
+solo se promueve a producción si supera los umbrales fijados sobre estas
+métricas: la evaluación funciona como una \emph{puerta de aceptación}
+(\emph{gate}), no como un mero informe.
+
+\begin{table}[t]
+  \centering
+  \caption{Métricas de seguridad por clase de la puerta de evaluación. La FNR
+  es la magnitud gobernante por su coste asimétrico.}
+  \label{tab:ia-metricas}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{ll}
+    \toprule
+    Métrica & Definición \\
+    \midrule
+    FNR                 & $P(\text{pred}{=}\textsc{fp} \mid \text{oro}{=}\textsc{tp})$ \\
+    Degradación         & $P(\text{pred}{=}\textsc{unc} \mid \text{oro}{=}\textsc{tp})$ \\
+    Cobertura \textsc{fp} & $P(\text{pred}{=}\textsc{fp} \mid \text{oro}{=}\textsc{fp})$ \\
+    Exactitud de rechazo & fracción de ruido conversacional rechazado \\
+    Exactitud (3 clases) & concordancia global, de referencia \\
+    Tasa de error        & inferencias fallidas (aisladas, no clasif.) \\
+    \bottomrule
+  \end{tabular}
+\end{table}

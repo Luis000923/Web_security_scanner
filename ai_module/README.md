@@ -16,7 +16,7 @@ deterministic heuristics. Intended for **authorized** engagements only.
 | Path | Purpose |
 |------|---------|
 | `dataset_generator.py` | telemetry JSONL → SFT dataset (alpaca / sharegpt / chatml) |
-| `train_qlora.py` | QLoRA / Unsloth fine-tuning, tuned for RTX 5090 (sm_120) |
+| `train_qlora.py` | QLoRA / Unsloth fine-tuning with dynamic parameter scaling by available memory |
 | `agent_inference.py` | async client: `openai` / `transformers` / `echo` backends |
 | `prompts/` | system prompts + reasoning guidelines |
 
@@ -25,9 +25,14 @@ test suite work with only the core scanner installed.
 
 ---
 
-# Runbook — university workstation (RTX 5090 + i9)
+# Runbook — training on a hardware-accelerated environment
 
-Blackwell / `sm_120` needs **CUDA 12.8+** wheels. Copy-paste in order.
+Recent GPU architectures need a matching **CUDA toolkit** (the commands below
+target the CUDA 12.8 wheel index; adjust the index to your accelerator's compute
+capability). Copy-paste in order. Model capacity and the quantization path are
+selected automatically from the available compute memory
+(`ai_module/auto_select_model.py`), so the same runbook applies across
+heterogeneous compute environments.
 
 The whole flow is driven by [`uv`](https://docs.astral.sh/uv/) — do **not** use
 `pip` or `python -m venv` directly. `uv run` executes inside the project
@@ -73,22 +78,23 @@ source .venv/bin/activate     # optional; uv run works without it
 uv sync                       # core scanner deps + dev group, from uv.lock
 ```
 
-### 1. PyTorch with CUDA 12.8
+### 1. PyTorch with a CUDA-matched build
 
-The Blackwell build lives on a dedicated index, so install it explicitly into
-the uv environment before the rest of the ML stack:
+The CUDA-accelerated build lives on a dedicated index, so install it explicitly
+into the uv environment before the rest of the ML stack (the URL below targets
+the CUDA 12.8 wheels; adjust it to your accelerator's compute capability):
 
 ```bash
 uv pip install torch --index-url https://download.pytorch.org/whl/cu128
 uv run python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
-# expect: 2.x.x+cu128  True  NVIDIA GeForce RTX 5090
+# expect: 2.x.x+cu128  True  <your CUDA accelerator>
 ```
 
 ### 2. Project + ML stack
 
 ```bash
 uv pip install -e ".[ai]"              # transformers, peft, trl, bitsandbytes, datasets…
-uv pip install -e ".[ai,ai-unsloth]"   # optional: fused kernels (~2x, less VRAM)
+uv pip install -e ".[ai,ai-unsloth]"   # optional: fused kernels (~2x, lower memory)
 uv pip install -e ".[ai,ai-serve]"     # optional: vLLM for the OpenAI-compatible endpoint
 ```
 
@@ -98,12 +104,13 @@ Then confirm the environment is uv-managed and the critical deps are resolved:
 bash ai_module/verify_uv_env.sh
 ```
 
-Unsloth is **off by default** on Blackwell / `sm_120` (its Triton kernels and
-pinned bitsandbytes tend to lag a new GPU arch). Once `ai-unsloth` is installed
-and validated, opt in with `--use-unsloth`; if its kernels fail to import or
-build the trainer auto-falls back to the `transformers + peft + trl` path.
-Attention defaults to PyTorch **SDPA**; pass `--flash-attn` only if a
-`flash-attn` wheel for CUDA 12.8 / `sm_120` is installed.
+Unsloth is **off by default** on the newest GPU architectures (its Triton
+kernels and pinned bitsandbytes tend to lag a new architecture). Once
+`ai-unsloth` is installed and validated, opt in with `--use-unsloth`; if its
+kernels fail to import or build the trainer auto-falls back to the
+`transformers + peft + trl` path. Attention defaults to PyTorch **SDPA**; pass
+`--flash-attn` only if a matching `flash-attn` wheel is installed for your
+accelerator.
 
 ### 3. Build & curate the training set from our telemetry
 
@@ -237,7 +244,7 @@ LoRA attach and the data pipeline before you commit hours to a full run.
 uv run python -m ai_module.train_qlora \
     --dataset data/triage.train.jsonl \
     --output-dir runs/_smoke --max-steps 5
-# -> "smoke test OK — NVIDIA GeForce RTX 5090 (sm_120) ... adapter not saved"
+# -> "smoke test OK — <your CUDA accelerator> ... adapter not saved"
 ```
 
 `uv run python -m ai_module.train_qlora --dry-run` prints the resolved config without importing torch at all.
@@ -253,7 +260,7 @@ uv run python -m ai_module.train_qlora \
     --merge-adapter
 ```
 
-The Blackwell knobs (bf16 compute, TF32 matmul, NF4 + double-quant, paged
+The accelerator knobs (bf16 compute, TF32 matmul, NF4 + double-quant, paged
 8-bit AdamW, SDPA attention, expandable CUDA segments) are applied
 automatically; add `--flash-attn` / `--use-unsloth` to opt in to those.
 

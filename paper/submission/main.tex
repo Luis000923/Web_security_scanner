@@ -1,0 +1,106 @@
+%% ===========================================================================
+%%  main.tex — Archivo maestro del artículo (IEEE, doble columna, español)
+%%
+%%  Eficiencia del análisis dinámico de seguridad (DAST) asíncrono:
+%%  planificación de payloads y confirmación en tiempo de ejecución para la
+%%  reducción de falsos positivos.
+%%
+%%  Estructura modular: cada sección vive en paper/sections/ y se une aquí
+%%  mediante \input{}. Ver paper/README.md.
+%%
+%%  Compilación (todo en el espacio de usuario; no se escribe en /):
+%%      cd paper/
+%%      tectonic -X compile main.tex --outdir build --keep-logs
+%%  o, con un TeX Live completo:
+%%      latexmk -pdf -output-directory=build main.tex
+%% ===========================================================================
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+% --- Idioma y codificación --------------------------------------------------
+% inputenc/fontenc solo son necesarios con pdfLaTeX; con un motor Unicode
+% (XeLaTeX / LuaLaTeX / Tectonic) la entrada ya es UTF-8 nativa.
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+\fi
+\usepackage[spanish,es-tabla,es-noindentfirst]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% --- Matemáticas, tablas, figuras -----------------------------------------
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{siunitx}
+\sisetup{detect-weight=true, detect-family=true,
+         round-mode=places, round-precision=3}
+\usepackage{graphicx}
+\graphicspath{{figures/}{build/}}
+\usepackage{xcolor}
+
+% --- Diagramas ------------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.geometric}
+
+% --- Hiperenlaces y referencias cruzadas (cargar al final) --------------
+\usepackage[hidelinks,breaklinks]{hyperref}
+\usepackage{cleveref}
+% Nombres en español para \cref (cleveref no siempre hereda los de babel).
+\crefname{section}{sección}{secciones}
+\Crefname{section}{Sección}{Secciones}
+\crefname{subsection}{sección}{secciones}
+\Crefname{subsection}{Sección}{Secciones}
+\crefname{table}{tabla}{tablas}
+\Crefname{table}{Tabla}{Tablas}
+\crefname{figure}{figura}{figuras}
+\Crefname{figure}{Figura}{Figuras}
+\crefname{equation}{ecuación}{ecuaciones}
+\Crefname{equation}{Ecuación}{Ecuaciones}
+
+% --- Ayudas de escritura reutilizables por todos los módulos -----------
+\usepackage{xspace}
+\newcommand{\herramienta}{\textsc{WebSecurityScanner}\xspace}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\rid}{\code{run\_id}\xspace}
+
+% --- Variables de resultados (reemplazo automático desde el análisis) ---
+% Todo valor numérico de la Sección 4 vive en este fichero; ver su cabecera.
+\input{sections/_datos}
+
+% Estilos de los bloques del diagrama TikZ de arquitectura.
+\tikzset{
+  bloque/.style    = {rectangle, rounded corners=2pt, draw=black!70,
+                      fill=black!4, align=center, font=\footnotesize,
+                      minimum height=8mm, inner sep=3pt},
+  nucleo/.style    = {bloque, fill=blue!8,   draw=blue!55},
+  ablac/.style     = {bloque, fill=orange!12, draw=orange!60},
+  artefacto/.style = {bloque, fill=green!9,  draw=green!55},
+  flecha/.style    = {-{Stealth[length=2mm]}, thick, draw=black!65},
+}
+
+% ===========================================================================
+\begin{document}
+
+\input{sections/00_abstract}
+\input{sections/01_introduccion}
+\input{sections/02_arquitectura}
+\input{sections/03_metodologia}
+\input{sections/03b_ia_alineacion}
+\input{sections/04_evaluacion}
+\input{sections/05_amenazas_validez}
+\input{sections/06_conclusion}
+
+% ---------------------------------------------------------------------------
+\section*{Disponibilidad de artefactos}
+El código de la herramienta, el generador de verdad-terreno, el orquestador de
+experimentos, el oráculo de calificación y los guiones de análisis se
+distribuyen con el repositorio del proyecto. Cada ejecución reportada incluye
+su manifiesto de reproducibilidad (\cref{sec:manifiesto}).
+
+% ---------------------------------------------------------------------------
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}

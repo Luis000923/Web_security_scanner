@@ -1,0 +1,251 @@
+%% 04_evaluacion.tex — Resultados de la barrida de ablación.
+%%
+%% Contenido numérico: testbed/experiment_results.csv (graduado por el
+%% oráculo) + testbed/analysis/{summary_by_run.csv,stats.json} + figuras de
+%% paper/figures/, todo producido por tools/analyze_results.py.
+%% Las cifras en prosa provienen de sections/_datos.tex.
+
+\section{Evaluación y resultados}
+\label{sec:resultados}
+
+La barrida produjo \NumCorridas{}~ejecuciones calificadas: los tres
+presupuestos $\{20, 50, \infty\}$ con las cuatro configuraciones
+(\NumBloquesCompletos{}~bloques completos) más el presupuesto de
+\num{10}~peticiones con \code{baseline} y \code{no-interleave}. El presupuesto
+de \num{10} para \code{no-priority} y \code{no-runtime-confirm} no llegó a
+calificarse (una de las dos trazas quedó truncada), por lo que ese bloque se
+trata como parcial y se excluye de las pruebas de significancia
+(\cref{sec:res-stats}). Todos los valores proceden de
+\code{tools/analyze\_results.py}.
+
+\subsection{Eficiencia: detección frente a presupuesto}
+\label{sec:res-eficiencia}
+
+La \cref{fig:deteccion-vs-presupuesto} muestra que la exhaustividad del
+\code{baseline} crece de \num{0.216} con \num{10}~peticiones a su valor de
+saturación \ValorRecallTecho{} ya con \num{20}~peticiones por parámetro, y no
+mejora al ampliar el presupuesto a \num{50} ni al eliminarlo por completo. Las
+curvas de \code{no-interleave} y \code{no-runtime-confirm} son
+indistinguibles de la del \code{baseline}; solo \code{no-priority} se separa,
+y únicamente en el presupuesto intermedio de \num{20}
+(\cref{fig:impacto-ablacion}).
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{figures/fig1_detection_vs_budget.pdf}{%
+    \includegraphics[width=\columnwidth]{fig1_detection_vs_budget.pdf}%
+  }{%
+    \fbox{\parbox[c][3.2cm][c]{0.9\columnwidth}{\centering\footnotesize
+      \textsc{Marcador de posición} ---
+      \code{figures/fig1\_detection\_vs\_budget.pdf}}}%
+  }
+  \caption{Exhaustividad (instancias vulnerables únicas detectadas $/$ total)
+  en función del presupuesto de peticiones \code{-{}-max-payloads}
+  ($\infty$ = sin límite), una curva por configuración del \emph{pipeline}.
+  Las curvas de \code{baseline}, \code{no-interleave} y
+  \code{no-runtime-confirm} se solapan.}
+  \label{fig:deteccion-vs-presupuesto}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{figures/fig2_ablation_impact.pdf}{%
+    \includegraphics[width=\columnwidth]{fig2_ablation_impact.pdf}%
+  }{%
+    \fbox{\parbox[c][3.2cm][c]{0.9\columnwidth}{\centering\footnotesize
+      \textsc{Marcador de posición} ---
+      \code{figures/fig2\_ablation\_impact.pdf}}}%
+  }
+  \caption{Caída de exhaustividad ($\text{baseline} - \text{ablación}$) al
+  desactivar cada optimización, por presupuesto. La $\Delta$ FPR es
+  idénticamente nula en todas las celdas y se omite de la gráfica. El único
+  efecto apreciable es \code{no-priority} en el presupuesto de \num{20}.}
+  \label{fig:impacto-ablacion}
+\end{figure}
+
+\subsection{Resumen de métricas y AUC}
+\label{sec:res-auc}
+
+Al presupuesto de \num{20}~peticiones por parámetro, el \code{baseline}
+alcanza un AUC de la curva de detección de \ValorAUCBaseline{}
+(\cref{eq:auc}), con precisión \ValorPrecisionBaseline{}, exhaustividad
+\ValorRecallBaseline{} y $F_1$ \ValorFOneBaseline{}. Desactivar el entrelazado
+por contexto o la confirmación en tiempo de ejecución no cambia ninguna de
+estas métricas (AUC \ValorAUCNoInterleave{} y \ValorAUCNoRuntimeConfirm{}
+respectivamente). Desactivar la priorización sí las degrada: el AUC baja a
+\ValorAUCNoPriority{}, la exhaustividad cae \DeltaRecallNoPriority{} y la
+precisión \DeltaPrecisionNoPriority{}, lo que en términos absolutos equivale a
+\NoPriorityVulnPerdidas{}~vulnerabilidades no detectadas y
+\NoPriorityFPnuevos{}~falsos positivos adicionales frente al \code{baseline}.
+En los presupuestos de \num{50} y $\infty$ el efecto se disuelve: las cuatro
+configuraciones convergen a exhaustividad \ValorRecallTecho{} y difieren en
+precisión en menos de \num{0.3}~p.p.\ (\cref{tab:auc}). La tasa de falsos
+positivos es \ValorFPRBaseline{} (\num{2} de \NumTrampas{}~trampas) en todas
+las configuraciones y presupuestos $\ge \num{20}$.
+
+\begin{table}[t]
+  \centering
+  \caption{Métricas por ejecución y AUC de la curva de detección
+  (\cref{eq:auc}). Fuente: \code{summary\_by\_run.csv}.}
+  \label{tab:auc}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{ll S[table-format=1.3] S[table-format=1.3] S[table-format=1.3] S[table-format=1.3]}
+    \toprule
+    Presup. & Config. & {Prec.} & {Rec.} & {$F_1$} & {AUC} \\
+    \midrule
+    \multirow{2}{*}{10\textsuperscript{$\dagger$}}
+      & baseline           & 0.667 & 0.216 & 0.327 & 0.119 \\
+      & no-interleave      & 0.667 & 0.216 & 0.327 & 0.119 \\
+    \midrule
+    \multirow{4}{*}{20}
+      & baseline           & 0.619 & 0.644 & 0.631 & 0.338 \\
+      & no-interleave      & 0.619 & 0.644 & 0.631 & 0.338 \\
+      & no-priority        & 0.561 & 0.613 & 0.586 & 0.331 \\
+      & no-runtime-confirm & 0.619 & 0.644 & 0.631 & 0.338 \\
+    \midrule
+    \multirow{4}{*}{50}
+      & baseline           & 0.573 & 0.644 & 0.607 & 0.339 \\
+      & no-interleave      & 0.573 & 0.644 & 0.607 & 0.340 \\
+      & no-priority        & 0.571 & 0.644 & 0.605 & 0.341 \\
+      & no-runtime-confirm & 0.571 & 0.644 & 0.605 & 0.339 \\
+    \midrule
+    \multirow{4}{*}{$\infty$}
+      & baseline           & 0.573 & 0.644 & 0.607 & 0.341 \\
+      & no-interleave      & 0.573 & 0.644 & 0.607 & 0.341 \\
+      & no-priority        & 0.573 & 0.644 & 0.607 & 0.341 \\
+      & no-runtime-confirm & 0.573 & 0.644 & 0.607 & 0.341 \\
+    \bottomrule
+  \end{tabular}
+  \\[2pt]
+  \footnotesize\textsuperscript{$\dagger$}\,Bloque parcial: \code{no-priority}
+  y \code{no-runtime-confirm} no se calificaron a este presupuesto.
+\end{table}
+
+\subsection{Significancia estadística}
+\label{sec:res-stats}
+
+Sobre los vectores de coste de detección por instancia (bloque agrupado de los
+\NumBloquesCompletos{}~presupuestos completos, $n = \ValorFriedmanN{}$), la
+prueba de Friedman rechaza la equivalencia de las cuatro configuraciones
+($\chi^2 = \ValorFriedmanChiSq{}$, $p = \ValorFriedmanP{}$). Sin embargo, el
+tamaño del efecto es \emph{insignificante} en las tres comparaciones pareadas
+\code{baseline} frente a ablación: $\delta$ de Cliff de
+\ValorCliffNoInterleave{} (\code{no-interleave}), \ValorCliffNoPriority{}
+(\code{no-priority}) y \ValorCliffNoRuntimeConfirm{}
+(\code{no-runtime-confirm}), todos con $\lvert\delta\rvert < \num{0.02}$
+(\cref{tab:stats}). El post-hoc de Nemenyi no logra separar
+\code{no-runtime-confirm} del \code{baseline}
+($p = \ValorNemenyiNoRuntimeConfirm{}$). La lectura es que las diferencias que
+Friedman detecta son de \emph{ordenación fina} de las peticiones ---
+estadísticamente reales por el gran número de bloques, pero sin traducción
+práctica en el conjunto finalmente detectado. El único cambio con
+consecuencias operativas es la pérdida de selectividad de \code{no-priority}
+en presupuestos ajustados, ya descrita en la \cref{sec:res-auc}; nótese que
+\code{no-priority} incluso reduce el coste medio de detección
+(\ValorCosteBaseline{} $\to$ \ValorCosteNoPriority{} peticiones), es decir,
+acierta antes en promedio pero a costa de la precisión.
+
+\begin{table}[t]
+  \centering
+  \caption{Pruebas sobre el coste de detección por instancia, \code{baseline}
+  frente a cada ablación (bloque agrupado, $n = \ValorFriedmanN{}$). Wilcoxon
+  con corrección de Benjamini--Hochberg; $p_{\text{Nem.}}$ del post-hoc de
+  Nemenyi; $\delta$ de Cliff como tamaño del efecto. Fuente:
+  \code{stats.json}.}
+  \label{tab:stats}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \resizebox{\columnwidth}{!}{%
+  \begin{tabular}{lccccl}
+    \toprule
+    \code{baseline} vs & Coste medio & $p_{\text{BH}}$ & $p_{\text{Nem.}}$
+      & $\delta$ Cliff & Magnitud \\
+    \midrule
+    no-interleave      & \num{23006}$\to$\num{23087} & \ValorWilcoxonPNoInterleave{}
+      & \ValorNemenyiNoInterleave{} & \ValorCliffNoInterleave{}
+      & \MagnitudCliffNoInterleave{} \\
+    no-priority        & \num{23006}$\to$\num{22818} & \ValorWilcoxonPNoPriority{}
+      & \ValorNemenyiNoPriority{} & \ValorCliffNoPriority{}
+      & \MagnitudCliffNoPriority{} \\
+    no-runtime-confirm & \num{23006}$\to$\num{22997} & \ValorWilcoxonPNoRuntimeConfirm{}
+      & \ValorNemenyiNoRuntimeConfirm{} & \ValorCliffNoRuntimeConfirm{}
+      & \MagnitudCliffNoRuntimeConfirm{} \\
+    \bottomrule
+  \end{tabular}}
+  \\[2pt]
+  \footnotesize\emph{Friedman global: $\chi^2 = \ValorFriedmanChiSq{}$,
+  $p = \ValorFriedmanP{}$.}
+\end{table}
+
+\subsection{Diagrama de diferencias críticas}
+\label{sec:res-cd}
+
+La \cref{fig:cd} ordena las cuatro configuraciones por su rango medio de coste
+de detección (bloque agrupado, $n = \ValorFriedmanN{}$). El post-hoc de
+Nemenyi solo deja sin separar a \code{baseline} y \code{no-runtime-confirm}
+(barra horizontal); \code{no-interleave} queda en el peor rango
+(detección más tardía) y \code{no-priority} en el mejor. Este último punto
+debe leerse con cuidado: \code{no-priority} adelanta la primera detección en
+promedio porque prueba antes \emph{payloads} triviales de alto rendimiento
+aparente, pero ---como muestra la \cref{tab:auc}--- lo hace a costa de
+\NoPriorityVulnPerdidas{}~vulnerabilidades y \NoPriorityFPnuevos{}~falsos
+positivos. El diagrama compara \emph{cuándo} detecta cada configuración, no
+\emph{cuánto} ni con qué precisión.
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{figures/fig3_cd_diagram.pdf}{%
+    \includegraphics[width=\columnwidth]{fig3_cd_diagram.pdf}%
+  }{%
+    \fbox{\parbox[c][2.6cm][c]{0.9\columnwidth}{\centering\footnotesize
+      \textsc{Pendiente} --- \code{figures/fig3\_cd\_diagram.pdf}.}}%
+  }
+  \caption{Diagrama de diferencias críticas (post-hoc de Nemenyi,
+  $\alpha = 0{,}05$) sobre el rango medio de coste de detección por instancia.
+  Menor rango $=$ detección más temprana. Las configuraciones unidas por una
+  barra horizontal no son distinguibles. Dado que todos los tamaños del efecto
+  son insignificantes (\cref{tab:stats}), el diagrama es indicativo del orden,
+  no de una ventaja práctica.}
+  \label{fig:cd}
+\end{figure}
+
+\subsection{Alcance: motor determinista y agente de triaje}
+\label{sec:res-alcance}
+
+La barrida de ablación anterior se ejecutó sobre el \textbf{motor determinista}
+(\code{-{}-ai-no}), de forma deliberada: aislar el efecto de la planificación de
+\emph{payloads} exige que la decisión de detección no dependa de un componente
+estocástico. El agente de triaje de la \cref{sec:agente} se evalúa por una vía
+independiente y complementaria ---la puerta de aceptación de la
+\cref{sec:ia-validacion}--- que mide su capacidad de suprimir falsos positivos
+sin incurrir en falsos negativos sobre el conjunto disjunto de validación, con
+la tasa de falsos negativos (FNR) como magnitud gobernante por su coste
+asimétrico. Mantener ambas evaluaciones separadas evita confundir la eficiencia
+del planificador con la fiabilidad del clasificador, y permite reproducir cada
+contribución por su cuenta: la ablación sobre el banco contenedorizado, y la
+alineación del agente sobre infraestructura de aceleración estándar con escalado
+dinámico de parámetros según la memoria disponible.
+
+\subsection{Síntesis de hallazgos}
+\label{sec:res-sintesis}
+
+\begin{enumerate}
+  \item El \code{pipeline} \code{baseline} satura en exhaustividad
+  \ValorRecallTecho{} con solo \num{20}~peticiones por parámetro y FPR
+  \ValorFPRBaseline{}; ampliar el presupuesto no aporta detección, solo
+  falsos positivos (la precisión cae de \ValorPrecisionBaseline{} a
+  \num{57.3}\% entre los presupuestos \num{20} y $\infty$).
+  \item La \textbf{priorización por confianza} es la única etapa cuya
+  desactivación tiene coste medible, y se concentra en presupuestos
+  ajustados: $-\DeltaRecallNoPriority{}$ de exhaustividad y
+  $-\DeltaPrecisionNoPriority{}$ de precisión a presupuesto \num{20}, efecto
+  que desaparece a partir de \num{50}.
+  \item El \textbf{entrelazado por contexto} y la \textbf{confirmación en
+  tiempo de ejecución} no alteran la exhaustividad, la precisión ni la FPR en
+  este banco; su efecto sobre el orden de las peticiones es estadísticamente
+  detectable pero de magnitud insignificante.
+  \item En consecuencia, el valor de la planificación de \emph{payloads} en
+  este escenario es de \emph{anticipación} (mayor AUC bajo presupuesto
+  reducido), no de \emph{techo} de detección.
+\end{enumerate}

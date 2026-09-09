@@ -1,0 +1,79 @@
+%% 05_amenazas_validez.tex — Validez interna, externa y de constructo.
+
+\section{Amenazas a la validez}
+\label{sec:amenazas}
+
+\subsection{Validez interna: calentamiento de la JVM y aislamiento}
+
+OWASP Benchmark es una aplicación Java sobre un contenedor de \emph{servlets}.
+El compilador JIT de la JVM optimiza las rutas de código calientes tras varias
+invocaciones, de modo que las primeras peticiones a un \emph{endpoint} son
+sistemáticamente más lentas que las siguientes. Esto introduce dos sesgos:
+(i)~la etapa de confirmación basada en tiempo (\cref{sec:confirmacion}) podría
+interpretar la latencia de calentamiento como un retardo inducido por
+\emph{payload}, inflando los \textsc{confirmed} en las fases tempranas del
+escaneo; y (ii)~la métrica de coste de detección se mide en índice de petición,
+no en tiempo, por lo que es robusta al calentamiento, pero la comparación de
+latencias absolutas entre configuraciones no lo es.
+
+Mitigaciones aplicadas: la latencia base se remuestrea inmediatamente antes de
+cada prueba temporizada (no una sola vez al inicio); el umbral
+$\tau = \SI{4}{\second}$ es holgado frente a la varianza de calentamiento
+observada; y todas las configuraciones se ejecutan sobre el mismo contenedor
+recién iniciado, con un único cliente y sin tráfico concurrente, de forma que
+cualquier sesgo residual de calentamiento es común a todos los brazos y se
+cancela en el contraste pareado. El aislamiento de recursos (contenedor
+dedicado, red local, ausencia de otros escáneres) reduce la varianza entre
+ejecuciones, pero no elimina la que introduce el planificador del sistema
+operativo ni la recolección de basura de la JVM. Una réplica con un
+precalentamiento explícito ($N$ peticiones de descarte por \emph{endpoint})
+queda como trabajo pendiente.
+
+\subsection{Validez externa: restricción a vectores \code{GET}}
+
+El estudio se limita a \num{338}~puntos de inyección en parámetros de consulta
+\code{GET}. Quedan fuera los vectores \code{POST} con cuerpo
+\code{application/x-www-form-urlencoded} o JSON, las cabeceras, las
+\emph{cookies} y los parámetros de ruta. En consecuencia, los resultados sobre
+exhaustividad y coste \emph{no} se generalizan directamente a la superficie de
+ataque completa de una aplicación real: las categorías cuya incidencia es mayor
+en cuerpos \code{POST} (p.\,ej.\ inyección SQL en formularios de autenticación)
+están infrarrepresentadas. Además, OWASP Benchmark es un banco sintético; sus
+\emph{payloads} de disparo y sus patrones de respuesta son más regulares que
+los de aplicaciones de producción, lo que probablemente sobreestima la
+exhaustividad absoluta de cualquier escáner~\cite{doupe2010johnny}. La
+contribución que sí se sostiene bajo esta restricción es la \emph{relativa}: el
+efecto de cada etapa del \emph{pipeline} sobre un conjunto de objetivos
+homogéneo y controlado.
+
+\subsection{Validez del agente de triaje: alucinación y saneamiento}
+
+El agente de triaje introduce tres amenazas propias. Primera, la
+\textbf{alucinación asimétrica}: un veredicto \textsc{false\_positive} erróneo
+suprime una vulnerabilidad real, un fallo más grave que su recíproco. Se mitiga
+con el diseño consultivo (el agente solo descarta por encima de un umbral de
+confianza), la decodificación estructurada que impide salidas fuera de la
+taxonomía, y una puerta de aceptación que gobierna sobre la tasa de falsos
+negativos (\cref{sec:ia-validacion}); el riesgo residual es la miscalibración de
+la confianza, que la validación disjunta acota pero no elimina. Segunda, la
+\textbf{fuga de etiqueta} durante el saneamiento: el conjunto de datos se deriva
+de la misma telemetría del banco, por lo que la anonimización del \emph{endpoint}
+y la deduplicación sobre la clave observable (\cref{sec:ia-dataset}) son
+condición necesaria para que las métricas no sobreestimen la competencia real;
+su verificación se apoya en el manifiesto de curación. Tercera, la
+\textbf{representatividad del corpus}: el conjunto curado, aun balanceado entre
+veredictos, hereda la regularidad de señales del banco sintético, de modo que el
+FNR medido es un límite optimista frente a aplicaciones de producción con
+evidencia más ruidosa.
+
+\subsection{Validez de constructo y de conclusión}
+
+El oráculo colapsa los alias de tipo sobre \emph{buckets} comunes; una
+detección con el tipo «correcto» pero la subclase «incorrecta» (p.\,ej.\
+\emph{blind} frente a \emph{error-based}) cuenta como acierto. La FPR se define
+solo sobre \num{144}~trampas explícitas; los falsos positivos contra tuplas que
+la verdad-terreno no menciona no tienen población de referencia y no se
+puntúan. Por último, el número de bloques por presupuesto está acotado por
+$\lvert P \rvert = 194$, suficiente para la prueba de Friedman pero modesto
+para el post-hoc de Nemenyi; los diagramas de diferencias críticas se
+interpretan como indicativos.

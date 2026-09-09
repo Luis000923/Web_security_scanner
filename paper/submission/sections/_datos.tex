@@ -1,0 +1,100 @@
+%% _datos.tex — Variables de resultados (reemplazo automático desde el análisis).
+%%
+%%  Fuente: tools/analyze_results.py sobre testbed/experiment_results.csv
+%%  (14 corridas graduadas: budgets {20,50,inf} x 4 condiciones completas +
+%%  budget 10 parcial con baseline y sin-entrelazado). Regenerado 2026-09-07.
+%%
+%%  Convención: los porcentajes incluyen «\%»; los estadísticos van con \num{}.
+%%  Salvo indicación, los valores de exhaustividad/AUC/coste son al presupuesto
+%%  intermedio de 20 peticiones/parámetro (el punto donde las condiciones se
+%%  diferencian; en presupuestos mayores convergen).
+
+% --- Parámetros fijos del experimento -------------------------------------
+\newcommand{\NumObjetivos}{338}
+\newcommand{\NumVulnerables}{194}
+\newcommand{\NumTrampas}{144}
+\newcommand{\NumCorridas}{14}
+\newcommand{\NumBloquesCompletos}{3}
+\newcommand{\UmbralTiempo}{4\,s}
+
+% --- Área bajo la curva de detección (AUC = exhaustividad media / presup.),
+%     al presupuesto intermedio de 20 peticiones/parámetro -----------------
+\newcommand{\ValorAUCBaseline}{33{,}8\%}
+\newcommand{\ValorAUCNoInterleave}{33{,}8\%}
+\newcommand{\ValorAUCNoPriority}{33{,}1\%}
+\newcommand{\ValorAUCNoRuntimeConfirm}{33{,}8\%}
+
+% --- Métricas agregadas del baseline (presupuesto 20) --------------------
+\newcommand{\ValorPrecisionBaseline}{61{,}9\%}
+\newcommand{\ValorRecallBaseline}{64{,}4\%}
+\newcommand{\ValorFOneBaseline}{63{,}1\%}
+\newcommand{\ValorFPRBaseline}{1{,}4\%}
+\newcommand{\ValorRecallTecho}{64{,}4\%}      % exhaustividad de saturación (presup. >= 20)
+
+% --- Caída de exhaustividad / precisión al desactivar cada optimización
+%     respecto al baseline, al presupuesto 20 (puntos porcentuales) --------
+\newcommand{\DeltaRecallNoInterleave}{\num{0.0}~p.p.}
+\newcommand{\DeltaRecallNoPriority}{\num{3.1}~p.p.}
+\newcommand{\DeltaRecallNoRuntimeConfirm}{\num{0.0}~p.p.}
+\newcommand{\DeltaPrecisionNoPriority}{\num{5.8}~p.p.}
+\newcommand{\DeltaFOneNoPriority}{\num{4.5}~p.p.}
+\newcommand{\NoPriorityVulnPerdidas}{6}
+\newcommand{\NoPriorityFPnuevos}{16}
+
+% --- Coste medio de detección (índice de la primera petición que acierta,
+%     censurado; presupuesto 20) -----------------------------------------
+\newcommand{\ValorCosteBaseline}{\num{3138}}
+\newcommand{\ValorCosteNoInterleave}{\num{3222}}
+\newcommand{\ValorCosteNoPriority}{\num{2838}}
+\newcommand{\ValorCosteNoRuntimeConfirm}{\num{3141}}
+
+% --- Prueba de Friedman sobre el coste de detección por instancia,
+%     bloque agrupado sobre los presupuestos 20/50/inf -------------------
+\newcommand{\ValorFriedmanChiSq}{\num{931.9}}
+\newcommand{\ValorFriedmanP}{\num{1.0e-201}}
+\newcommand{\ValorFriedmanN}{\num{582}}
+
+% --- Wilcoxon pareado (baseline vs ablación), p corregido por BH (pooled)
+\newcommand{\ValorWilcoxonPNoInterleave}{\num{4.8e-72}}
+\newcommand{\ValorWilcoxonPNoPriority}{\num{6.9e-73}}
+\newcommand{\ValorWilcoxonPNoRuntimeConfirm}{\num{0.046}}
+
+% --- Tamaño del efecto: delta de Cliff (baseline vs ablación, pooled) ---
+\newcommand{\ValorCliffNoInterleave}{\num{0.006}}
+\newcommand{\ValorCliffNoPriority}{\num{-0.014}}
+\newcommand{\ValorCliffNoRuntimeConfirm}{\num{-0.0001}}
+\newcommand{\MagnitudCliffNoInterleave}{insignificante}
+\newcommand{\MagnitudCliffNoPriority}{insignificante}
+\newcommand{\MagnitudCliffNoRuntimeConfirm}{insignificante}
+
+% --- Post-hoc de Nemenyi (pooled): p de baseline vs cada ablación --------
+\newcommand{\ValorNemenyiNoInterleave}{\ensuremath{<}\,\num{0.001}}
+\newcommand{\ValorNemenyiNoPriority}{\ensuremath{<}\,\num{0.001}}
+\newcommand{\ValorNemenyiNoRuntimeConfirm}{\num{0.83}}
+
+% ===========================================================================
+%  Subsistema de alineación del agente de triaje (fine-tuning QLoRA).
+%  Fuente: data/curation.json (manifiesto de curación del dataset) y la
+%  configuración de ai_module/train_qlora.py. Regenerado 2026-09-08.
+% ===========================================================================
+
+% --- Fase 1: dataset de triaje curado -----------------------------------
+\newcommand{\IADatasetTriaje}{\num{1786}}         % instancias de triaje totales
+\newcommand{\IATriajeTP}{\num{589}}               % TRUE_POSITIVE
+\newcommand{\IATriajeFP}{\num{604}}               % FALSE_POSITIVE
+\newcommand{\IATriajeUNC}{\num{593}}              % UNCERTAIN
+\newcommand{\IATriajeTrain}{\num{1608}}           % partición de entrenamiento
+\newcommand{\IATriajeVal}{\num{178}}              % partición de validación
+\newcommand{\IATriajeSplit}{90/10}                % razón del split estratificado
+\newcommand{\IARuidoCognitivo}{\num{10}\%}        % proporción de ruido conversacional inyectado
+
+% --- Fase 2: hiperparámetros de la adaptación QLoRA ---------------------
+\newcommand{\IALoraR}{\num{32}}
+\newcommand{\IALoraAlpha}{\num{64}}               % alpha = 2 * r
+\newcommand{\IALoraDropout}{\num{0.05}}
+\newcommand{\IALoraModulos}{\num{7}}              % proyecciones objetivo (atención + MLP)
+\newcommand{\IACuantBits}{\num{4}}                % cuantización NF4 de 4 bits
+
+% --- Fase 3: conjunto de validación disjunto (Golden Set) ---------------
+\newcommand{\IAClasesTaxonomia}{\num{4}}          % SQLi, XSS, Path Traversal, Cmd Injection
+\newcommand{\IAVeredictos}{\num{3}}               % TRUE_POSITIVE / FALSE_POSITIVE / UNCERTAIN
