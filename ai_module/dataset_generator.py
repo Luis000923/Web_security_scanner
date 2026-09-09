@@ -90,6 +90,7 @@ from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
 from ai_module.prompts import load_prompt
+from web_security_scanner.core.param_semantics import is_redirect_param
 
 # --------------------------------------------------------------------------- #
 # Telemetry loading
@@ -1570,6 +1571,14 @@ def build_triage_samples(
         }
         body_ev, _body_note = _reflection_evidence(row, payload)
         evidence.update(body_ev)
+        # Make the parameter's *role* an explicit, learnable feature. The name
+        # itself is anonymised away (``generic_param``), so without this the
+        # model could never tell a redirect destination from an identifier —
+        # and redirect destinations are where the scanner's differential oracle
+        # produces most of its false positives.
+        redirect_param = is_redirect_param(param)
+        if redirect_param:
+            evidence["parameter_role"] = "redirect/flow-control destination (URL or path)"
 
         weak_label = label_src.startswith("weak")
         a = _assess_evidence(evidence, context=row.get("context") or "", vclass=vclass)
@@ -1586,7 +1595,15 @@ def build_triage_samples(
 
         strong_final = a["scanner_conf"] in {"HIGH", "CONFIRMED"}
         if weak_label:
-            if a["discriminating"] or (strong_apriori and not a["within_noise"]):
+            if a["discriminating"]:
+                verdict = "TRUE_POSITIVE"
+            elif redirect_param:
+                # A flow-control parameter carries a URL the application
+                # validates before redirecting. Any divergence that is not a
+                # body/timing signal is explained by that validation, so a weak
+                # label must never promote it to TRUE_POSITIVE.
+                verdict = "FALSE_POSITIVE"
+            elif strong_apriori and not a["within_noise"]:
                 verdict = "TRUE_POSITIVE"
             elif ambiguous:
                 verdict = "UNCERTAIN"
@@ -1617,6 +1634,7 @@ def build_triage_samples(
                 str(a["apriori"]), a["scanner_conf"],
                 str(evidence.get("injection_context") or ""),
                 str(evidence.get("vector") or ""),
+                str(evidence.get("parameter_role") or ""),
             ]
         )
         g = groups.get(obs_key)

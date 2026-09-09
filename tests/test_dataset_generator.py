@@ -390,3 +390,68 @@ def test_cli_no_standalone_seeds_flag_opts_out(tmp_path):
     assert "pathtraver" not in syn["seed_classes"]
     assert "cmdi" not in syn["seed_classes"]
     assert syn["standalone_seeds"] == 0
+
+
+# --------------------------------------------------------------------------- #
+# Redirect-parameter false positives must not become TRUE_POSITIVE weak labels
+# --------------------------------------------------------------------------- #
+
+def _weak_labels_for(param: str, tmp_path, name: str) -> list[str]:
+    """Weak-label a boolean-based probe whose only signal is a response change.
+
+    Three sibling rows pin the run baseline near 0.1 s so the probe below sits
+    *outside* jitter without being a timing oracle: a-priori HIGH + an
+    off-baseline latency, no body evidence — the exact profile that used to be
+    weak-labelled TRUE_POSITIVE on a ``next=`` parameter.
+    """
+    tele = tmp_path / f"telemetry_{name}.jsonl"
+    rows = [
+        _native_row(request_index=i, tester_id="SQLInjectionTester",
+                    context="boolean_based", param="q", decision=False,
+                    confidence_final="LOW", confidence_apriori="LOW",
+                    url=f"https://t/search?q=probe{i}", elapsed_time=0.1)
+        for i in range(3)
+    ]
+    rows.append(_native_row(
+        request_index=9, tester_id="SQLInjectionTester", context="boolean_based",
+        url=f"https://t/accounts/login/?{param}=%27%20OR%20%271%27%3D%271",
+        param=param, confidence_apriori="HIGH", confidence_final="HIGH",
+        elapsed_time=0.5,
+    ))
+    tele.write_text("\n".join(json.dumps(r) for r in rows))
+    out = tmp_path / f"triage_{name}.jsonl"
+    assert dg.main([
+        "--telemetry", str(tele), "--task", "triage", "--format", "alpaca",
+        "--out", str(out), "--weak-labels", "--no-standalone-seeds",
+    ]) == 0
+    recs = [json.loads(x) for x in out.read_text().splitlines()]
+    # The probe of interest is the only HIGH-a-priori sample.
+    return [r["meta"]["label"] for r in recs
+            if "\"apriori_confidence\": \"HIGH\"" in r["input"]]
+
+
+def test_weak_label_on_redirect_param_is_a_false_positive(tmp_path):
+    # `next` holds a URL the app validates: a differential with no body/timing
+    # signal is a false positive, however confident the scanner was.
+    assert _weak_labels_for("next", tmp_path, "next") == ["FALSE_POSITIVE"]
+
+
+def test_weak_label_on_ordinary_param_keeps_the_scanner_verdict(tmp_path):
+    assert _weak_labels_for("id", tmp_path, "id") == ["TRUE_POSITIVE"]
+
+
+def test_redirect_param_role_is_visible_to_the_model(tmp_path):
+    tele = tmp_path / "telemetry_role.jsonl"
+    tele.write_text(json.dumps(_native_row(
+        tester_id="SQLInjectionTester", url="https://t/login/?next=%27",
+        param="next", confidence_final="HIGH",
+    )))
+    out = tmp_path / "triage_role.jsonl"
+    assert dg.main([
+        "--telemetry", str(tele), "--task", "triage", "--format", "alpaca",
+        "--out", str(out), "--weak-labels", "--no-standalone-seeds",
+    ]) == 0
+    prompt = json.loads(out.read_text().splitlines()[0])["input"]
+    # The parameter name itself stays anonymised; only its role is exposed.
+    assert "redirect/flow-control destination" in prompt
+    assert "Parameter: p" not in prompt or "next" not in prompt.split("Observed")[0]

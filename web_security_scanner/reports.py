@@ -14,6 +14,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from .utils.validation import mask_secrets
 
@@ -71,6 +72,85 @@ def _sorted_vulns(vulns: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+# --- Site-wide finding grouping -------------------------------------------
+#
+# Some findings are properties of the *application*, not of one URL: a missing
+# CSP / HSTS / X-Frame-Options header, a leaked ``Server`` banner. A crawl of N
+# pages used to produce N identical Low/Info rows, which buries the handful of
+# findings that matter and — when the reports feed the triage-LLM dataset —
+# floods training with hundreds of redundant, near-identical low-severity
+# records. Testers now tag such findings with a ``group_key``; here we collapse
+# every row sharing one into a single record carrying an exact ``occurrences``
+# count and a bounded ``affected_urls`` sample.
+_MAX_SAMPLE_URLS = 10
+
+
+def _occurrences(v: dict[str, Any]) -> int:
+    """How many URLs a (possibly grouped) finding covers; 1 when unknown."""
+    try:
+        return max(1, int(v.get("occurrences", 1) or 1))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _origin_of(url: Any) -> str:
+    parsed = urlparse(str(url or ""))
+    return f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else str(url or "")
+
+
+def _group_key_of(v: dict[str, Any]) -> str | None:
+    """Grouping key for a finding, or ``None`` when it must stay standalone.
+
+    Prefers the tester-supplied ``group_key``. Findings that only declare
+    ``scope: "site"`` (older runs, third-party importers) fall back to a key
+    derived from their origin, type and header/payload name.
+    """
+    explicit = v.get("group_key")
+    if explicit:
+        return str(explicit)
+    if str(v.get("scope", "")).lower() == "site":
+        return (f"{_origin_of(v.get('host') or v.get('url'))}|"
+                f"{v.get('type', '')}|{v.get('payload', '')}")
+    return None
+
+
+def group_findings(vulns: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Collapse site-wide findings that share a group key.
+
+    Order is preserved (first occurrence wins its position). Ungrouped findings
+    pass through untouched, so per-parameter vulnerabilities — the ones an
+    analyst actually triages — are never merged.
+    """
+    out: list[dict[str, Any]] = []
+    index: dict[str, dict[str, Any]] = {}
+    for vuln in vulns:
+        key = _group_key_of(vuln)
+        if key is None:
+            out.append(vuln)
+            continue
+        merged = index.get(key)
+        if merged is None:
+            merged = dict(vuln)
+            merged.setdefault("occurrences", 1)
+            merged.setdefault("affected_urls", [str(vuln.get("url", ""))])
+            merged["url"] = merged.get("host") or _origin_of(vuln.get("url"))
+            merged["scope"] = "site"
+            index[key] = merged
+            out.append(merged)
+            continue
+        merged["occurrences"] = _occurrences(merged) + _occurrences(vuln)
+        urls = merged.setdefault("affected_urls", [])
+        for url in vuln.get("affected_urls") or [vuln.get("url", "")]:
+            if url and url not in urls and len(urls) < _MAX_SAMPLE_URLS:
+                urls.append(url)
+    return out
+
+
+def _prepared_vulns(scan_data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Group site-wide findings, then order by severity/confidence."""
+    return _sorted_vulns(group_findings(scan_data.get("vulnerabilities", [])))
+
+
 def generate_json_report(scan_data: dict[str, Any], output_dir: str = "reports") -> str:
     """Write a JSON report and return its path."""
     out = Path(output_dir)
@@ -84,7 +164,7 @@ def generate_json_report(scan_data: dict[str, Any], output_dir: str = "reports")
         "technologies": scan_data.get("technologies", {}),
         "vulnerabilities": [
             {**_mask_vuln(v), "confidence": _confidence_of(v)}
-            for v in _sorted_vulns(scan_data.get("vulnerabilities", []))
+            for v in _prepared_vulns(scan_data)
         ],
         "map_report": scan_data.get("map_report"),
     }
@@ -100,7 +180,7 @@ def generate_html_report(scan_data: dict[str, Any], output_dir: str = "reports")
     path = out / f"scan_{_timestamp()}.html"
 
     # Redact operator secrets BEFORE anything is rendered/escaped.
-    vulns = [_mask_vuln(v) for v in _sorted_vulns(scan_data.get("vulnerabilities", []))]
+    vulns = [_mask_vuln(v) for v in _prepared_vulns(scan_data)]
     target = _e(scan_data.get("target", ""))
     profile = _e(scan_data.get("profile", ""))
 
@@ -113,7 +193,10 @@ def generate_html_report(scan_data: dict[str, Any], output_dir: str = "reports")
             f"<td>{_e(v.get('url',''))}</td>"
             f"<td>{_e(v.get('parameter',''))}</td>"
             f"<td><code>{_e(v.get('payload',''))}</code></td>"
-            f"<td>{_e(v.get('evidence',''))}</td>"
+            f"<td>{_e(v.get('evidence',''))}"
+            + (f" <span class='occ'>(site-wide: {_occurrences(v)} URLs)</span>"
+               if _occurrences(v) > 1 else "")
+            + "</td>"
             "</tr>"
             for v in vulns
         )
@@ -155,6 +238,7 @@ def generate_html_report(scan_data: dict[str, Any], output_dir: str = "reports")
   .sev {{ font-weight:bold; text-transform:capitalize; }}
   .sev-critical {{ color:#b10000; }} .sev-high {{ color:#d35400; }}
   .sev-medium {{ color:#c29d00; }} .sev-low {{ color:#2874a6; }} .sev-info {{ color:#555; }}
+  .occ {{ color:#666; font-size:12px; }}
   .conf {{ font-weight:bold; }}
   .conf-confirmed {{ color:#b10000; }} .conf-high {{ color:#d35400; }}
   .conf-medium {{ color:#c29d00; }} .conf-low {{ color:#2874a6; }} .conf-na {{ color:#999; }}

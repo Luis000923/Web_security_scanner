@@ -7,6 +7,37 @@ al versionado semantico.
 
 ## [No publicado]
 
+### Corregido
+
+- **Falsos positivos de inyeccion en parametros de redireccion.** Nuevo modulo
+  `web_security_scanner/core/param_semantics.py`: reconoce parametros de
+  control de flujo web (`next`, `redirect`, `redirect_uri`, `return_to`, `url`,
+  `callback`... por nombre exacto, patron o valor URL/path observado) y aplica
+  una politica de evidencia. Los testers de SQLi, NoSQLi y LDAP etiquetan ahora
+  el motivo por el que disparan (`evidence_kind`: `error_signature`,
+  `time_confirmed`, `differential`...) y `VulnerabilityTester.report_vulnerability`
+  descarta cualquier hallazgo que en un parametro de redireccion solo se apoye
+  en una divergencia de respuesta (302, validacion de URL, cambio de longitud).
+  La evidencia dura (error de motor de base de datos / LDAP / BSON, oraculo
+  temporal confirmado, callback OOB) se conserva, pero con la severidad topada
+  en `Medium` salvo confianza `CONFIRMED`, de modo que un parametro de flujo
+  nunca encabeza un informe con un unico indicio ambiguo. Tests en
+  `tests/test_fp_redirect_params.py`.
+- **Hallazgos de cabeceras agrupados por dominio.** `HeaderSecurityTester` se
+  ejecuta una vez por URL rastreada y emitia N filas identicas de CSP / HSTS /
+  X-Frame-Options / X-Content-Type-Options / fuga de `Server`. Ahora publica un
+  unico hallazgo por `(origen, cabecera, tipo)` con `scope: "site"`, un contador
+  exacto `occurrences` y una muestra acotada de `affected_urls`;
+  `report_vulnerability` devuelve el hallazgo emitido para permitirlo.
+  `web_security_scanner/reports.py` anade `group_findings()`, que vuelve a
+  colapsar por `group_key` cualquier duplicado que llegue de ejecuciones
+  anteriores o de otras fuentes, e indica el alcance del hallazgo en el informe
+  HTML. Tests en `tests/test_header_grouping.py`.
+- **Etiquetado debil del dataset de triage.** `ai_module/dataset_generator.py`
+  expone el *rol* del parametro (`parameter_role`) como caracteristica visible
+  para el modelo y, sin oraculo, nunca promueve a `TRUE_POSITIVE` una sonda
+  sobre un parametro de redireccion cuya unica senal es diferencial.
+
 ### Anadido
 
 - **Modulo de transformaciones y mutaciones de payloads.**
