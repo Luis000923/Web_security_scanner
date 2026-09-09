@@ -1,0 +1,76 @@
+%% 01_introduccion.tex — Contexto, desafíos y contribuciones.
+
+\section{Introducción}
+\label{sec:intro}
+
+El análisis dinámico de seguridad de aplicaciones (DAST) evalúa un sistema en
+ejecución enviando peticiones manipuladas y observando la respuesta, sin
+acceso al código fuente. Frente al análisis estático, su principal ventaja es
+la ausencia de suposiciones sobre el lenguaje o el marco de trabajo del
+objetivo; su principal inconveniente es el coste. Diversos estudios
+comparativos han mostrado que los escáneres de caja negra presentan cobertura
+desigual y tasas de falsos positivos
+elevadas~\cite{doupe2010johnny,bau2010state,parvez2015analysis}, lo que erosiona
+la confianza del equipo de desarrollo y, en la práctica, conduce a ignorar los
+informes.
+
+Identificamos tres desafíos concretos que este trabajo aborda de forma
+explícita:
+
+\begin{enumerate}
+  \item \textbf{Latencia acumulada.} Un escaneo realista implica del orden de
+  $10^4$--$10^5$ peticiones HTTP. Ejecutadas secuencialmente, la latencia de
+  red domina el tiempo total y hace inviable integrar el DAST en cada
+  \emph{commit}.
+  \item \textbf{Ruido (falsos positivos).} La detección basada únicamente en
+  la reflexión de una cadena o en un patrón de error de base de datos produce
+  hallazgos que no son explotables. Distinguir una reflexión inerte de una
+  ejecución real requiere una segunda observación dirigida y, en los casos
+  ambiguos, un juicio contextual que las heurísticas por sí solas no capturan
+  ---sin, a su vez, introducir el tipo de error contrario (un veredicto
+  alucinado que descarte una vulnerabilidad real).
+  \item \textbf{Explosión combinatoria.} El producto (puntos de inyección)
+  $\times$ (\emph{payloads} por categoría) $\times$ (transformaciones de
+  evasión) crece hasta hacer imposible probarlo todo bajo un presupuesto de
+  tiempo fijo; el orden en que se agota ese presupuesto determina qué se
+  detecta.
+\end{enumerate}
+
+\noindent\textbf{Contribuciones.} Este artículo realiza las siguientes
+aportaciones:
+
+\begin{itemize}
+  \item Un motor DAST asíncrono con un único punto de estrangulamiento HTTP,
+  control de concurrencia con contrapresión, limitación de tasa por
+  \emph{token bucket} y salvaguardas frente a SSRF en el seguimiento de
+  redirecciones (\cref{sec:arquitectura}).
+  \item Un \emph{pipeline} de planificación de \emph{payloads} con etapas
+  desacoplables --- entrelazado por contexto, priorización y ordenación --- y
+  una etapa de confirmación en tiempo de ejecución que calibra la confianza
+  del hallazgo (\cref{sec:arquitectura,sec:metodologia}).
+  \item Un \code{TelemetryWorker} no bloqueante que registra una fila JSONL
+  por \emph{sonda} de \emph{payload}, habilitando la medición del coste de
+  detección instancia a instancia (\cref{sec:telemetria}).
+  \item Una metodología de evaluación reproducible: banco de pruebas
+  contenedorizado, oráculo de calificación independiente, diseño experimental
+  RCBD y manifiesto de reproducibilidad con \emph{hash} del corpus
+  (\cref{sec:metodologia}).
+  \item Un estudio de ablación que aísla la contribución de cada etapa del
+  \emph{pipeline} a la curva de detección frente a coste y a la tasa de
+  falsos positivos (\cref{sec:resultados}).
+  \item Un agente de triaje asesor basado en un modelo de lenguaje abierto,
+  junto con la metodología de \emph{fine-tuning} y alineación en tres fases
+  ---saneamiento del conjunto de datos, adaptación eficiente en parámetros
+  mediante cuantización y adaptación de bajo rango, y validación de seguridad
+  sobre un conjunto disjunto--- que lo especializa en la taxonomía de
+  ciberseguridad sin degradar su fiabilidad
+  (\cref{sec:ia-metodologia}).
+\end{itemize}
+
+El resto del artículo se organiza como sigue. La \cref{sec:arquitectura}
+describe el diseño del motor, incluido el subsistema de triaje asistido por
+modelo de lenguaje. La \cref{sec:metodologia} detalla el banco de pruebas y el
+diseño experimental, y la \cref{sec:ia-metodologia} formaliza la metodología de
+\emph{fine-tuning} y alineación del agente en sus tres fases. La
+\cref{sec:resultados} presenta la evaluación. La \cref{sec:amenazas} discute
+las amenazas a la validez y la \cref{sec:conclusion} concluye.

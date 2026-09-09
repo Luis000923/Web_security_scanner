@@ -1,0 +1,60 @@
+%% 06_conclusion.tex — Conclusión y trabajo futuro.
+
+\section{Conclusión y trabajo futuro}
+\label{sec:conclusion}
+
+Se ha presentado \herramienta, un motor DAST asíncrono cuya arquitectura separa
+explícitamente la planificación de \emph{payloads} y la confirmación de
+hallazgos en etapas desacoplables, junto con una metodología de evaluación
+reproducible sobre OWASP Benchmark, un oráculo independiente, un diseño RCBD y
+un manifiesto con \emph{hash} del corpus. Sobre ese motor se documenta, además,
+un agente de triaje asesor especializado mediante una metodología modular de
+\emph{fine-tuning} y alineación en tres fases ---saneamiento del conjunto de
+datos, adaptación eficiente en parámetros con cuantización, y validación de
+seguridad sobre un conjunto disjunto--- reproducible sobre infraestructura de
+aceleración estándar con escalado dinámico de parámetros.
+
+El estudio de ablación arroja un resultado matizado. Sobre los
+\NumObjetivos{}~objetivos de parámetro \code{GET}, el \code{pipeline} completo
+alcanza una exhaustividad de \ValorRecallTecho{} con una FPR de
+\ValorFPRBaseline{}, y \emph{satura} ya con \num{20}~peticiones por parámetro.
+De las tres optimizaciones evaluadas, solo la \textbf{priorización por
+confianza} produce un cambio con consecuencias prácticas, y acotado a los
+presupuestos ajustados: desactivarla cuesta \DeltaRecallNoPriority{} de
+exhaustividad y \DeltaPrecisionNoPriority{} de precisión a presupuesto
+\num{20}, y nada a partir de \num{50}. El \textbf{entrelazado por contexto} y
+la \textbf{confirmación en tiempo de ejecución} no modifican la exhaustividad,
+la precisión ni la FPR en este banco; la prueba de Friedman detecta
+diferencias en el \emph{orden} de las peticiones
+($p = \ValorFriedmanP{}$), pero con tamaños del efecto insignificantes
+($\lvert\delta\rvert < \num{0.02}$). La conclusión operativa es que, en un
+banco con señales de disparo tan regulares como OWASP Benchmark, el beneficio
+de la planificación de \emph{payloads} es de \emph{anticipación} ---mayor área
+bajo la curva de detección cuando el presupuesto es escaso--- y no de
+\emph{techo} de detección, y que la confirmación en tiempo de ejecución no
+penaliza la precisión porque los indicadores crudos ya son fiables en este
+escenario.
+
+\noindent\textbf{Trabajo futuro.}
+\begin{enumerate}
+  \item Repetir el estudio sobre aplicaciones reales y bancos con señales
+  ruidosas, donde la confirmación en tiempo de ejecución debería mostrar su
+  valor en la reducción de falsos positivos que aquí no fue observable.
+  \item Extender el banco a vectores \code{POST}, cabeceras y \emph{cookies}
+  para caracterizar categorías hoy infrarrepresentadas.
+  \item Completar el bloque de presupuesto \num{10} y ampliar la rejilla a
+  presupuestos menores ($\le \num{10}$), donde el efecto de la priorización es
+  máximo, con réplicas para estrechar los intervalos.
+  \item Añadir un precalentamiento explícito de la JVM y repetir el análisis de
+  latencia absoluta entre configuraciones.
+  \item Aprender la política de ordenación \code{freq} de forma adaptativa
+  durante el propio escaneo, en lugar de fijarla \emph{a priori}.
+  \item Publicar el conjunto completo de manifiestos y trazas JSONL como
+  artefacto de investigación verificable.
+  \item Cuantificar empíricamente la reducción de falsos positivos del agente
+  de triaje frente al motor determinista sobre bancos con señales ruidosas, y
+  calibrar la confianza del veredicto para acotar el riesgo de falso negativo.
+  \item Extender la metodología de alineación en tres fases a la síntesis de
+  \emph{payloads} de confirmación, evaluando si un adaptador especializado
+  supera a la lista estática bajo presupuesto ajustado.
+\end{enumerate}

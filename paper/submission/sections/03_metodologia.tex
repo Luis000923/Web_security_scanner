@@ -1,0 +1,139 @@
+%% 03_metodologia.tex — Testbed, oráculo, diseño RCBD, reproducibilidad.
+
+\section{Metodología experimental}
+\label{sec:metodologia}
+
+\subsection{Banco de pruebas}
+\label{sec:testbed}
+
+El objetivo de evaluación es OWASP Benchmark~\cite{owaspbenchmark}, una
+aplicación Java deliberadamente vulnerable con casos de prueba etiquetados. Se
+despliega mediante \code{docker compose}, sirviendo HTTPS en el puerto
+\num{8443} con un certificado autofirmado (de ahí que todas las sondas usen
+\code{-{}-no-verify-ssl}). Para acotar el estudio a un único tipo de vector, el
+banco se restringe a los \textbf{\num{338}~casos de parámetro \code{GET}}
+(\code{vector = getparam}). El generador \code{build\_ground\_truth.py} produce
+el fichero de verdad-terreno como un arreglo de registros
+$\langle \code{url}, \code{param}, \code{type}, \code{vulnerable} \rangle$; los
+registros con \code{vulnerable = false} son \emph{trampas} explícitas (puntos
+conocidos como seguros que no deben dispararse). La \cref{tab:testbed} resume
+su composición.
+
+\begin{table}[t]
+  \centering
+  \caption{Composición de la verdad-terreno (OWASP Benchmark, vectores
+  \code{getparam}).}
+  \label{tab:testbed}
+  \begin{tabular}{lrr}
+    \toprule
+    Categoría & Instancias vulnerables & Trampas \\
+    \midrule
+    XSS (reflejado)          & 68 & \multirow{5}{*}{144} \\
+    Inyección SQL            & 65 & \\
+    Path Traversal           & 30 & \\
+    Inyección de comandos    & 25 & \\
+    Inyección LDAP           & 6  & \\
+    \midrule
+    \textbf{Total}           & \textbf{194} & \textbf{144} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Oráculo de calificación}
+\label{sec:oraculo}
+
+La calificación la realiza \code{tools/eval\_oracle.py}, un guion independiente
+sin dependencias de terceros. Normaliza cada tupla
+$(\code{url}, \code{param}, \code{type})$ con las mismas funciones de
+\emph{folding} que emplea el análisis (se descartan cadena de consulta y
+fragmento; los alias de tipo se colapsan sobre un mismo \emph{bucket}), y
+calcula:
+\begin{align}
+  \mathrm{TP} &= \lvert H \cap P \rvert, &
+  \mathrm{FP} &= \lvert H \setminus P \rvert, \nonumber\\
+  \mathrm{FN} &= \lvert P \setminus H \rvert, &
+  \mathrm{FPR} &= \frac{\lvert H \cap T \rvert}{\lvert T \rvert},
+  \label{eq:metricas}
+\end{align}
+donde $H$ es el conjunto de hallazgos, $P$ el de instancias vulnerables y $T$
+el de trampas. La FPR se define \emph{exclusivamente} sobre la población de
+trampas conocidas; cuando la verdad-terreno no define trampas, se reporta
+\code{N/A}. De aquí se derivan precisión, exhaustividad (\emph{recall}) y
+$F_1$.
+
+\subsection{Diseño experimental}
+\label{sec:diseno}
+
+Se emplea un \textbf{diseño de bloques completos al azar} (RCBD) en el que:
+
+\begin{itemize}
+  \item El \textbf{factor} es la configuración del \emph{pipeline}, con cuatro
+  niveles: \code{baseline} (todas las optimizaciones activas),
+  \code{no-interleave}, \code{no-priority} y \code{no-runtime-confirm} --- es
+  decir, una ablación de un solo componente por brazo.
+  \item El \textbf{presupuesto de peticiones}
+  (\code{-{}-max-payloads} $\in \{10, 20, 50, \infty\}$) se trata como un
+  factor de bloqueo: la detección es trivialmente monótona en el presupuesto,
+  y bloquear por él aísla el efecto de la configuración.
+  \item La \textbf{unidad de bloqueo} para las pruebas de significancia es el
+  \emph{coste de detección por instancia vulnerable}: el \code{request\_index}
+  de la primera sonda que la detecta, censurado en $(\text{presupuesto}+1)$
+  cuando nunca se detecta.
+\end{itemize}
+
+La rejilla completa es $4 \times 4 = 16$ ejecuciones, orquestadas por
+\code{tools/run\_experiments.py} y consolidadas en
+\code{testbed/experiment\_results.csv}; de ellas se calificaron
+\NumCorridas{} (el bloque de presupuesto \num{10} quedó incompleto, véase la
+\cref{sec:resultados}). Cada ejecución produce su propia telemetría JSONL, su
+informe JSON y su \code{metrics.json}.
+
+\subsection{Métrica de eficiencia: AUC de la curva de detección}
+\label{sec:auc}
+
+Para cada ejecución se construye la curva escalonada
+$c(k) = \lvert \{\text{instancias detectadas con } \code{request\_index} \le k\} \rvert$.
+Tomada sobre los ejes normalizados (exhaustividad frente a fracción de
+presupuesto), su área
+\begin{equation}
+  \mathrm{AUC} = \int_0^1 \frac{c(k)}{\lvert P \rvert}\, \mathrm{d}\hat{k}
+  \label{eq:auc}
+\end{equation}
+equivale a la exhaustividad media sobre el presupuesto y es la medida principal
+de eficiencia: un \emph{pipeline} que detecta lo mismo pero antes tiene mayor
+AUC.
+
+\subsection{Pruebas estadísticas}
+\label{sec:tests}
+
+Para cada presupuesto en el que las cuatro configuraciones completaron su
+ejecución se comparan los cuatro vectores de coste de detección con:
+\begin{enumerate}
+  \item una prueba de \textbf{Friedman}~\cite{friedman1937use} sobre las cuatro
+  condiciones (bloques $=$ instancias vulnerables);
+  \item un post-hoc de \textbf{Nemenyi}~\cite{nemenyi1963distribution} para las
+  comparaciones por pares;
+  \item \textbf{Wilcoxon} de rangos con signo y \textbf{McNemar} para
+  \code{baseline} frente a cada ablación, con corrección de
+  \textbf{Benjamini--Hochberg}~\cite{benjamini1995controlling} sobre la familia
+  de pares;
+  \item $\delta$ de \textbf{Cliff}~\cite{cliff1993dominance} como tamaño del
+  efecto no paramétrico (un $\delta > 0$ indica que la ablación es más lenta o
+  peor).
+\end{enumerate}
+Este protocolo sigue las recomendaciones de Dem\v{s}ar para la comparación de
+métodos sobre múltiples conjuntos~\cite{demsar2006statistical}. Los bloques se
+agrupan además sobre todos los presupuestos (\emph{pooled}) para una prueba
+global.
+
+\subsection{Pilares de reproducibilidad}
+\label{sec:reprod}
+
+Toda ejecución reportada va acompañada de: (i)~el manifiesto de la
+\cref{sec:manifiesto}, con el \emph{hash} SHA-256 del corpus y el \emph{commit}
+de \code{git}; (ii)~una semilla global (\code{-{}-global-seed}) que fija la
+ordenación \code{random} de \emph{payloads}, la rotación de \emph{User-Agent},
+el \emph{jitter} y la mutación de caja; y (iii)~el guion de orquestación, que
+es idempotente --- un directorio de resultados existente se omite salvo
+\code{-{}-force}, de modo que una barrida interrumpida se reanuda sin
+recomputar.
