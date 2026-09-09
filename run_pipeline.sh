@@ -21,7 +21,7 @@
 #   --task triage|payload   which adapter to train           (default: triage)
 #   --epochs N              full fine-tune epochs             (default: 3)
 #   --base-model NAME       base model for the full run
-#                           (default: unsloth/Qwen2.5-7B-Instruct-bnb-4bit)
+#                           (default: Qwen/Qwen2.5-7B-Instruct — native bf16)
 #   --no-install            do NOT auto-install missing ML deps; abort instead
 #   --no-cuda-torch         when auto-installing, skip the explicit CUDA 12.8
 #                           torch wheel (use whatever ".[ai]" resolves)
@@ -80,7 +80,7 @@ trap 'on_err "${LINENO}" "${BASH_COMMAND}"' ERR
 REGEN_DATA=0
 TASK="triage"
 EPOCHS=3
-BASE_MODEL="unsloth/Qwen2.5-7B-Instruct-bnb-4bit"
+BASE_MODEL="Qwen/Qwen2.5-7B-Instruct"
 NO_INSTALL=0
 NO_CUDA_TORCH=0
 SKIP_MODEL_DL=0
@@ -117,10 +117,69 @@ case "$TASK" in
     *) die "--task must be 'triage' or 'payload', got '${TASK}'" ;;
 esac
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
 # ---------------------------------------------------------------------------
-# permission sanity — running as root corrupts .venv / HF-cache ownership
+# OS-aware virtualenv layout
+#   Linux/macOS : .venv/bin/python3
+#   Windows     : .venv/Scripts/python.exe   (Git Bash / MSYS2 / Cygwin)
+# The directory is probed first so an existing venv always wins; when no venv
+# exists yet we fall back to what `uname` says the platform should create.
 # ---------------------------------------------------------------------------
-if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+case "$(uname -s 2>/dev/null || echo unknown)" in
+    MINGW*|MSYS*|CYGWIN*|Windows_NT) IS_WINDOWS=1 ;;
+    *)                               IS_WINDOWS=0 ;;
+esac
+
+VENV_DIR="$ROOT/.venv"
+if [[ -d "$VENV_DIR/Scripts" ]]; then
+    VENV_BIN="$VENV_DIR/Scripts"
+elif [[ -d "$VENV_DIR/bin" ]]; then
+    VENV_BIN="$VENV_DIR/bin"
+elif [[ "$IS_WINDOWS" -eq 1 ]]; then
+    VENV_BIN="$VENV_DIR/Scripts"
+else
+    VENV_BIN="$VENV_DIR/bin"
+fi
+
+# Set VENV_BIN/VENV_PY to the first interpreter that actually exists there.
+# VENV_PY stays empty when the venv has not been created yet, so callers can
+# bootstrap it with `uv venv` and re-resolve.
+resolve_venv_python() {
+    if [[ -d "$VENV_DIR/Scripts" ]]; then
+        VENV_BIN="$VENV_DIR/Scripts"
+    elif [[ -d "$VENV_DIR/bin" ]]; then
+        VENV_BIN="$VENV_DIR/bin"
+    fi
+    VENV_PY=""
+    local cand
+    for cand in "$VENV_BIN/python.exe" "$VENV_BIN/python3.exe" \
+                "$VENV_BIN/python3" "$VENV_BIN/python"; do
+        if [[ -x "$cand" || -f "$cand" ]]; then VENV_PY="$cand"; return 0; fi
+    done
+    return 1
+}
+resolve_venv_python || true
+
+# Normalise a path for comparison: backslashes -> slashes, "C:/x" -> "/c/x",
+# no trailing slash, and case-folded on Windows (its filesystem is too).
+norm_path() {
+    local p="${1//\\//}"
+    p="$(printf '%s' "$p" | sed -e 's#^\([A-Za-z]\):/#/\1/#' -e 's#/\{2,\}#/#g' -e 's#/$##')"
+    if [[ "$IS_WINDOWS" -eq 1 ]]; then
+        printf '%s' "$p" | tr '[:upper:]' '[:lower:]'
+    else
+        printf '%s' "$p"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# permission sanity — running as root corrupts .venv / HF-cache ownership.
+# Meaningless under Git Bash on Windows, where MSYS reports uid 0 for an
+# ordinary account, so the guard only applies to Unix.
+# ---------------------------------------------------------------------------
+if [[ "$IS_WINDOWS" -eq 0 && "${EUID:-$(id -u)}" -eq 0 ]]; then
     if [[ "$ALLOW_ROOT" -eq 1 ]]; then
         warn "running as root (--allow-root): files created here may be unusable \
 by your normal user"
@@ -129,13 +188,10 @@ by your normal user"
 the Hugging Face cache as root and break later non-root runs. Re-run as your \
 normal user, or pass --allow-root if you really mean it."
     fi
-elif [[ -n "${SUDO_USER:-}" ]]; then
+elif [[ "$IS_WINDOWS" -eq 0 && -n "${SUDO_USER:-}" ]]; then
     warn "invoked via sudo by '${SUDO_USER}' — proceeding as uid ${EUID}, but \
 prefer a plain (non-sudo) shell for uv work"
 fi
-
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$ROOT"
 
 TELEMETRY_DIR="testbed/results"
 BENCHMARK_CSV="testbed/.cache/benchmark/expectedresults-1.2.csv"
@@ -154,13 +210,17 @@ step "Environment & uv verification"
 command -v uv >/dev/null 2>&1 || die "uv is not installed — https://docs.astral.sh/uv/"
 ok "uv present: $(uv --version)"
 
-if [[ ! -d .venv ]]; then
-    warn ".venv not found — bootstrapping with uv venv + uv sync"
+if [[ -z "$VENV_PY" ]]; then
+    warn "no interpreter under ${VENV_BIN#$ROOT/} — bootstrapping with uv venv + uv sync"
     uv venv
     uv sync
+    resolve_venv_python || true
     ok "environment created"
+fi
+if [[ -n "$VENV_PY" ]]; then
+    ok "venv interpreter: ${VENV_PY#$ROOT/}  ($([[ "$IS_WINDOWS" -eq 1 ]] && echo Windows || echo Unix) layout)"
 else
-    ok ".venv present"
+    die "uv venv did not produce an interpreter under ${VENV_BIN#$ROOT/}"
 fi
 
 install_ml_stack() {
