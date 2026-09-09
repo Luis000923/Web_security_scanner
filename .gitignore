@@ -6,6 +6,13 @@ __pycache__/
 build/
 dist/
 
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # uv / venv
 .venv/
 
@@ -42,5 +49,5 @@ docs_context/
 .idea/
 .vscode/
 
-# QLoRA training outputs
+# QLoRA training outputs / experiment telemetry
 runs/

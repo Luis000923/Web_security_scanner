@@ -7,7 +7,7 @@ name = "web-security-scanner"
 version = "5.2.0"
 description = "Advanced Web Security Scanner with AsyncIO and Plugin System"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Luis", email = "luis@example.com"},
@@ -60,16 +60,15 @@ ai-unsloth = [
 ai-serve = [
     "vllm>=0.7.0",
     "aiohttp>=3.8.0",
-]
-dev = [
-    "pytest",
-    "pytest-asyncio",
-    "black",
-    "mypy",
-    "ruff",
-    "jsonschema>=4.20",
+    # Constrained decoding for structured_inference.py (tier-1 local grammar
+    # enforcement). vLLM also enforces the same schema server-side via
+    # guided_json, so this is only needed for the in-process transformers path.
+    "outlines>=0.1.0",
+    "pydantic>=2.0",
 ]
 
+# Dev tooling lives in the [dependency-groups] table below (uv-native, and what
+# CI installs with `uv sync --all-groups`) — not as a project extra.
 [dependency-groups]
 dev = [
     "pytest",
