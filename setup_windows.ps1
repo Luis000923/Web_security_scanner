@@ -1,21 +1,33 @@
 <#
 .SYNOPSIS
-    Quick-start bootstrapper for Web_security_scanner on Windows.
+    One-shot bootstrapper for Web_security_scanner on Windows: pre-flight check,
+    toolchain install, clone, and an unattended pipeline run.
 
 .DESCRIPTION
-    Zero-touch setup for a fresh Windows machine (e.g. a university lab box):
+    Designed to be the only file you need on a bare Windows machine (e.g. a
+    university lab PC). Two phases, one command:
 
+    PHASE 1 - pre-flight (Invoke-PreflightCheck)
+        Cheap, read-only checks that run BEFORE anything is downloaded, so a
+        machine that cannot possibly succeed fails in seconds instead of after
+        a 6 GB torch download: 64-bit OS, PowerShell version, winget, disk
+        space, write access, and reachability of github.com / huggingface.co.
+        Blocking failures abort in red. Warnings print in yellow and continue.
+
+    PHASE 2 - setup + run (fully unattended)
         1. Git (Git Bash)      via winget  Git.Git
         2. Python 3.11         via winget  Python.Python.3.11
         3. uv                  via https://astral.sh/uv/install.ps1
         4. git clone + git checkout ai-agent
-        5. runs `bash run_pipeline.sh` through Git Bash, automatically
+        5. bash run_pipeline.sh   through Git Bash
 
-    Everything is idempotent: already-installed tools are detected and skipped,
-    and an existing clone is reused (fetch + checkout) instead of re-cloned.
+    Everything is idempotent: installed tools are detected and skipped, and an
+    existing clone is reused (fetch + checkout) instead of re-cloned. No
+    administrator rights are required - winget installs per-user by default and
+    uv installs into %USERPROFILE%\.local\bin.
 
-    No administrator rights are required — winget installs per-user by default,
-    and uv installs into %USERPROFILE%\.local\bin.
+    check_windows_env.ps1 is the standalone entry point to phase 1; it delegates
+    here so the checks have exactly one implementation.
 
 .PARAMETER InstallDir
     Parent directory that will contain the clone. Defaults to the directory the
@@ -26,6 +38,17 @@
 
 .PARAMETER RepoUrl
     Clone URL. Default: https://github.com/Luis000923/Web_security_scanner.git
+
+.PARAMETER CheckOnly
+    Run the pre-flight check and exit. Exit code 0 = ready (warnings allowed),
+    1 = at least one blocking problem.
+
+.PARAMETER SkipPreflight
+    Jump straight to phase 2 without checking anything.
+
+.PARAMETER Force
+    Continue even when the pre-flight reports blocking problems. At your own
+    risk: these are the checks that predict a failed install.
 
 .PARAMETER SkipPipeline
     Do the setup but stop before launching run_pipeline.sh.
@@ -38,6 +61,9 @@
     powershell -ExecutionPolicy Bypass -File .\setup_windows.ps1
 
 .EXAMPLE
+    .\setup_windows.ps1 -CheckOnly
+
+.EXAMPLE
     .\setup_windows.ps1 -PipelineArgs '--skip-train'
 #>
 
@@ -46,6 +72,9 @@ param(
     [string]   $InstallDir    = $PSScriptRoot,
     [string]   $Branch        = 'ai-agent',
     [string]   $RepoUrl       = 'https://github.com/Luis000923/Web_security_scanner.git',
+    [switch]   $CheckOnly,
+    [switch]   $SkipPreflight,
+    [switch]   $Force,
     [switch]   $SkipPipeline,
     [string[]] $PipelineArgs  = @()
 )
@@ -54,7 +83,21 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference    = 'SilentlyContinue'   # keeps Invoke-WebRequest fast
 
+# Windows PowerShell 5.1 still negotiates TLS 1.0 by default on older images,
+# which huggingface.co and astral.sh both refuse. Opt in before any web call.
+try {
+    [Net.ServicePointManager]::SecurityProtocol =
+        [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+} catch {
+    Write-Verbose "could not raise the TLS floor: $($_.Exception.Message)"
+}
+
 if (-not $InstallDir) { $InstallDir = (Get-Location).Path }
+
+# Disk budget, in GB. A tier-3 run pulls a 14B 4-bit checkpoint (~9 GB), the
+# CUDA torch wheels (~6 GB), and writes a merged fp16 adapter (~28 GB).
+$script:DiskBlockGB = 15
+$script:DiskWarnGB  = 50
 
 # ---------------------------------------------------------------------------
 # presentation helpers
@@ -74,9 +117,330 @@ function Stop-Setup($msg) {
     exit 1
 }
 
-# ---------------------------------------------------------------------------
-# environment helpers
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# PHASE 1 - pre-flight check
+# ===========================================================================
+
+# Every check returns one of these. Status is Pass | Warn | Block.
+function New-CheckResult {
+    param(
+        [Parameter(Mandatory)][string] $Name,
+        [Parameter(Mandatory)][ValidateSet('Pass', 'Warn', 'Block')][string] $Status,
+        [string] $Detail = '',
+        [string] $Remedy = ''
+    )
+    [pscustomobject]@{
+        Name   = $Name
+        Status = $Status
+        Detail = $Detail
+        Remedy = $Remedy
+    }
+}
+
+function Test-Endpoint {
+    <#
+      Reachability, not correctness: any HTTP response - including a 403 or 405
+      from a host that rejects HEAD - proves we got through DNS, TLS and any
+      proxy, which is all the pre-flight needs to know.
+    #>
+    param([Parameter(Mandatory)][string] $Url, [int] $TimeoutSec = 15)
+    try {
+        $r = Invoke-WebRequest -Uri $Url -Method Head -UseBasicParsing `
+                               -TimeoutSec $TimeoutSec -ErrorAction Stop
+        return [pscustomobject]@{ Ok = $true; Detail = "HTTP $([int]$r.StatusCode)" }
+    } catch {
+        $status = $null
+        try {
+            $resp = $_.Exception.Response
+            if ($resp) { $status = [int]$resp.StatusCode }
+        } catch { $status = $null }
+        if ($status) {
+            return [pscustomobject]@{ Ok = $true; Detail = "HTTP $status" }
+        }
+        return [pscustomobject]@{ Ok = $false; Detail = $_.Exception.Message }
+    }
+}
+
+function Test-Command($name) {
+    $null -ne (Get-Command $name -ErrorAction SilentlyContinue)
+}
+
+function Get-FreeSpaceGB {
+    <# Free GB on the volume that holds $Path, or $null if it cannot be read. #>
+    param([Parameter(Mandatory)][string] $Path)
+    try {
+        $probe = $Path
+        while ($probe -and -not (Test-Path -LiteralPath $probe)) {
+            $parent = Split-Path $probe -Parent
+            if ($parent -eq $probe) { break }
+            $probe = $parent
+        }
+        if (-not $probe) { return $null }
+        $root = [System.IO.Path]::GetPathRoot((Resolve-Path -LiteralPath $probe).Path)
+        if (-not $root) { return $null }
+        return [math]::Round(([System.IO.DriveInfo]::new($root)).AvailableFreeSpace / 1GB, 1)
+    } catch {
+        return $null
+    }
+}
+
+function Get-GpuProfile {
+    <#
+      Reads VRAM through nvidia-smi and mirrors the tier table in
+      ai_module/auto_select_model.py so the operator sees, before anything is
+      downloaded, which model the pipeline will pick. That Python module stays
+      authoritative - this is a preview, not the decision.
+    #>
+    if (-not (Test-Command 'nvidia-smi')) { return $null }
+    try {
+        $raw = & nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $raw) { return $null }
+        $first = @($raw)[0]
+        $parts = $first -split ',', 2
+        if ($parts.Count -lt 2) { return $null }
+        $name   = $parts[0].Trim()
+        $vramGB = [math]::Round([double]($parts[1].Trim()) / 1024, 1)
+        $tier = if ($vramGB -le 7)  { '1 (1.5B)' }
+                elseif ($vramGB -le 16) { '2 (7B)' }
+                else                    { '3 (14B)' }
+        return [pscustomobject]@{ Name = $name; VramGB = $vramGB; Tier = $tier }
+    } catch {
+        return $null
+    }
+}
+
+function Invoke-PreflightCheck {
+    <#
+      Read-only. Returns every result plus the Blocking/Warning subsets, so both
+      -CheckOnly and the installer can decide what to do with them.
+    #>
+    param([Parameter(Mandatory)][string] $TargetDir)
+
+    $results = New-Object System.Collections.Generic.List[object]
+
+    # --- platform ----------------------------------------------------------
+    $psv = $PSVersionTable.PSVersion
+    if ($psv.Major -gt 5 -or ($psv.Major -eq 5 -and $psv.Minor -ge 1)) {
+        $results.Add((New-CheckResult 'PowerShell' 'Pass' "v$psv"))
+    } else {
+        $results.Add((New-CheckResult 'PowerShell' 'Block' "v$psv is too old" `
+            'Windows Management Framework 5.1+ is required (Windows 10 ships it).'))
+    }
+
+    # NB: must not be called $isWindows - PowerShell variable names are
+    # case-insensitive, and $IsWindows is a read-only automatic variable in
+    # PS 7, so assigning to it throws. Absent in 5.1, where "Windows" is implied.
+    $onWindows = $true
+    $isWinVar = Get-Variable -Name IsWindows -ErrorAction SilentlyContinue
+    if ($isWinVar) { $onWindows = [bool]$isWinVar.Value }
+    if (-not $onWindows) {
+        $results.Add((New-CheckResult 'Operating system' 'Block' 'not Windows' `
+            'This bootstrapper targets Windows. On Linux/macOS run ./run_pipeline.sh directly.'))
+    } elseif ([Environment]::Is64BitOperatingSystem) {
+        $results.Add((New-CheckResult 'Architecture' 'Pass' '64-bit Windows'))
+    } else {
+        $results.Add((New-CheckResult 'Architecture' 'Block' '32-bit Windows' `
+            'torch and bitsandbytes publish no 32-bit wheels; a 64-bit OS is required.'))
+    }
+
+    # --- package manager ---------------------------------------------------
+    # winget is only load-bearing when something still has to be installed:
+    # a machine that already has git+python+uv does not need it at all.
+    $hasGit    = Test-Command 'git'
+    $hasUv     = Test-Command 'uv'
+    $hasPython = (Test-Command 'python') -or (Test-Command 'py')
+    $hasWinget = Test-Command 'winget'
+    $needsInstall = -not ($hasGit -and $hasUv -and $hasPython)
+
+    if ($hasWinget) {
+        $wv = try { (& winget --version) -join '' } catch { 'unknown' }
+        $results.Add((New-CheckResult 'winget' 'Pass' $wv))
+    } elseif ($needsInstall) {
+        $results.Add((New-CheckResult 'winget' 'Block' 'not found, and tools are missing' `
+            'Install "App Installer" from the Microsoft Store: https://apps.microsoft.com/detail/9NBLGGH4NNS1'))
+    } else {
+        $results.Add((New-CheckResult 'winget' 'Warn' 'not found (nothing left to install)' `
+            'Only needed to install Git/Python; both are already present.'))
+    }
+
+    # --- toolchain ---------------------------------------------------------
+    # git is the one hard requirement the installer itself can satisfy, so it
+    # blocks only when winget is ALSO missing - i.e. nothing can install it.
+    if ($hasGit) {
+        $gv = try { (& git --version) -join '' } catch { 'present' }
+        $results.Add((New-CheckResult 'git' 'Pass' $gv))
+    } elseif ($hasWinget) {
+        $results.Add((New-CheckResult 'git' 'Warn' 'not installed' `
+            'Will be installed via winget in phase 2.'))
+    } else {
+        $results.Add((New-CheckResult 'git' 'Block' 'not installed and no winget to install it' `
+            'Install Git for Windows manually: https://git-scm.com/download/win'))
+    }
+
+    if ($hasPython) {
+        $pv = try { (& python --version 2>&1) -join '' } catch { 'present' }
+        $results.Add((New-CheckResult 'Python' 'Pass' $pv))
+    } else {
+        $results.Add((New-CheckResult 'Python' 'Warn' 'not installed' `
+            'Will be installed via winget; uv can also provision its own interpreter.'))
+    }
+
+    if ($hasUv) {
+        $uvv = try { (& uv --version) -join '' } catch { 'present' }
+        $results.Add((New-CheckResult 'uv' 'Pass' $uvv))
+    } else {
+        $results.Add((New-CheckResult 'uv' 'Warn' 'not installed' `
+            'Will be installed from https://astral.sh/uv/install.ps1 in phase 2.'))
+    }
+
+    # --- storage -----------------------------------------------------------
+    $freeGB = Get-FreeSpaceGB -Path $TargetDir
+    if ($null -eq $freeGB) {
+        $results.Add((New-CheckResult 'Disk space' 'Warn' "could not read free space for $TargetDir"))
+    } elseif ($freeGB -lt $script:DiskBlockGB) {
+        $results.Add((New-CheckResult 'Disk space' 'Block' "$freeGB GB free at $TargetDir" `
+            "At least $($script:DiskBlockGB) GB is needed for the CUDA wheels and one base model."))
+    } elseif ($freeGB -lt $script:DiskWarnGB) {
+        $results.Add((New-CheckResult 'Disk space' 'Warn' "$freeGB GB free at $TargetDir" `
+            "A full tier-3 run (14B + merged fp16 adapter) wants ~$($script:DiskWarnGB) GB; a smaller model or --skip-train will still fit."))
+    } else {
+        $results.Add((New-CheckResult 'Disk space' 'Pass' "$freeGB GB free at $TargetDir"))
+    }
+
+    # The Hugging Face cache lands under the profile, which is often a different
+    # (and smaller) volume than the checkout on a managed lab image.
+    # Join-Path throws on a null parent, and USERPROFILE is absent in some
+    # service/CI contexts, so fall back to the target volume rather than dying.
+    $hfHome = if ($env:HF_HOME)     { $env:HF_HOME }
+              elseif ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.cache\huggingface' }
+              else                  { $TargetDir }
+    $hfFree = Get-FreeSpaceGB -Path $hfHome
+    if ($null -ne $hfFree -and $null -ne $freeGB -and $hfFree -ne $freeGB) {
+        if ($hfFree -lt $script:DiskBlockGB) {
+            $results.Add((New-CheckResult 'HF cache space' 'Block' "$hfFree GB free at $hfHome" `
+                'Point HF_HOME at a roomier volume, e.g. $env:HF_HOME="D:\hf-cache".'))
+        } else {
+            $results.Add((New-CheckResult 'HF cache space' 'Pass' "$hfFree GB free at $hfHome"))
+        }
+    }
+
+    # --- write access ------------------------------------------------------
+    try {
+        if (-not (Test-Path -LiteralPath $TargetDir)) {
+            New-Item -ItemType Directory -Path $TargetDir -Force -ErrorAction Stop | Out-Null
+        }
+        $probeFile = Join-Path $TargetDir ".preflight-$PID.tmp"
+        [System.IO.File]::WriteAllText($probeFile, 'x')
+        Remove-Item -LiteralPath $probeFile -Force -ErrorAction SilentlyContinue
+        $results.Add((New-CheckResult 'Write access' 'Pass' $TargetDir))
+    } catch {
+        $results.Add((New-CheckResult 'Write access' 'Block' "cannot write to $TargetDir" `
+            'Pick a writable -InstallDir, e.g. -InstallDir "$env:USERPROFILE\Documents".'))
+    }
+
+    # --- connectivity ------------------------------------------------------
+    # github.com and huggingface.co are non-negotiable: without them there is no
+    # clone and no model. The wheel mirrors only warn - a partial cache or a
+    # local mirror can still carry the run.
+    foreach ($ep in @(
+        @{ Name = 'github.com';       Url = 'https://github.com';                Blocking = $true  },
+        @{ Name = 'huggingface.co';   Url = 'https://huggingface.co';            Blocking = $true  },
+        @{ Name = 'astral.sh (uv)';   Url = 'https://astral.sh/uv/install.ps1';  Blocking = $false },
+        @{ Name = 'pypi.org';         Url = 'https://pypi.org/simple/';          Blocking = $false },
+        @{ Name = 'pytorch wheels';   Url = 'https://download.pytorch.org/whl/cu128'; Blocking = $false }
+    )) {
+        $probe = Test-Endpoint -Url $ep.Url
+        if ($probe.Ok) {
+            $results.Add((New-CheckResult "Network: $($ep.Name)" 'Pass' $probe.Detail))
+        } elseif ($ep.Blocking) {
+            $results.Add((New-CheckResult "Network: $($ep.Name)" 'Block' $probe.Detail `
+                'Check the connection, the campus proxy (HTTPS_PROXY), or a content filter.'))
+        } else {
+            $results.Add((New-CheckResult "Network: $($ep.Name)" 'Warn' $probe.Detail `
+                'Non-fatal, but the dependency install will likely fail without it.'))
+        }
+    }
+
+    if ($env:HTTPS_PROXY -or $env:HTTP_PROXY) {
+        $results.Add((New-CheckResult 'Proxy' 'Warn' "HTTPS_PROXY=$($env:HTTPS_PROXY) HTTP_PROXY=$($env:HTTP_PROXY)" `
+            'Git and uv honour these; make sure Git Bash inherits them too.'))
+    }
+
+    # --- GPU ---------------------------------------------------------------
+    $gpu = Get-GpuProfile
+    if ($gpu) {
+        $results.Add((New-CheckResult 'GPU' 'Pass' `
+            "$($gpu.Name), $($gpu.VramGB) GB VRAM -> auto-select tier $($gpu.Tier)"))
+    } else {
+        $results.Add((New-CheckResult 'GPU' 'Warn' 'no NVIDIA GPU detected (nvidia-smi absent or failed)' `
+            'The pipeline will auto-select a CPU-sized model; training will be very slow.'))
+    }
+
+    # --- Windows quirks that bite later ------------------------------------
+    try {
+        $lp = Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' `
+                               -Name 'LongPathsEnabled' -ErrorAction Stop
+        if ($lp.LongPathsEnabled -eq 1) {
+            $results.Add((New-CheckResult 'Long paths' 'Pass' 'enabled'))
+        } else {
+            $results.Add((New-CheckResult 'Long paths' 'Warn' 'disabled (MAX_PATH = 260)' `
+                'Deep Hugging Face cache paths can fail. Enable with: git config --system core.longpaths true'))
+        }
+    } catch {
+        $results.Add((New-CheckResult 'Long paths' 'Warn' 'could not read the policy'))
+    }
+
+    try {
+        $ram = [math]::Round((Get-CimInstance Win32_ComputerSystem -ErrorAction Stop).TotalPhysicalMemory / 1GB, 1)
+        if ($ram -ge 16) {
+            $results.Add((New-CheckResult 'System RAM' 'Pass' "$ram GB"))
+        } else {
+            $results.Add((New-CheckResult 'System RAM' 'Warn' "$ram GB" `
+                'QLoRA loads the checkpoint through host RAM; 16 GB+ is recommended.'))
+        }
+    } catch {
+        $results.Add((New-CheckResult 'System RAM' 'Warn' 'could not be read'))
+    }
+
+    [pscustomobject]@{
+        Results  = $results
+        Blocking = @($results | Where-Object { $_.Status -eq 'Block' })
+        Warnings = @($results | Where-Object { $_.Status -eq 'Warn'  })
+    }
+}
+
+function Show-PreflightReport {
+    param([Parameter(Mandatory)][object] $Report)
+
+    foreach ($r in $Report.Results) {
+        switch ($r.Status) {
+            'Pass'  { Write-Host ("   [OK]    {0,-24} {1}" -f $r.Name, $r.Detail) -ForegroundColor Green }
+            'Warn'  { Write-Host ("   [WARN]  {0,-24} {1}" -f $r.Name, $r.Detail) -ForegroundColor Yellow }
+            'Block' { Write-Host ("   [BLOCK] {0,-24} {1}" -f $r.Name, $r.Detail) -ForegroundColor Red }
+        }
+    }
+
+    if ($Report.Warnings.Count) {
+        Write-Host ''
+        Write-Host "   $($Report.Warnings.Count) warning(s) - continuing:" -ForegroundColor Yellow
+        foreach ($w in $Report.Warnings) {
+            if ($w.Remedy) { Write-Host "     - $($w.Name): $($w.Remedy)" -ForegroundColor Yellow }
+        }
+    }
+
+    if ($Report.Blocking.Count) {
+        Write-Host ''
+        Write-Host "   $($Report.Blocking.Count) blocking problem(s):" -ForegroundColor Red
+        foreach ($b in $Report.Blocking) {
+            Write-Host "     - $($b.Name): $($b.Detail)" -ForegroundColor Red
+            if ($b.Remedy) { Write-Host "       -> $($b.Remedy)" -ForegroundColor Red }
+        }
+    }
+}
+
+# ===========================================================================
+# PHASE 2 - install helpers
+# ===========================================================================
 
 # winget and the uv installer edit the *persisted* PATH, which does not reach an
 # already-running process. Re-read Machine + User PATH so freshly installed
@@ -98,11 +462,7 @@ function Update-SessionPath {
     $env:Path = ($merged -join ';')
 }
 
-function Test-Command($name) {
-    $null -ne (Get-Command $name -ErrorAction SilentlyContinue)
-}
-
-# `bash.exe` in System32 is the WSL launcher, not Git Bash — it would run the
+# `bash.exe` in System32 is the WSL launcher, not Git Bash - it would run the
 # pipeline inside a Linux distro (or fail outright), so it is always rejected.
 function Resolve-GitBash {
     $candidates = New-Object System.Collections.Generic.List[string]
@@ -157,8 +517,12 @@ function Invoke-Winget([string]$Id, [string]$Label) {
     Update-SessionPath
 }
 
+# ===========================================================================
+# main
+# ===========================================================================
+
 Write-Host ''
-Write-Host 'Web_security_scanner - Windows quick start' -ForegroundColor Cyan
+Write-Host 'Web_security_scanner - Windows one-shot setup' -ForegroundColor Cyan
 Write-Host ("  branch : {0}" -f $Branch)
 Write-Host ("  target : {0}" -f $InstallDir)
 
@@ -166,20 +530,43 @@ $startedAt = Get-Date
 Update-SessionPath
 
 # ---------------------------------------------------------------------------
-# 0. winget availability
+# phase 1
 # ---------------------------------------------------------------------------
-Write-Step 'Checking winget (App Installer)'
-if (Test-Command 'winget') {
-    Write-Ok "winget present: $(& winget --version)"
+if ($SkipPreflight) {
+    Write-Step 'Pre-flight check'
+    Write-Warn 'skipped (-SkipPreflight)'
+    if ($CheckOnly) { Stop-Setup '-CheckOnly and -SkipPreflight are contradictory.' }
 } else {
-    Stop-Setup @'
-winget was not found. Install "App Installer" from the Microsoft Store
-(https://apps.microsoft.com/detail/9NBLGGH4NNS1), then re-run this script.
-'@
+    Write-Step 'Pre-flight check'
+    $report = Invoke-PreflightCheck -TargetDir $InstallDir
+    Show-PreflightReport -Report $report
+
+    if ($report.Blocking.Count -gt 0) {
+        if ($Force) {
+            Write-Host ''
+            Write-Warn "$($report.Blocking.Count) blocking problem(s) overridden by -Force - continuing at your own risk"
+        } elseif ($CheckOnly) {
+            Write-Host ''
+            Write-Host 'X NOT READY' -ForegroundColor Red
+            exit 1
+        } else {
+            Stop-Setup @"
+the pre-flight check found $($report.Blocking.Count) blocking problem(s) - see the
+red lines above. Nothing was installed and nothing was downloaded.
+Fix them and re-run, or pass -Force to proceed anyway.
+"@
+        }
+    }
+
+    if ($CheckOnly) {
+        Write-Host ''
+        Write-Host 'OK  READY - re-run without -CheckOnly to install and start the pipeline' -ForegroundColor Green
+        exit 0
+    }
 }
 
 # ---------------------------------------------------------------------------
-# 1. Git (Git Bash)
+# phase 2.1 Git (Git Bash)
 # ---------------------------------------------------------------------------
 Write-Step 'Git / Git Bash'
 if (Test-Command 'git') {
@@ -200,7 +587,7 @@ if (Test-Command 'git') {
 }
 
 # ---------------------------------------------------------------------------
-# 2. Python 3.11
+# phase 2.2 Python 3.11
 # ---------------------------------------------------------------------------
 Write-Step 'Python 3.11'
 $pythonOk = $false
@@ -231,7 +618,7 @@ if (-not $pythonOk) {
 }
 
 # ---------------------------------------------------------------------------
-# 3. uv
+# phase 2.3 uv
 # ---------------------------------------------------------------------------
 Write-Step 'uv package manager'
 if (Test-Command 'uv') {
@@ -256,7 +643,7 @@ if (Test-Command 'uv') {
 }
 
 # ---------------------------------------------------------------------------
-# 4. clone / update the repository
+# phase 2.4 clone / update the repository
 # ---------------------------------------------------------------------------
 Write-Step "Repository (branch: $Branch)"
 
@@ -293,7 +680,7 @@ if ($LASTEXITCODE -ne 0) { Stop-Setup "git checkout $Branch failed" }
 Write-Ok "on branch $(& git rev-parse --abbrev-ref HEAD) @ $(& git rev-parse --short HEAD)"
 
 # ---------------------------------------------------------------------------
-# 5. locate Git Bash and launch the pipeline
+# phase 2.5 locate Git Bash and launch the pipeline
 # ---------------------------------------------------------------------------
 Write-Step 'Launching run_pipeline.sh through Git Bash'
 
