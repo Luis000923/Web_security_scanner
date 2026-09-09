@@ -6,9 +6,10 @@
 #   1. environment + uv verification, with auto-install of the ML stack
 #      (bash ai_module/verify_uv_env.sh; on missing deps -> uv pip install -e ".[ai]")
 #   2. dataset (re)generation                    (optional, --regen-data)
-#   3. base-model cache preparation              (HF snapshot download if missing)
-#   4. QLoRA smoke test                          (--max-steps 5, fast CUDA/VRAM check)
-#   5. full QLoRA fine-tune                      (--epochs 3 --max-seq-len 2048 --eval)
+#   3. hardware profiling + base-model choice    (VRAM tier -> model size)
+#   4. base-model cache preparation              (HF snapshot download if missing)
+#   5. QLoRA smoke test                          (--max-steps 5, fast CUDA/VRAM check)
+#   6. full QLoRA fine-tune                      (--epochs 3 --max-seq-len 2048 --eval)
 #
 # Any failure aborts the pipeline in red and prints the elapsed time, so a
 # half-finished run never corrupts the adapter/output state.
@@ -20,8 +21,14 @@
 #                           (--synthetic-multiplier 40) before training
 #   --task triage|payload   which adapter to train           (default: triage)
 #   --epochs N              full fine-tune epochs             (default: 3)
-#   --base-model NAME       base model for the full run
-#                           (default: Qwen/Qwen2.5-7B-Instruct — native bf16)
+#   --base-model NAME       pin the base model, skipping auto-selection.
+#                           By default the model is chosen from the detected
+#                           VRAM (see ai_module/auto_select_model.py):
+#                             <=7 GB  -> Qwen2.5-1.5B-Instruct-bnb-4bit
+#                             <=16 GB -> Qwen2.5-7B-Instruct-bnb-4bit
+#                             >16 GB  -> Qwen2.5-14B-Instruct-bnb-4bit
+#                           so a 6 GB RTX 4050 and a 32 GB RTX 5090 both work
+#                           without editing the script.
 #   --no-install            do NOT auto-install missing ML deps; abort instead
 #   --no-cuda-torch         when auto-installing, skip the explicit CUDA 12.8
 #                           torch wheel (use whatever ".[ai]" resolves)
@@ -80,7 +87,8 @@ trap 'on_err "${LINENO}" "${BASH_COMMAND}"' ERR
 REGEN_DATA=0
 TASK="triage"
 EPOCHS=3
-BASE_MODEL="Qwen/Qwen2.5-7B-Instruct"
+BASE_MODEL=""            # empty => auto-select from the detected VRAM
+BASE_MODEL_EXPLICIT=0
 NO_INSTALL=0
 NO_CUDA_TORCH=0
 SKIP_MODEL_DL=0
@@ -97,7 +105,7 @@ while [[ $# -gt 0 ]]; do
         --regen-data)     REGEN_DATA=1; shift ;;
         --task)           TASK="${2:?}"; shift 2 ;;
         --epochs)         EPOCHS="${2:?}"; shift 2 ;;
-        --base-model)     BASE_MODEL="${2:?}"; shift 2 ;;
+        --base-model)     BASE_MODEL="${2:?}"; BASE_MODEL_EXPLICIT=1; shift 2 ;;
         --no-install)     NO_INSTALL=1; shift ;;
         --no-cuda-torch)  NO_CUDA_TORCH=1; shift ;;
         --skip-model-dl)  SKIP_MODEL_DL=1; shift ;;
@@ -107,7 +115,7 @@ while [[ $# -gt 0 ]]; do
         --skip-train)     SKIP_TRAIN=1; shift ;;
         --no-verify)      NO_VERIFY=1; shift ;;
         --allow-root)     ALLOW_ROOT=1; shift ;;
-        -h|--help)        sed -n '3,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)        awk 'NR>2{ if (!/^#/) exit; sub(/^# ?/, ""); print }' "$0"; exit 0 ;;
         *)                die "unknown option: $1  (try --help)" ;;
     esac
 done
@@ -200,7 +208,8 @@ SMOKE_DIR="runs/_smoke"
 
 printf '%s%sai_module QLoRA pipeline%s  —  task=%s  epochs=%s  regen-data=%s\n' \
     "$BOLD" "$CYAN" "$RESET" "$TASK" "$EPOCHS" "$REGEN_DATA"
-printf '   repo: %s\n' "$ROOT"
+printf '   repo : %s\n' "$ROOT"
+printf '   model: %s\n' "${BASE_MODEL:-auto (from detected VRAM)}"
 
 # ---------------------------------------------------------------------------
 # 1. environment + uv verification
@@ -308,7 +317,43 @@ ok "train: ${TRAIN_DS}"
 ok "eval : ${VAL_DS}"
 
 # ---------------------------------------------------------------------------
-# 3. base-model cache preparation
+# 3. hardware profiling -> base-model selection
+#
+# A single hard-coded base model cannot serve both machines this project runs
+# on: the 7B that fits the 32 GB RTX 5090 OOMs on the 6 GB RTX 4050, and a
+# model small enough for the 4050 leaves the 5090 idle. Pick by VRAM instead.
+# ---------------------------------------------------------------------------
+step "Hardware profiling & base-model selection"
+
+if [[ "$BASE_MODEL_EXPLICIT" -eq 1 ]]; then
+    ok "base model pinned by --base-model: ${BASE_MODEL}"
+    info "auto-selection skipped"
+else
+    # --format tsv keeps the machine-readable profile on one line:
+    #   vram_gb <TAB> tier <TAB> model <TAB> device <TAB> status
+    autosel=""
+    if ! autosel="$(uv run python -m ai_module.auto_select_model --format tsv --quiet)"; then
+        die "ai_module.auto_select_model failed to run — re-run with an explicit \
+'--base-model NAME' to bypass hardware profiling"
+    fi
+    IFS=$'\t' read -r AUTO_VRAM AUTO_TIER BASE_MODEL AUTO_DEVICE AUTO_STATUS <<<"$autosel"
+
+    [[ -n "$BASE_MODEL" ]] || die "auto_select_model returned no model name (got: '${autosel}')"
+
+    if [[ "$AUTO_TIER" == "0" ]]; then
+        # Step 1 already installed and verified torch, so reaching the CPU tier
+        # here means the GPU is not usable — say so instead of quietly
+        # fine-tuning a toy model on a workstation that has a 5090 in it.
+        warn "no usable GPU detected (${AUTO_STATUS}) — falling back to a CPU-sized model"
+        warn "training will be extremely slow; check 'nvidia-smi' and the torch CUDA build"
+    fi
+    info "[INFO] Hardware profiling: ${AUTO_VRAM} GB VRAM detected (${AUTO_DEVICE}, tier ${AUTO_TIER})."
+    ok "Auto-selected model: ${BASE_MODEL}"
+    info "pass '--base-model NAME' to override this choice"
+fi
+
+# ---------------------------------------------------------------------------
+# 4. base-model cache preparation
 # ---------------------------------------------------------------------------
 step "Base-model preparation"
 
@@ -334,7 +379,7 @@ often gets past Xet/CAS errors."
 fi
 
 # ---------------------------------------------------------------------------
-# 4. QLoRA smoke test
+# 5. QLoRA smoke test
 # ---------------------------------------------------------------------------
 step "QLoRA smoke test (5 steps)"
 
@@ -351,7 +396,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 5. full QLoRA fine-tune
+# 6. full QLoRA fine-tune
 # ---------------------------------------------------------------------------
 step "Full QLoRA fine-tune"
 
