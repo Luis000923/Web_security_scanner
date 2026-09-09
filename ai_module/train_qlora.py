@@ -67,12 +67,16 @@ from typing import Any
 
 @dataclass
 class TrainConfig:
-    base_model: str = "unsloth/Qwen2.5-7B-Instruct-bnb-4bit"
+    # Native bf16 base. On a 32 GB RTX 5090 the 7B weights (~15 GB) + LoRA +
+    # activations fit comfortably, so we drop the 4-bit NF4 path that was only
+    # there to save VRAM. Use the *upstream* (non-prequantized) checkpoint —
+    # the ``-bnb-4bit`` repo ships 4-bit weights and cannot be loaded in bf16.
+    base_model: str = "Qwen/Qwen2.5-7B-Instruct"
     train: Path = Path("data/triage.train.jsonl")
     eval: Path | None = None
     output_dir: Path = Path("runs/qlora")
     # LoRA — standard recipe: alpha = 2 * r, small dropout for regularisation
-    # on a small (~800 sample) synthetic corpus.
+    # on a small (~1.8k sample) synthetic corpus.
     lora_r: int = 32
     lora_alpha: int | None = None  # None -> 2 * lora_r (resolved in __post_init__)
     lora_dropout: float = 0.05
@@ -80,16 +84,21 @@ class TrainConfig:
         "q_proj", "k_proj", "v_proj", "o_proj",
         "gate_proj", "up_proj", "down_proj",
     ])
-    # Optimisation
-    epochs: float = 3.0
-    batch_size: int = 8
-    grad_accum: int = 2
-    lr: float = 2e-4
-    warmup_ratio: float = 0.03
-    weight_decay: float = 0.01
-    # Our triage/synthesis examples are ~700 tokens; 2048 leaves headroom while
-    # cutting padding/attention cost versus the old 4096 default.
-    max_seq_len: int = 2048
+    # Optimisation — "cognitive lobotomy" recipe: enough epochs to overwrite the
+    # general-assistant behaviour with the restricted security taxonomy, higher
+    # weight decay to keep the adapter from memorising the small corpus verbatim.
+    epochs: float = 6.0
+    # RTX 5090 (32 GB) trains the full bf16 base with only LoRA params live, so a
+    # real micro-batch of 16 fits and grad accumulation is unnecessary — dropping
+    # it removes redundant book-keeping and improves SM occupancy.
+    batch_size: int = 16
+    grad_accum: int = 1
+    lr: float = 1e-4
+    warmup_ratio: float = 0.1
+    weight_decay: float = 0.05
+    # Our triage/synthesis examples are ~700 tokens; a 1024 ceiling leaves
+    # headroom while roughly halving the padded attention cost versus 2048.
+    max_seq_len: int = 1024
     max_steps: int = -1  # >0 overrides epochs (quick hardware/CUDA validation)
     # Validation / checkpoint selection (small-dataset overfit guard)
     save_total_limit: int = 2
@@ -97,7 +106,14 @@ class TrainConfig:
     early_stopping_threshold: float = 0.0
     # RTX 5090 knobs
     bf16: bool = True
-    packing: bool = True
+    # 4-bit quantization is now OFF by default (native bf16). Kept as an opt-in
+    # escape hatch (``--load-in-4bit``) for smaller GPUs / multi-model VRAM
+    # sharing; it forces the bitsandbytes NF4 load path in _build_model_hf.
+    load_in_4bit: bool = False
+    # Packing OFF: each security sample is a strictly isolated sequence so the
+    # loss for one finding never leaks cross-attention from an unrelated one.
+    # This matters for the [ERROR_COGNITIVO] refusal examples especially.
+    packing: bool = False
     gradient_checkpointing: bool = True
     # Blackwell / sm_120 safe defaults: SDPA attention, no Unsloth.
     attn_impl: str = "sdpa"           # "sdpa" | "flash_attention_2" | "eager"
@@ -105,6 +121,17 @@ class TrainConfig:
     merge_adapter: bool = False
     seed: int = 1337
     dataset_text_field: str = "text"
+    # --- throughput / Blackwell kernel knobs ---
+    # LoRA-only training => the AdamW state is tiny; the fused Torch kernel beats
+    # paged_adamw_8bit (no CPU paging, no 8-bit de-quant per step).
+    optim: str = "adamw_torch_fused"
+    # Bucket batches by length so padding is to the batch max, not max_seq_len.
+    group_by_length: bool = True
+    # Pad the collated batch up to a multiple of 16 — Tensor-core friendly shapes.
+    pad_to_multiple_of: int = 16
+    dataloader_num_workers: int = 4
+    # torch.compile is opt-in: warmup (~minutes) only pays off on long runs.
+    torch_compile: bool = False
 
     def __post_init__(self) -> None:
         # Standard LoRA scaling: alpha = 2 * r unless explicitly overridden.
@@ -143,8 +170,13 @@ def _tune_cuda_for_blackwell() -> None:
 
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
+        torch.set_float32_matmul_precision("high")
         if hasattr(torch.backends.cuda, "enable_flash_sdp"):
             torch.backends.cuda.enable_flash_sdp(True)
+        if hasattr(torch.backends.cuda, "enable_cudnn_sdp"):
+            torch.backends.cuda.enable_cudnn_sdp(True)
+        if hasattr(torch.backends.cuda, "enable_mem_efficient_sdp"):
+            torch.backends.cuda.enable_mem_efficient_sdp(True)
         if torch.cuda.is_available():
             cap = torch.cuda.get_device_capability()
             print(f"CUDA device: {torch.cuda.get_device_name(0)} (sm_{cap[0]}{cap[1]})")
@@ -216,7 +248,7 @@ def _build_model_unsloth(cfg: TrainConfig):
         model_name=cfg.base_model,
         max_seq_length=cfg.max_seq_len,
         dtype=None,  # auto -> bf16 on Blackwell
-        load_in_4bit=True,
+        load_in_4bit=cfg.load_in_4bit,
     )
     model = FastLanguageModel.get_peft_model(
         model,
@@ -236,21 +268,26 @@ def _build_model_hf(cfg: TrainConfig):
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-    bnb = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-        # Never silently spill the quantized model to CPU/disk: a partial
-        # dispatch makes Accelerate raise "Some modules are dispatched on the
-        # CPU or the disk" instead of OOMing loudly. QLoRA needs every base
-        # weight resident on the GPU anyway.
-        llm_int8_enable_fp32_cpu_offload=False,
-    )
+    # Native bf16 by default; NF4 4-bit only when explicitly requested. The
+    # 5090 has the VRAM for the full bf16 base, which trains faster and avoids
+    # the quantization-error floor that caps LoRA quality.
+    bnb = None
+    if cfg.load_in_4bit:
+        bnb = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            # Never silently spill the quantized model to CPU/disk: a partial
+            # dispatch makes Accelerate raise "Some modules are dispatched on the
+            # CPU or the disk" instead of OOMing loudly. QLoRA needs every base
+            # weight resident on the GPU anyway.
+            llm_int8_enable_fp32_cpu_offload=False,
+        )
 
-    # Pin the whole quantized model onto a single CUDA device. ``device_map=
-    # "auto"`` lets Accelerate place layers on CPU/disk when its VRAM estimate
-    # is conservative, which is exactly the failure we hit. Only fall back to
+    # Pin the whole model onto a single CUDA device. ``device_map="auto"`` lets
+    # Accelerate place layers on CPU/disk when its VRAM estimate is
+    # conservative, which is exactly the failure we hit. Only fall back to
     # "auto" when there is no visible GPU (CPU smoke runs / CI).
     if torch.cuda.is_available():
         gpu_index = torch.cuda.current_device()
@@ -263,14 +300,25 @@ def _build_model_hf(cfg: TrainConfig):
     tokenizer.padding_side = "right"  # required for training with bnb / SDPA / FA2
     model = AutoModelForCausalLM.from_pretrained(
         cfg.base_model,
-        quantization_config=bnb,
+        quantization_config=bnb,          # None -> full bf16 load
         torch_dtype=torch.bfloat16,
         attn_implementation=cfg.attn_impl,
         device_map=device_map,
     )
-    model = prepare_model_for_kbit_training(
-        model, use_gradient_checkpointing=cfg.gradient_checkpointing
-    )
+    if cfg.load_in_4bit:
+        model = prepare_model_for_kbit_training(
+            model, use_gradient_checkpointing=cfg.gradient_checkpointing
+        )
+    elif cfg.gradient_checkpointing:
+        # kbit prep is what normally enables checkpointing + input grads; do it
+        # by hand on the full-precision path so bf16 training still gets the
+        # activation-memory savings.
+        # Non-reentrant checkpointing: single forward, compatible with
+        # torch.compile and forward hooks.
+        model.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False}
+        )
+        model.enable_input_require_grads()
     lora = LoraConfig(
         r=cfg.lora_r,
         lora_alpha=cfg.lora_alpha,
@@ -320,10 +368,23 @@ def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
         load_best_model_at_end=evaluate,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        optim="paged_adamw_8bit",
+        optim=cfg.optim,
         gradient_checkpointing=cfg.gradient_checkpointing,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
         report_to=report_to,
         seed=cfg.seed,
+        # --- throughput: length bucketing, Tensor-core padding, DataLoader ---
+        group_by_length=cfg.group_by_length and not cfg.packing,
+        length_column_name="length",
+        pad_to_multiple_of=cfg.pad_to_multiple_of,
+        dataloader_num_workers=cfg.dataloader_num_workers,
+        dataloader_pin_memory=True,
+        dataloader_persistent_workers=cfg.dataloader_num_workers > 0,
+        dataloader_prefetch_factor=4 if cfg.dataloader_num_workers > 0 else None,
+        # --- graph compilation (opt-in) ---
+        torch_compile=cfg.torch_compile,
+        torch_compile_backend="inductor" if cfg.torch_compile else None,
+        torch_compile_mode="default" if cfg.torch_compile else None,
         # --- SFT-specific (TRL) ---
         packing=cfg.packing,
         dataset_text_field=cfg.dataset_text_field,
@@ -352,7 +413,26 @@ def _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds, cfg=None):
         allowed.pop("tokenizer", None)
     trainer = SFTTrainer(**allowed)
     _attach_early_stopping(trainer, cfg, have_eval=eval_ds is not None)
+    _attach_security_metrics(trainer, tokenizer, cfg, have_eval=eval_ds is not None)
     return trainer
+
+
+def _attach_security_metrics(trainer, tokenizer, cfg, *, have_eval: bool) -> None:
+    """Report FNR / FP-recall / refusal accuracy at each eval round.
+
+    No-op without an eval set. Best-effort: a failure to build the callback
+    (e.g. transformers too old) must never abort a training run.
+    """
+    if cfg is None or not have_eval or not cfg.eval:
+        return
+    try:
+        from ai_module.security_metrics import SecurityMetricsCallback
+
+        trainer.add_callback(SecurityMetricsCallback(cfg.eval, tokenizer))
+        print("security metrics enabled: eval_fnr / eval_fp_recall / "
+              "eval_refusal_acc reported each eval round")
+    except Exception as exc:  # pragma: no cover - never fail the run for a metric
+        print(f"warn: security-metrics callback disabled ({type(exc).__name__}: {exc})")
 
 
 def _attach_early_stopping(trainer, cfg, *, have_eval: bool) -> None:
@@ -410,10 +490,30 @@ def main(argv: list[str] | None = None) -> int:
                     help="opt in to Unsloth fused kernels (off by default on "
                          "Blackwell / sm_120; auto-falls back to transformers/peft "
                          "if the kernels fail to import or build)")
-    ap.add_argument("--no-packing", action="store_true")
+    ap.add_argument("--packing", action="store_true",
+                    help="opt back into sequence packing (OFF by default: the "
+                         "lobotomy recipe keeps every security sample isolated)")
+    ap.add_argument("--no-packing", action="store_true",
+                    help="explicit no-op; packing is already off by default")
+    ap.add_argument("--load-in-4bit", action="store_true",
+                    help="opt back into bitsandbytes NF4 4-bit base (OFF by "
+                         "default; native bf16 fits on the 32 GB RTX 5090)")
     ap.add_argument("--flash-attn", action="store_true",
                     help="use FlashAttention-2 instead of SDPA (needs a flash-attn "
                          "wheel built for your CUDA / GPU arch)")
+    ap.add_argument("--optim", default=TrainConfig.optim,
+                    help="HF optimiser id (default: adamw_torch_fused — fastest "
+                         "for LoRA-only training on a single GPU)")
+    ap.add_argument("--num-workers", type=int, default=TrainConfig.dataloader_num_workers,
+                    dest="num_workers", help="DataLoader worker processes")
+    ap.add_argument("--pad-to-multiple-of", type=int,
+                    default=TrainConfig.pad_to_multiple_of,
+                    help="pad collated batches to a multiple of N (Tensor-core shapes)")
+    ap.add_argument("--no-group-by-length", action="store_true",
+                    help="disable length bucketing (padding then goes to max_seq_len)")
+    ap.add_argument("--compile", dest="torch_compile", action="store_true",
+                    help="torch.compile the model via inductor (warmup ~minutes; "
+                         "worth it only on long runs / larger datasets)")
     ap.add_argument("--merge-adapter", action="store_true",
                     help="also write a merged fp16 model next to the adapter "
                          "(ready to serve with vLLM / transformers)")
@@ -439,11 +539,17 @@ def main(argv: list[str] | None = None) -> int:
         save_total_limit=args.save_total_limit,
         early_stopping_patience=args.early_stopping_patience,
         early_stopping_threshold=args.early_stopping_threshold,
-        packing=not args.no_packing,
+        packing=args.packing and not args.no_packing,
+        load_in_4bit=args.load_in_4bit,
         attn_impl="flash_attention_2" if args.flash_attn else "sdpa",
         use_unsloth=args.use_unsloth,
         merge_adapter=args.merge_adapter,
         seed=args.seed,
+        optim=args.optim,
+        group_by_length=not args.no_group_by_length,
+        pad_to_multiple_of=args.pad_to_multiple_of,
+        dataloader_num_workers=args.num_workers,
+        torch_compile=args.torch_compile,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "train_config.json").write_text(

@@ -83,8 +83,15 @@ def test_build_sft_config_is_guarded_by_signature_filter():
 
 def test_small_dataset_defaults():
     cfg = tq.TrainConfig()
-    assert cfg.epochs == 3.0
-    assert cfg.max_seq_len == 2048
+    # "Cognitive lobotomy" recipe: native bf16, packing off, higher decay.
+    assert cfg.epochs == 6.0
+    assert cfg.lr == 1e-4
+    assert cfg.warmup_ratio == 0.1
+    assert cfg.weight_decay == 0.05
+    assert cfg.lora_r == 32
+    assert cfg.packing is False
+    assert cfg.load_in_4bit is False
+    assert cfg.max_seq_len == 1024
     assert cfg.lora_dropout == 0.05
     assert cfg.save_total_limit == 2
     assert cfg.early_stopping_patience == 2

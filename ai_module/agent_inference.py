@@ -20,17 +20,36 @@ Backends (selected by ``AI_AGENT_BACKEND`` or ``AgentClient(backend=...)``):
 
 The scanner should call this behind its existing worker-pool backpressure and
 treat every result as advisory (confidence-scored), never authoritative.
+
+Structured decoding
+--------------------
+Both ``triage_finding()`` and ``synthesize_payloads()`` decode through
+``ai_module.structured_inference``: the OpenAI-compatible request carries a
+``json_schema`` ``response_format`` built from the shared pydantic taxonomy
+(``TriageOut`` / ``PayloadOut``), enforced server-side (vLLM ``guided_json`` /
+recent TGI); the response text is then validated with ``parse_triage`` /
+``parse_payloads`` rather than hand-rolled regex/JSON-object scraping. Parsing
+never raises — malformed or refused output folds to the safe ``UNCERTAIN``
+contingency verdict (triage) or an empty suggestion list (payloads), so a
+server that ignores the schema hint degrades gracefully instead of crashing
+the scan.
 """
 from __future__ import annotations
 
 import asyncio
 import json
 import os
-import re
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from ai_module.prompts import load_prompt
+from ai_module.structured_inference import (
+    PayloadOut,
+    TriageOut,
+    openai_response_format,
+    parse_payloads,
+    parse_triage,
+)
 
 Verdict = Literal["TRUE_POSITIVE", "FALSE_POSITIVE", "UNCERTAIN"]
 
@@ -116,19 +135,33 @@ class AgentClient:
         user = (
             "Classify the following DAST candidate.\n\n"
             f"{json.dumps(finding, ensure_ascii=False, indent=2)}\n\n"
-            'Respond as JSON: {"verdict": "...", "confidence": 0-1, '
-            '"reasoning": "...", "next_step": "..."}'
+            "Return the verdict as the required structured JSON object."
         )
-        text = await self._chat(load_prompt("triage_system"), user)
-        data = _extract_json(text)
-        verdict = str(data.get("verdict", "UNCERTAIN")).upper()
+        text = await self._chat(
+            load_prompt("triage_system"), user,
+            response_format=openai_response_format(TriageOut),
+        )
+        try:
+            parsed = parse_triage(text)
+        except Exception:  # pragma: no cover - parse_triage never raises today;
+            # this is defense in depth so a future bug there can never crash a scan.
+            return TriageResult(
+                verdict="UNCERTAIN", confidence=0.0,
+                reasoning="Structured triage parse failed catastrophically; "
+                          "held to the safe contingency verdict.",
+                next_step="Investigate the backend's response format.", raw=text,
+            )
+        verdict = parsed.verdict.value
         if verdict not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "UNCERTAIN"):
+            # Covers RESTRICTED (the lobotomy's refusal sentinel) and any future
+            # taxonomy addition: TriageResult's contract is exactly these three
+            # values, and a hedge is always safer than fabricating a verdict.
             verdict = "UNCERTAIN"
         return TriageResult(
             verdict=verdict,  # type: ignore[arg-type]
-            confidence=_clamp01(data.get("confidence", 0.0)),
-            reasoning=str(data.get("reasoning", "")).strip(),
-            next_step=str(data.get("next_step", "")).strip(),
+            confidence=parsed.confidence,
+            reasoning=parsed.reasoning,
+            next_step=parsed.next_step,
             raw=text,
         )
 
@@ -138,21 +171,29 @@ class AgentClient:
         user = (
             f"Target context:\n{json.dumps(context, ensure_ascii=False, indent=2)}\n\n"
             f"Propose the {n} most informative next payloads, best first. "
-            'Respond as JSON: {"payloads": [{"payload": "...", "rationale": "...", '
-            '"confirm_signal": "...", "score": 0-1}]}'
+            "Return them as the required structured JSON object."
         )
-        text = await self._chat(load_prompt("payload_system"), user)
-        data = _extract_json(text)
+        text = await self._chat(
+            load_prompt("payload_system"), user,
+            response_format=openai_response_format(PayloadOut),
+        )
+        try:
+            parsed = parse_payloads(text)
+        except Exception:  # pragma: no cover - defense in depth, see triage_finding
+            return []
         out: list[PayloadSuggestion] = []
-        for item in data.get("payloads", [])[:n]:
-            if not isinstance(item, dict) or not item.get("payload"):
+        for item in parsed.payloads[:n]:
+            # parse_payloads() falls back to a "<none>" placeholder on
+            # unparseable output; that sentinel must never be forwarded as a
+            # real payload to fire at a target.
+            if item.payload == "<none>" and item.rationale == "parse failure":
                 continue
             out.append(
                 PayloadSuggestion(
-                    payload=str(item["payload"]),
-                    rationale=str(item.get("rationale", "")),
-                    confirm_signal=str(item.get("confirm_signal", "")),
-                    score=_clamp01(item.get("score", 0.0)),
+                    payload=item.payload,
+                    rationale=item.rationale,
+                    confirm_signal=item.confirm_signal,
+                    score=item.score,
                 )
             )
         return out
@@ -172,14 +213,23 @@ class AgentClient:
     # backends
     # ------------------------------------------------------------------ #
 
-    async def _chat(self, system: str, user: str) -> str:
+    async def _chat(
+        self, system: str, user: str, *, response_format: dict[str, Any] | None = None,
+    ) -> str:
         if self.backend == "echo":
             return self._echo(system, user)
         if self.backend == "transformers":
+            # In-process transformers generation has no server to hand a
+            # response_format to; structured enforcement there is
+            # StructuredLocalAgent's job (ai_module/structured_inference.py),
+            # a separate opt-in path. Free text still lands in parse_triage /
+            # parse_payloads at the call site, which is schema-tolerant.
             return await asyncio.to_thread(self._chat_hf, system, user)
-        return await self._chat_openai(system, user)
+        return await self._chat_openai(system, user, response_format=response_format)
 
-    async def _chat_openai(self, system: str, user: str) -> str:
+    async def _chat_openai(
+        self, system: str, user: str, *, response_format: dict[str, Any] | None = None,
+    ) -> str:
         import aiohttp
 
         payload = {
@@ -190,7 +240,10 @@ class AgentClient:
             ],
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
-            "response_format": {"type": "json_object"},
+            # Caller-supplied json_schema (see openai_response_format) enforces
+            # our exact taxonomy server-side; fall back to the older open-ended
+            # json_object mode if a call site doesn't provide one.
+            "response_format": response_format or {"type": "json_object"},
         }
         headers = {"Authorization": f"Bearer {self.api_key}"}
         timeout = aiohttp.ClientTimeout(total=self.timeout)
@@ -239,34 +292,6 @@ class AgentClient:
             {"verdict": "UNCERTAIN", "confidence": 0.0,
              "reasoning": "echo backend", "next_step": "use a real backend"}
         )
-
-
-# --------------------------------------------------------------------------- #
-# helpers
-# --------------------------------------------------------------------------- #
-
-_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
-
-
-def _extract_json(text: str) -> dict[str, Any]:
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-    m = _JSON_RE.search(text or "")
-    if m:
-        try:
-            return json.loads(m.group(0))
-        except json.JSONDecodeError:
-            pass
-    return {}
-
-
-def _clamp01(v: Any) -> float:
-    try:
-        return max(0.0, min(1.0, float(v)))
-    except (TypeError, ValueError):
-        return 0.0
 
 
 # --------------------------------------------------------------------------- #

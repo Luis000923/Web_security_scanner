@@ -232,6 +232,120 @@ def test_echo_backend_roundtrip():
 
 
 # --------------------------------------------------------------------------- #
+# 4b. structured decoding: response_format wiring + safe-default fallback
+# --------------------------------------------------------------------------- #
+
+class _FakeAiohttpResp:
+    """Minimal async-context-manager stand-in for aiohttp's response object."""
+
+    def __init__(self, content: str):
+        self._content = content
+
+    def raise_for_status(self):
+        pass
+
+    async def json(self):
+        return {"choices": [{"message": {"content": self._content}}]}
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+
+class _FakeAiohttpSession:
+    def __init__(self, content: str, captured: dict):
+        self._content = content
+        self._captured = captured
+
+    def post(self, url, json, headers):
+        self._captured["url"] = url
+        self._captured["payload"] = json
+        return _FakeAiohttpResp(self._content)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+
+def test_chat_openai_injects_triage_json_schema(monkeypatch):
+    """triage_finding must request the exact TriageOut json_schema, not the
+    old open-ended {"type": "json_object"}."""
+    import aiohttp
+
+    captured: dict = {}
+    reply = ('{"verdict": "TRUE_POSITIVE", "confidence": 0.9, '
+             '"reasoning": "sqlstate leak", "next_step": "confirm with a second probe"}')
+    monkeypatch.setattr(aiohttp, "ClientSession",
+                        lambda **kw: _FakeAiohttpSession(reply, captured))
+
+    client = AgentClient(backend="openai")
+    res = asyncio.run(client.triage_finding({"url": "http://t", "param": "id"}))
+
+    fmt = captured["payload"]["response_format"]
+    assert fmt["type"] == "json_schema"
+    assert fmt["json_schema"]["name"] == "TriageOut"
+    assert res.verdict == "TRUE_POSITIVE" and res.confidence == 0.9
+
+
+def test_chat_openai_injects_payload_json_schema(monkeypatch):
+    import aiohttp
+
+    captured: dict = {}
+    reply = ('{"payloads": [{"payload": "<svg/onload=alert(1)>", '
+             '"rationale": "r", "confirm_signal": "s", "score": 0.6}]}')
+    monkeypatch.setattr(aiohttp, "ClientSession",
+                        lambda **kw: _FakeAiohttpSession(reply, captured))
+
+    client = AgentClient(backend="openai")
+    sugg = asyncio.run(client.synthesize_payloads({"url": "http://t"}, n=3))
+
+    fmt = captured["payload"]["response_format"]
+    assert fmt["json_schema"]["name"] == "PayloadOut"
+    assert sugg[0].payload == "<svg/onload=alert(1)>"
+
+
+def test_triage_falls_back_to_uncertain_on_garbage_response(monkeypatch):
+    """Non-JSON prose from a backend that ignores the schema hint must never
+    crash the client — it degrades to the safe UNCERTAIN contingency verdict."""
+    async def _fake_chat(self, system, user, *, response_format=None):
+        return "the server hiccuped and sent back plain prose, not JSON"
+
+    monkeypatch.setattr(AgentClient, "_chat", _fake_chat)
+    res = asyncio.run(AgentClient(backend="openai").triage_finding({"url": "http://t"}))
+    assert res.verdict == "UNCERTAIN"
+
+
+def test_triage_restricted_sentinel_folds_to_uncertain(monkeypatch):
+    """The lobotomy's refusal sentinel is a valid structured outcome but isn't
+    part of TriageResult's 3-value contract — it must fold to UNCERTAIN rather
+    than leak a fourth verdict value downstream."""
+    from ai_module.structured_inference import REFUSAL_SENTINEL
+
+    async def _fake_chat(self, system, user, *, response_format=None):
+        return REFUSAL_SENTINEL
+
+    monkeypatch.setattr(AgentClient, "_chat", _fake_chat)
+    res = asyncio.run(AgentClient(backend="openai").triage_finding({"url": "http://t"}))
+    assert res.verdict == "UNCERTAIN"
+
+
+def test_synthesize_payloads_drops_parse_failure_placeholder(monkeypatch):
+    """parse_payloads() returns a safe '<none>' placeholder on unparseable
+    output; the client must filter it rather than handing a fake payload to
+    the tester."""
+    async def _fake_chat(self, system, user, *, response_format=None):
+        return "not json"
+
+    monkeypatch.setattr(AgentClient, "_chat", _fake_chat)
+    sugg = asyncio.run(AgentClient(backend="openai").synthesize_payloads({"url": "http://t"}, n=3))
+    assert sugg == []
+
+
+# --------------------------------------------------------------------------- #
 # 5. CLI: the agent is the default engine; --ai-no* opts out
 # --------------------------------------------------------------------------- #
 
