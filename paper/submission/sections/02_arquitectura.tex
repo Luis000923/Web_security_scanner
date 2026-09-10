@@ -48,11 +48,11 @@ reproducibilidad. La \cref{fig:arquitectura} resume el flujo de trabajo.
     % --- flechas
     \draw[flecha] (cli) -- (core);
     \draw[flecha] (core) -- (pool);
-    \draw[flecha] (pool.south) -- ++(0,-2mm) -| (probe.north);
+    \draw[flecha, rounded corners=3mm] (pool.south) -- ++(0,-2mm) -| (probe.north);
     \draw[flecha] (load) -- (sched);
     \draw[flecha] (sched) -- (probe);
     \draw[flecha] (core.south) to[out=-90,in=90] (load.north);
-    \draw[flecha] (probe.south) -- ++(0,-6mm) -| (jsonl.north);
+    \draw[flecha, rounded corners=3mm] (probe.south) -- ++(0,-6mm) -| (jsonl.north);
     \draw[flecha] (load.south) to[out=-90,in=90] (tel.north);
     \draw[flecha] (tel) -- (jsonl);
     \draw[flecha] (jsonl) -- (manif);
