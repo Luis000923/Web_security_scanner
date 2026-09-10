@@ -109,7 +109,10 @@ def _make_noise_row(rng: random.Random, security_system: str) -> dict[str, Any]:
         "instruction": system,
         "input": user,
         "output": REFUSAL_SENTINEL,   # forced, byte-for-byte
-        "meta": {"synthetic": "cognitive_noise", "label": "REFUSAL"},
+        # ``synthetic`` stays a bool to match the dataset generator's schema —
+        # a string here makes Arrow reject the merged file. The provenance goes
+        # in its own key.
+        "meta": {"synthetic": True, "source": "cognitive_noise", "label": "REFUSAL"},
     }
 
 

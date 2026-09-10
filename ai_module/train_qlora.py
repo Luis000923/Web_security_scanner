@@ -241,14 +241,31 @@ def _render_messages(messages: list[dict[str, str]], tokenizer: Any) -> str:
 
 
 def _load_dataset(path: Path, tokenizer: Any, text_field: str):
-    from datasets import load_dataset
+    from datasets import Dataset
 
-    ds = load_dataset("json", data_files=str(path), split="train")
+    # Parse the JSONL with the stdlib rather than ``load_dataset("json", ...)``.
+    # Arrow unifies the schema across every row and aborts when a key's type
+    # drifts between records ("Column(/meta/synthetic) changed from boolean to
+    # string") — which happens whenever one producer writes a flag as a bool
+    # and another (e.g. inject_cognitive_noise) as a string. We only ever keep
+    # the rendered ``text`` column, so the metadata schema is irrelevant; read
+    # each line independently and hand Arrow a single-column table it cannot
+    # trip over.
+    rows: list[dict[str, str]] = []
+    with path.open(encoding="utf-8") as fh:
+        for lineno, line in enumerate(fh, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"{path}:{lineno}: invalid JSON ({exc})") from exc
+            rows.append({text_field: _render_messages(_row_to_messages(row), tokenizer)})
 
-    def _to_text(row):
-        return {text_field: _render_messages(_row_to_messages(row), tokenizer)}
-
-    return ds.map(_to_text, remove_columns=list(ds.column_names))
+    if not rows:
+        raise ValueError(f"{path}: no usable training rows")
+    return Dataset.from_list(rows)
 
 
 def _build_model_unsloth(cfg: TrainConfig):
