@@ -102,10 +102,28 @@
 
 % ---------------------------------------------------------------------------
 \section*{Disponibilidad de artefactos}
-El código de la herramienta, el generador de verdad-terreno, el orquestador de
-experimentos, el oráculo de calificación y los guiones de análisis se
-distribuyen con el repositorio del proyecto. Cada ejecución reportada incluye
-su manifiesto de reproducibilidad (\cref{sec:manifiesto}).
+Todos los artefactos que sustentan este trabajo son abiertos. El código de la
+herramienta \herramienta, el generador de verdad-terreno
+(\code{build\_ground\_truth.py}), el orquestador de experimentos
+(\code{run\_experiments.py}), el oráculo de calificación independiente
+(\code{eval\_oracle.py}) y los guiones de análisis y figuras
+(\code{analyze\_results.py}) se publican bajo licencia \textsc{mit} en el
+repositorio \url{https://github.com/EJEMPLO/web-security-scanner} y se archivan,
+en la revisión exacta usada para esta versión, en un depósito con identificador
+persistente (\textsc{doi}~\texttt{10.5281/zenodo.XXXXXXX}).\footnote{Las
+direcciones marcadas como \textsc{ejemplo}/\texttt{XXXXXXX} se sustituyen por
+las definitivas en la versión de cámara lista.} El paquete de datos incluye la
+verdad-terreno, \code{experiment\_results.csv}, el directorio
+\code{testbed/analysis/} (\code{summary\_by\_run.csv}, \code{stats.json},
+\code{average\_ranks.csv}) y, por cada una de las \NumCorridas{}~ejecuciones, su
+telemetría \textsc{jsonl} y su manifiesto de reproducibilidad
+(\cref{sec:manifiesto}), que fija el \emph{hash} \textsc{sha}-256 del corpus de
+\emph{payloads}, el \emph{commit} de \code{git} y la semilla global del
+generador de números aleatorios. La barrida completa se reproduce con
+\code{run\_experiments.py} seguido de \code{analyze\_results.py} sobre el banco
+contenedorizado; el subsistema de alineación del agente
+(\cref{sec:ia-metodologia}) se reproduce de forma independiente a partir del
+manifiesto de curación \code{data/curation.json}.
 
 % ---------------------------------------------------------------------------
 \bibliographystyle{IEEEtran}

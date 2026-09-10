@@ -22,29 +22,35 @@
 
 % --- Exhaustividad del baseline al presupuesto de 10 peticiones (previa
 %     al techo de saturación, alcanzado en 20) -----------------------------
-\newcommand{\ValorRecallBudgetDiez}{61{,}3\%}
+% Convención de formato: todo porcentaje se compone con \num{} (marcador
+% decimal según babel-es) seguido de un espacio fino y «\%», de modo que la
+% notación sea idéntica en el resumen, el cuerpo y las tablas.
+\newcommand{\ValorRecallBudgetDiez}{\num{61.3}\,\%}
 
 % --- Área bajo la curva de detección (AUC = exhaustividad media / presup.),
 %     al presupuesto intermedio de 20 peticiones/parámetro -----------------
-\newcommand{\ValorAUCBaseline}{33{,}8\%}
-\newcommand{\ValorAUCNoInterleave}{33{,}8\%}
-\newcommand{\ValorAUCNoPriority}{33{,}2\%}
-\newcommand{\ValorAUCNoRuntimeConfirm}{33{,}8\%}
+\newcommand{\ValorAUCBaseline}{\num{33.8}\,\%}
+\newcommand{\ValorAUCNoInterleave}{\num{33.8}\,\%}
+\newcommand{\ValorAUCNoPriority}{\num{33.2}\,\%}
+\newcommand{\ValorAUCNoRuntimeConfirm}{\num{33.8}\,\%}
 
 % --- Métricas agregadas del baseline (presupuesto 20) --------------------
-\newcommand{\ValorPrecisionBaseline}{62{,}2\%}
-\newcommand{\ValorRecallBaseline}{64{,}4\%}
-\newcommand{\ValorFOneBaseline}{63{,}3\%}
-\newcommand{\ValorFPRBaseline}{1{,}4\%}
-\newcommand{\ValorRecallTecho}{64{,}4\%}      % exhaustividad de saturación (presup. >= 20)
+\newcommand{\ValorPrecisionBaseline}{\num{62.2}\,\%}
+\newcommand{\ValorRecallBaseline}{\num{64.4}\,\%}
+\newcommand{\ValorFOneBaseline}{\num{63.3}\,\%}
+\newcommand{\ValorFPRBaseline}{\num{1.4}\,\%}
+\newcommand{\ValorRecallTecho}{\num{64.4}\,\%}   % exhaustividad de saturación (presup. >= 20)
 
 % --- Caída de exhaustividad / precisión al desactivar cada optimización
 %     respecto al baseline, al presupuesto 20 (puntos porcentuales) --------
-\newcommand{\DeltaRecallNoInterleave}{\num{0.0}~p.p.}
-\newcommand{\DeltaRecallNoPriority}{\num{3.1}~p.p.}
-\newcommand{\DeltaRecallNoRuntimeConfirm}{\num{0.0}~p.p.}
-\newcommand{\DeltaPrecisionNoPriority}{\num{5.8}~p.p.}
-\newcommand{\DeltaFOneNoPriority}{\num{4.5}~p.p.}
+% Nota: la unidad «p.p.» se compone en modo texto; para un signo negativo,
+% escríbase «$-$\DeltaRecall...{}» y no «$-\DeltaRecall...{}$».
+\newcommand{\ppdiff}[1]{\num{#1}\,p.p.\@\xspace}
+\newcommand{\DeltaRecallNoInterleave}{\ppdiff{0.0}}
+\newcommand{\DeltaRecallNoPriority}{\ppdiff{3.1}}
+\newcommand{\DeltaRecallNoRuntimeConfirm}{\ppdiff{0.0}}
+\newcommand{\DeltaPrecisionNoPriority}{\ppdiff{5.8}}
+\newcommand{\DeltaFOneNoPriority}{\ppdiff{4.5}}
 \newcommand{\NoPriorityVulnPerdidas}{6}
 \newcommand{\NoPriorityFPnuevos}{16}
 
@@ -100,7 +106,7 @@
 \newcommand{\IATriajeTrain}{\num{1608}}           % partición de entrenamiento
 \newcommand{\IATriajeVal}{\num{178}}              % partición de validación
 \newcommand{\IATriajeSplit}{90/10}                % razón del split estratificado
-\newcommand{\IARuidoCognitivo}{\num{10}\%}        % proporción de ruido conversacional inyectado
+\newcommand{\IARuidoCognitivo}{\num{10}\,\%}      % proporción de ruido conversacional inyectado
 
 % --- Fase 2: hiperparámetros de la adaptación QLoRA ---------------------
 \newcommand{\IALoraR}{\num{32}}

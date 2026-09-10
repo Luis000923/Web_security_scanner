@@ -53,10 +53,13 @@ intermedio de \num{20} (\cref{fig:impacto-ablacion}).
       \textsc{Marcador de posición} ---
       \code{figures/fig2\_ablation\_impact.pdf}}}%
   }
-  \caption{Caída de exhaustividad ($\text{baseline} - \text{ablación}$) al
-  desactivar cada optimización, por presupuesto. La $\Delta$ FPR es
-  idénticamente nula en todas las celdas y se omite de la gráfica. El único
-  efecto apreciable es \code{no-priority} en el presupuesto de \num{20}.}
+  \caption{Caída de exhaustividad
+  ($\Delta\text{exhaustividad} = \text{exhaustividad}_{\text{baseline}}
+  - \text{exhaustividad}_{\text{ablación}}$) al desactivar cada optimización,
+  por presupuesto. La variación de la tasa de falsos positivos
+  ($\Delta\mathrm{FPR}$) es idénticamente nula en todas las celdas y se omite
+  de la gráfica. El único efecto apreciable es \code{no-priority} en el
+  presupuesto de \num{20}~peticiones por parámetro.}
   \label{fig:impacto-ablacion}
 \end{figure}
 
@@ -76,7 +79,7 @@ precisión \DeltaPrecisionNoPriority{}, lo que en términos absolutos equivale a
 \NoPriorityFPnuevos{}~falsos positivos adicionales frente al \code{baseline}.
 En los presupuestos de \num{50} y $\infty$ el efecto se disuelve: las cuatro
 configuraciones convergen a exhaustividad \ValorRecallTecho{} y difieren en
-precisión en menos de \num{0.3}~p.p.\ (\cref{tab:auc}). La tasa de falsos
+precisión en menos de \ppdiff{0.3}(\cref{tab:auc}). La tasa de falsos
 positivos es \ValorFPRBaseline{} (\num{2} de \NumTrampas{}~trampas) en todas
 las configuraciones y en los cuatro presupuestos, incluido \num{10}.
 
@@ -148,32 +151,35 @@ precisión.
   \centering
   \caption{Pruebas sobre el coste de detección por instancia, \code{baseline}
   frente a cada ablación (bloque agrupado, $n = \ValorFriedmanN{}$). Wilcoxon
-  con corrección de Benjamini--Hochberg; $p_{\text{Nem.}}$ del post-hoc de
-  Nemenyi; $\delta$ de Cliff como tamaño del efecto. Fuente:
+  de rangos con signo y corrección de Benjamini--Hochberg ($p_{\text{BH}}$);
+  $p_{\text{Nem.}}$ del post-hoc de Nemenyi; $\delta$ de Cliff como tamaño del
+  efecto. El «coste medio agr.» es la media del índice de petición censurado
+  sobre los cuatro presupuestos agrupados; no coincide con el valor a
+  presupuesto \num{20} citado en el texto (\cref{sec:res-stats}). Fuente:
   \code{stats.json}.}
   \label{tab:stats}
   \footnotesize
   \setlength{\tabcolsep}{4pt}
   \resizebox{\columnwidth}{!}{%
-  \begin{tabular}{lccccl}
+  \begin{tabular}{l c c c S[table-format=-1.4] l}
     \toprule
-    \code{baseline} vs & Coste medio & $p_{\text{BH}}$ & $p_{\text{Nem.}}$
-      & $\delta$ Cliff & Magnitud \\
+    \code{baseline} vs & {Coste medio agr.} & {$p_{\text{BH}}$}
+      & {$p_{\text{Nem.}}$} & {$\delta$ Cliff} & Magnitud \\
     \midrule
-    no-interleave      & \num{17838}$\to$\num{17784} & \ValorWilcoxonPNoInterleave{}
-      & \ValorNemenyiNoInterleave{} & \ValorCliffNoInterleave{}
+    no-interleave      & \num{17838}$\rightarrow$\num{17784} & \ValorWilcoxonPNoInterleave{}
+      & \ValorNemenyiNoInterleave{} & -0.0003
       & \MagnitudCliffNoInterleave{} \\
-    no-priority        & \num{17838}$\to$\num{17579} & \ValorWilcoxonPNoPriority{}
-      & \ValorNemenyiNoPriority{} & \ValorCliffNoPriority{}
+    no-priority        & \num{17838}$\rightarrow$\num{17579} & \ValorWilcoxonPNoPriority{}
+      & \ValorNemenyiNoPriority{} & -0.017
       & \MagnitudCliffNoPriority{} \\
-    no-runtime-confirm & \num{17838}$\to$\num{17844} & \ValorWilcoxonPNoRuntimeConfirm{}
-      & \ValorNemenyiNoRuntimeConfirm{} & \ValorCliffNoRuntimeConfirm{}
+    no-runtime-confirm & \num{17838}$\rightarrow$\num{17844} & \ValorWilcoxonPNoRuntimeConfirm{}
+      & \ValorNemenyiNoRuntimeConfirm{} & 0.0007
       & \MagnitudCliffNoRuntimeConfirm{} \\
     \bottomrule
   \end{tabular}}
-  \\[2pt]
-  \footnotesize\emph{Friedman global: $\chi^2 = \ValorFriedmanChiSq{}$,
-  $p = \ValorFriedmanP{}$.}
+  \par\smallskip
+  {\footnotesize\emph{Friedman global: $\chi^2 = \ValorFriedmanChiSq{}$,
+  $p = \ValorFriedmanP{}$.}\par}
 \end{table}
 
 \subsection{Diagrama de diferencias críticas}
@@ -185,7 +191,7 @@ de detección (bloque agrupado, $n = \ValorFriedmanN{}$): \code{no-priority}
 \code{no-interleave} (\RangoNoInterleave{}), el propio \code{baseline}
 (\RangoBaseline{}) y, en el peor rango, \code{no-runtime-confirm}
 (\RangoNoRuntimeConfirm{}). Con el bloque agrupado completo el post-hoc de
-Nemenyi separa las cuatro configuraciones entre sí a $\alpha = 0{,}05$, sin
+Nemenyi separa las cuatro configuraciones entre sí a $\alpha = \num{0.05}$, sin
 ninguna barra horizontal de indistinguibilidad. Dos lecturas se imponen. La
 primera, ya discutida: \code{no-priority} adelanta la primera detección en
 promedio porque prueba antes \emph{payloads} triviales de alto rendimiento
@@ -208,11 +214,16 @@ detecta cada configuración, no \emph{cuánto} ni con qué precisión.
       \textsc{Pendiente} --- \code{figures/fig3\_cd\_diagram.pdf}.}}%
   }
   \caption{Diagrama de diferencias críticas (post-hoc de Nemenyi,
-  $\alpha = 0{,}05$) sobre el rango medio de coste de detección por instancia.
-  Menor rango $=$ detección más temprana. Las configuraciones unidas por una
-  barra horizontal no son distinguibles. Dado que todos los tamaños del efecto
-  son insignificantes (\cref{tab:stats}), el diagrama es indicativo del orden,
-  no de una ventaja práctica.}
+  $\alpha = \num{0.05}$) sobre el rango medio de Friedman del coste de
+  detección por instancia (bloque agrupado, $n = \ValorFriedmanN{}$; menor
+  rango $=$ detección más temprana). Junto a cada configuración se indica su
+  rango medio. Con este número de bloques el post-hoc separa las cuatro
+  configuraciones a $\alpha = \num{0.05}$: \emph{no} aparece ninguna barra de
+  indistinguibilidad. Esa separación es de significancia, no de magnitud ---
+  las tres comparaciones \code{baseline} frente a ablación tienen un
+  $\delta$ de Cliff con $\lvert\delta\rvert < \num{0.02}$ (\cref{tab:stats})
+  ---, de modo que el diagrama ordena \emph{cuándo} detecta cada configuración
+  pero no cuantifica una ventaja práctica.}
   \label{fig:cd}
 \end{figure}
 
@@ -241,12 +252,12 @@ dinámico de parámetros según la memoria disponible.
   de exhaustividad con solo \num{10}~peticiones por parámetro, satura en
   \ValorRecallTecho{} con \num{20} y FPR \ValorFPRBaseline{}; ampliar el
   presupuesto no aporta detección, solo falsos positivos (la precisión cae de
-  \ValorPrecisionBaseline{} a \num{57.3}\% entre los presupuestos \num{20} y
+  \ValorPrecisionBaseline{} a \num{57.3}\,\% entre los presupuestos \num{20} y
   $\infty$).
   \item La \textbf{priorización por confianza} es la única etapa cuya
   desactivación tiene coste medible, y se concentra en presupuestos
-  ajustados: $-\DeltaRecallNoPriority{}$ de exhaustividad y
-  $-\DeltaPrecisionNoPriority{}$ de precisión a presupuesto \num{20}, efecto
+  ajustados: $-$\DeltaRecallNoPriority{} de exhaustividad y
+  $-$\DeltaPrecisionNoPriority{} de precisión a presupuesto \num{20}, efecto
   que desaparece a partir de \num{50}.
   \item El \textbf{entrelazado por contexto} y la \textbf{confirmación en
   tiempo de ejecución} no alteran la exhaustividad, la precisión ni la FPR en
