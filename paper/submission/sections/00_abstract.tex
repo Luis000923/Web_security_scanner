@@ -43,9 +43,10 @@ post-hoc de Nemenyi, Wilcoxon pareado con corrección de Benjamini--Hochberg y
 $\delta$ de Cliff como tamaño del efecto). La reproducibilidad se garantiza
 mediante un manifiesto por ejecución que fija el \emph{hash} SHA-256 del corpus
 de \emph{payloads}, el \emph{commit} de \code{git} y la semilla global del
-generador de números aleatorios. El \emph{pipeline} completo alcanza una
-exhaustividad del \num{64}\,\% con una tasa de falsos positivos del
-\num{1.4}\,\%, y satura ya con \num{20}~peticiones por parámetro. De las tres
+generador de números aleatorios. El \emph{pipeline} completo alcanza ya \num{61}\,\% de exhaustividad con solo
+\num{10}~peticiones por parámetro, satura en \num{64}\,\% con
+\num{20}~peticiones, y mantiene una tasa de falsos positivos del
+\num{1.4}\,\% en los cuatro presupuestos evaluados. De las tres
 optimizaciones, solo la priorización por confianza tiene un efecto con
 consecuencias prácticas ---y acotado a presupuestos ajustados---: el
 entrelazado por contexto y la confirmación en tiempo de ejecución alteran el

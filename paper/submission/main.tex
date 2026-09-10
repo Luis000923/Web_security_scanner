@@ -34,8 +34,16 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{siunitx}
+% NOTA (2026-09-09): round-mode=places + round-precision=3 forzaba a TODO
+% \num{} a rellenar hasta 3 decimales (p.ej. \num{10} -> «10,000»), que con
+% la coma decimal española se lee como diez mil — corrompía visualmente
+% cualquier entero pequeño en el texto (presupuestos, conteos, p.p.). Se
+% retira el redondeo forzado; cada \num{} conserva la precisión con la que
+% se escribió. El separador de agrupación se fija explícitamente a espacio
+% fino para no colisionar con la coma decimal española en enteros grandes
+% (p.ej. \num{182385} -> «182 385», no «182,385»).
 \sisetup{detect-weight=true, detect-family=true,
-         round-mode=places, round-precision=3}
+         group-separator={\,}}
 \usepackage{graphicx}
 \graphicspath{{figures/}{build/}}
 \usepackage{xcolor}

@@ -1,8 +1,11 @@
 %% _datos.tex — Variables de resultados (reemplazo automático desde el análisis).
 %%
 %%  Fuente: tools/analyze_results.py sobre testbed/experiment_results.csv
-%%  (14 corridas graduadas: budgets {20,50,inf} x 4 condiciones completas +
-%%  budget 10 parcial con baseline y sin-entrelazado). Regenerado 2026-09-07.
+%%  (barrida completa: 4 presupuestos {10,20,50,inf} x 4 condiciones, los
+%%  16 bloques del diseño RCBD calificados en su totalidad — sin bloques
+%%  parciales). Regenerado 2026-09-09 tras una nueva barrida completa que
+%%  incorpora la depuración de falsos positivos en parámetros de redirección
+%%  (véase param_semantics.py).
 %%
 %%  Convención: los porcentajes incluyen «\%»; los estadísticos van con \num{}.
 %%  Salvo indicación, los valores de exhaustividad/AUC/coste son al presupuesto
@@ -13,21 +16,25 @@
 \newcommand{\NumObjetivos}{338}
 \newcommand{\NumVulnerables}{194}
 \newcommand{\NumTrampas}{144}
-\newcommand{\NumCorridas}{14}
-\newcommand{\NumBloquesCompletos}{3}
+\newcommand{\NumCorridas}{16}
+\newcommand{\NumBloquesCompletos}{4}
 \newcommand{\UmbralTiempo}{4\,s}
+
+% --- Exhaustividad del baseline al presupuesto de 10 peticiones (previa
+%     al techo de saturación, alcanzado en 20) -----------------------------
+\newcommand{\ValorRecallBudgetDiez}{61{,}3\%}
 
 % --- Área bajo la curva de detección (AUC = exhaustividad media / presup.),
 %     al presupuesto intermedio de 20 peticiones/parámetro -----------------
 \newcommand{\ValorAUCBaseline}{33{,}8\%}
 \newcommand{\ValorAUCNoInterleave}{33{,}8\%}
-\newcommand{\ValorAUCNoPriority}{33{,}1\%}
+\newcommand{\ValorAUCNoPriority}{33{,}2\%}
 \newcommand{\ValorAUCNoRuntimeConfirm}{33{,}8\%}
 
 % --- Métricas agregadas del baseline (presupuesto 20) --------------------
-\newcommand{\ValorPrecisionBaseline}{61{,}9\%}
+\newcommand{\ValorPrecisionBaseline}{62{,}2\%}
 \newcommand{\ValorRecallBaseline}{64{,}4\%}
-\newcommand{\ValorFOneBaseline}{63{,}1\%}
+\newcommand{\ValorFOneBaseline}{63{,}3\%}
 \newcommand{\ValorFPRBaseline}{1{,}4\%}
 \newcommand{\ValorRecallTecho}{64{,}4\%}      % exhaustividad de saturación (presup. >= 20)
 
@@ -43,34 +50,41 @@
 
 % --- Coste medio de detección (índice de la primera petición que acierta,
 %     censurado; presupuesto 20) -----------------------------------------
-\newcommand{\ValorCosteBaseline}{\num{3138}}
-\newcommand{\ValorCosteNoInterleave}{\num{3222}}
-\newcommand{\ValorCosteNoPriority}{\num{2838}}
-\newcommand{\ValorCosteNoRuntimeConfirm}{\num{3141}}
+\newcommand{\ValorCosteBaseline}{\num{3225}}
+\newcommand{\ValorCosteNoInterleave}{\num{3226}}
+\newcommand{\ValorCosteNoPriority}{\num{2851}}
+\newcommand{\ValorCosteNoRuntimeConfirm}{\num{3225}}
 
 % --- Prueba de Friedman sobre el coste de detección por instancia,
-%     bloque agrupado sobre los presupuestos 20/50/inf -------------------
-\newcommand{\ValorFriedmanChiSq}{\num{931.9}}
-\newcommand{\ValorFriedmanP}{\num{1.0e-201}}
-\newcommand{\ValorFriedmanN}{\num{582}}
+%     bloque agrupado sobre los cuatro presupuestos completos (10/20/50/inf)
+\newcommand{\ValorFriedmanChiSq}{\num{975.1}}
+\newcommand{\ValorFriedmanP}{\num{4.5e-211}}
+\newcommand{\ValorFriedmanN}{\num{776}}
 
 % --- Wilcoxon pareado (baseline vs ablación), p corregido por BH (pooled)
-\newcommand{\ValorWilcoxonPNoInterleave}{\num{4.8e-72}}
-\newcommand{\ValorWilcoxonPNoPriority}{\num{6.9e-73}}
-\newcommand{\ValorWilcoxonPNoRuntimeConfirm}{\num{0.046}}
+\newcommand{\ValorWilcoxonPNoInterleave}{\num{1.5e-23}}
+\newcommand{\ValorWilcoxonPNoPriority}{\num{3.3e-97}}
+\newcommand{\ValorWilcoxonPNoRuntimeConfirm}{\num{5.1e-22}}
 
 % --- Tamaño del efecto: delta de Cliff (baseline vs ablación, pooled) ---
-\newcommand{\ValorCliffNoInterleave}{\num{0.006}}
-\newcommand{\ValorCliffNoPriority}{\num{-0.014}}
-\newcommand{\ValorCliffNoRuntimeConfirm}{\num{-0.0001}}
+\newcommand{\ValorCliffNoInterleave}{\num{-0.0003}}
+\newcommand{\ValorCliffNoPriority}{\num{-0.017}}
+\newcommand{\ValorCliffNoRuntimeConfirm}{\num{0.0007}}
 \newcommand{\MagnitudCliffNoInterleave}{insignificante}
 \newcommand{\MagnitudCliffNoPriority}{insignificante}
 \newcommand{\MagnitudCliffNoRuntimeConfirm}{insignificante}
 
 % --- Post-hoc de Nemenyi (pooled): p de baseline vs cada ablación --------
-\newcommand{\ValorNemenyiNoInterleave}{\ensuremath{<}\,\num{0.001}}
+\newcommand{\ValorNemenyiNoInterleave}{\num{0.004}}
 \newcommand{\ValorNemenyiNoPriority}{\ensuremath{<}\,\num{0.001}}
-\newcommand{\ValorNemenyiNoRuntimeConfirm}{\num{0.83}}
+\newcommand{\ValorNemenyiNoRuntimeConfirm}{\num{0.001}}
+
+% --- Rango medio de coste de detección (pooled, para el diagrama de
+%     diferencias críticas): menor rango = detección más temprana --------
+\newcommand{\RangoNoPriority}{\num{1.56}}
+\newcommand{\RangoNoInterleave}{\num{2.58}}
+\newcommand{\RangoBaseline}{\num{2.81}}
+\newcommand{\RangoNoRuntimeConfirm}{\num{3.05}}
 
 % ===========================================================================
 %  Subsistema de alineación del agente de triaje (fine-tuning QLoRA).

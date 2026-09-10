@@ -16,9 +16,11 @@ aceleración estándar con escalado dinámico de parámetros.
 
 El estudio de ablación arroja un resultado matizado. Sobre los
 \NumObjetivos{}~objetivos de parámetro \code{GET}, el \code{pipeline} completo
-alcanza una exhaustividad de \ValorRecallTecho{} con una FPR de
-\ValorFPRBaseline{}, y \emph{satura} ya con \num{20}~peticiones por parámetro.
-De las tres optimizaciones evaluadas, solo la \textbf{priorización por
+alcanza ya \ValorRecallBudgetDiez{} de exhaustividad con solo
+\num{10}~peticiones por parámetro y \emph{satura} en \ValorRecallTecho{} con
+\num{20}, con una FPR de \ValorFPRBaseline{} estable en los cuatro
+presupuestos evaluados. De las tres optimizaciones evaluadas, solo la
+\textbf{priorización por
 confianza} produce un cambio con consecuencias prácticas, y acotado a los
 presupuestos ajustados: desactivarla cuesta \DeltaRecallNoPriority{} de
 exhaustividad y \DeltaPrecisionNoPriority{} de precisión a presupuesto
@@ -42,9 +44,9 @@ escenario.
   valor en la reducción de falsos positivos que aquí no fue observable.
   \item Extender el banco a vectores \code{POST}, cabeceras y \emph{cookies}
   para caracterizar categorías hoy infrarrepresentadas.
-  \item Completar el bloque de presupuesto \num{10} y ampliar la rejilla a
-  presupuestos menores ($\le \num{10}$), donde el efecto de la priorización es
-  máximo, con réplicas para estrechar los intervalos.
+  \item Ampliar la rejilla a presupuestos menores ($< \num{10}$), donde el
+  efecto de la priorización debería ser aún más pronunciado, con réplicas
+  para estrechar los intervalos.
   \item Añadir un precalentamiento explícito de la JVM y repetir el análisis de
   latencia absoluta entre configuraciones.
   \item Aprender la política de ordenación \code{freq} de forma adaptativa

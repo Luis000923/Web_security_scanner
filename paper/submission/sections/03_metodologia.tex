@@ -81,12 +81,13 @@ Se emplea un \textbf{diseño de bloques completos al azar} (RCBD) en el que:
   cuando nunca se detecta.
 \end{itemize}
 
-La rejilla completa es $4 \times 4 = 16$ ejecuciones, orquestadas por
-\code{tools/run\_experiments.py} y consolidadas en
-\code{testbed/experiment\_results.csv}; de ellas se calificaron
-\NumCorridas{} (el bloque de presupuesto \num{10} quedó incompleto, véase la
-\cref{sec:resultados}). Cada ejecución produce su propia telemetría JSONL, su
-informe JSON y su \code{metrics.json}.
+La rejilla completa es $4 \times 4 = \NumCorridas{}$ ejecuciones, orquestadas
+por \code{tools/run\_experiments.py} y consolidadas en
+\code{testbed/experiment\_results.csv}; las \NumCorridas{} se calificaron sin
+excepción, de modo que los \NumBloquesCompletos{} bloques de presupuesto
+quedan completos para las pruebas de significancia (\cref{sec:resultados}).
+Cada ejecución produce su propia telemetría JSONL, su informe JSON y su
+\code{metrics.json}.
 
 \subsection{Métrica de eficiencia: AUC de la curva de detección}
 \label{sec:auc}
