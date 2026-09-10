@@ -1,0 +1,3044 @@
+[
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00021",
+    "param": "BenchmarkTest00021",
+    "type": "LDAPInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest00021"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00026",
+    "param": "BenchmarkTest00026",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00026"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00041",
+    "param": "BenchmarkTest00041",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00041"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00047",
+    "param": "BenchmarkTest00047",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00047"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00048",
+    "param": "BenchmarkTest00048",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00048"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00049",
+    "param": "BenchmarkTest00049",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00049"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00362",
+    "param": "BenchmarkTest00362",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00362"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00367",
+    "param": "BenchmarkTest00367",
+    "type": "LDAPInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest00367"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00377",
+    "param": "BenchmarkTest00377",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00377"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00382",
+    "param": "BenchmarkTest00382",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00382"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00387",
+    "param": "BenchmarkTest00387",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00387"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00392",
+    "param": "BenchmarkTest00392",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00392"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00407",
+    "param": "BenchmarkTest00407",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00407"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00412",
+    "param": "BenchmarkTest00412",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00412"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00432",
+    "param": "BenchmarkTest00432",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00432"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00437",
+    "param": "BenchmarkTest00437",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00437"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00452",
+    "param": "BenchmarkTest00452",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00452"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00457",
+    "param": "BenchmarkTest00457",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00457"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00467",
+    "param": "BenchmarkTest00467",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00467"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00472",
+    "param": "BenchmarkTest00472",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00472"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00477",
+    "param": "BenchmarkTest00477",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00477"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00492",
+    "param": "BenchmarkTest00492",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00492"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00497",
+    "param": "BenchmarkTest00497",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00497"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00512",
+    "param": "BenchmarkTest00512",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00512"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00517",
+    "param": "BenchmarkTest00517",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00517"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00619",
+    "param": "BenchmarkTest00619",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00619"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00624",
+    "param": "BenchmarkTest00624",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00624"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00629",
+    "param": "BenchmarkTest00629",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00629"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00644",
+    "param": "BenchmarkTest00644",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00644"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00649",
+    "param": "BenchmarkTest00649",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00649"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00659",
+    "param": "BenchmarkTest00659",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00659"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00674",
+    "param": "BenchmarkTest00674",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00674"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00679",
+    "param": "BenchmarkTest00679",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00679"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00694",
+    "param": "BenchmarkTest00694",
+    "type": "LDAPInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest00694"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00699",
+    "param": "BenchmarkTest00699",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00699"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00714",
+    "param": "BenchmarkTest00714",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00714"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00719",
+    "param": "BenchmarkTest00719",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00719"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00724",
+    "param": "BenchmarkTest00724",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00724"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00729",
+    "param": "BenchmarkTest00729",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00729"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00739",
+    "param": "BenchmarkTest00739",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00739"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00764",
+    "param": "BenchmarkTest00764",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00764"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00769",
+    "param": "BenchmarkTest00769",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00769"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00774",
+    "param": "BenchmarkTest00774",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00774"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00783",
+    "param": "BenchmarkTest00783",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00783"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00784",
+    "param": "BenchmarkTest00784",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00784"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00785",
+    "param": "BenchmarkTest00785",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00785"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00786",
+    "param": "BenchmarkTest00786",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00786"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00787",
+    "param": "BenchmarkTest00787",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00787"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00788",
+    "param": "BenchmarkTest00788",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00788"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00799",
+    "param": "BenchmarkTest00799",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00799"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00800",
+    "param": "BenchmarkTest00800",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00800"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00801",
+    "param": "BenchmarkTest00801",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00801"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00802",
+    "param": "BenchmarkTest00802",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00802"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00803",
+    "param": "BenchmarkTest00803",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00803"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00804",
+    "param": "BenchmarkTest00804",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00804"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00805",
+    "param": "BenchmarkTest00805",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00805"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00806",
+    "param": "BenchmarkTest00806",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00806"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00807",
+    "param": "BenchmarkTest00807",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00807"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00808",
+    "param": "BenchmarkTest00808",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00808"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00809",
+    "param": "BenchmarkTest00809",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00809"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00810",
+    "param": "BenchmarkTest00810",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00810"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00811",
+    "param": "BenchmarkTest00811",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00811"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00812",
+    "param": "BenchmarkTest00812",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00812"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00813",
+    "param": "BenchmarkTest00813",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00813"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00814",
+    "param": "BenchmarkTest00814",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00814"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00815",
+    "param": "BenchmarkTest00815",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00815"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00816",
+    "param": "BenchmarkTest00816",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00816"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00822",
+    "param": "BenchmarkTest00822",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00822"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00823",
+    "param": "BenchmarkTest00823",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00823"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00824",
+    "param": "BenchmarkTest00824",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00824"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00825",
+    "param": "BenchmarkTest00825",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00825"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00826",
+    "param": "BenchmarkTest00826",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00826"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00827",
+    "param": "BenchmarkTest00827",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00827"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00837",
+    "param": "BenchmarkTest00837",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00837"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00838",
+    "param": "BenchmarkTest00838",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00838"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00839",
+    "param": "BenchmarkTest00839",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00839"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00840",
+    "param": "BenchmarkTest00840",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00840"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00841",
+    "param": "BenchmarkTest00841",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00841"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00842",
+    "param": "BenchmarkTest00842",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00842"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00843",
+    "param": "BenchmarkTest00843",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00843"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00844",
+    "param": "BenchmarkTest00844",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00844"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00845",
+    "param": "BenchmarkTest00845",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00845"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00846",
+    "param": "BenchmarkTest00846",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00846"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00847",
+    "param": "BenchmarkTest00847",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00847"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00848",
+    "param": "BenchmarkTest00848",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00848"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00849",
+    "param": "BenchmarkTest00849",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00849"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00850",
+    "param": "BenchmarkTest00850",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00850"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00851",
+    "param": "BenchmarkTest00851",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00851"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00862",
+    "param": "BenchmarkTest00862",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00862"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest00867",
+    "param": "BenchmarkTest00867",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest00867"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00882",
+    "param": "BenchmarkTest00882",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00882"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00887",
+    "param": "BenchmarkTest00887",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00887"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00892",
+    "param": "BenchmarkTest00892",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest00892"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00897",
+    "param": "BenchmarkTest00897",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00897"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907",
+    "param": "BenchmarkTest00907",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest00907"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00927",
+    "param": "BenchmarkTest00927",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00927"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00932",
+    "param": "BenchmarkTest00932",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00932"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest00937",
+    "param": "BenchmarkTest00937",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest00937"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01233",
+    "param": "BenchmarkTest01233",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01233"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01238",
+    "param": "BenchmarkTest01238",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01238"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01243",
+    "param": "BenchmarkTest01243",
+    "type": "LDAPInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest01243"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01253",
+    "param": "BenchmarkTest01253",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01253"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01258",
+    "param": "BenchmarkTest01258",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01258"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01263",
+    "param": "BenchmarkTest01263",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01263"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01268",
+    "param": "BenchmarkTest01268",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01268"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01288",
+    "param": "BenchmarkTest01288",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01288"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01303",
+    "param": "BenchmarkTest01303",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01303"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01308",
+    "param": "BenchmarkTest01308",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01308"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01313",
+    "param": "BenchmarkTest01313",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01313"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01328",
+    "param": "BenchmarkTest01328",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01328"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01338",
+    "param": "BenchmarkTest01338",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01338"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01343",
+    "param": "BenchmarkTest01343",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01343"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01348",
+    "param": "BenchmarkTest01348",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01348"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01353",
+    "param": "BenchmarkTest01353",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01353"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01363",
+    "param": "BenchmarkTest01363",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01363"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01378",
+    "param": "BenchmarkTest01378",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01378"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01383",
+    "param": "BenchmarkTest01383",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01383"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01388",
+    "param": "BenchmarkTest01388",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01388"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01393",
+    "param": "BenchmarkTest01393",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01393"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01491",
+    "param": "BenchmarkTest01491",
+    "type": "LDAPInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest01491"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01496",
+    "param": "BenchmarkTest01496",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01496"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01501",
+    "param": "BenchmarkTest01501",
+    "type": "LDAPInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest01501"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01506",
+    "param": "BenchmarkTest01506",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01506"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01511",
+    "param": "BenchmarkTest01511",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01511"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01516",
+    "param": "BenchmarkTest01516",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01516"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01526",
+    "param": "BenchmarkTest01526",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01526"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01531",
+    "param": "BenchmarkTest01531",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01531"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01556",
+    "param": "BenchmarkTest01556",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01556"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01571",
+    "param": "BenchmarkTest01571",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01571"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01586",
+    "param": "BenchmarkTest01586",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01586"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01591",
+    "param": "BenchmarkTest01591",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01591"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01596",
+    "param": "BenchmarkTest01596",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01596"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01601",
+    "param": "BenchmarkTest01601",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01601"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01606",
+    "param": "BenchmarkTest01606",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01606"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01621",
+    "param": "BenchmarkTest01621",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01621"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01626",
+    "param": "BenchmarkTest01626",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01626"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01631",
+    "param": "BenchmarkTest01631",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01631"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01642",
+    "param": "BenchmarkTest01642",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01642"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01643",
+    "param": "BenchmarkTest01643",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01643"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01644",
+    "param": "BenchmarkTest01644",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01644"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01645",
+    "param": "BenchmarkTest01645",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01645"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01646",
+    "param": "BenchmarkTest01646",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01646"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01647",
+    "param": "BenchmarkTest01647",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01647"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01657",
+    "param": "BenchmarkTest01657",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01657"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01658",
+    "param": "BenchmarkTest01658",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01658"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01659",
+    "param": "BenchmarkTest01659",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01659"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01660",
+    "param": "BenchmarkTest01660",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01660"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01661",
+    "param": "BenchmarkTest01661",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01661"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01662",
+    "param": "BenchmarkTest01662",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01662"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01663",
+    "param": "BenchmarkTest01663",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01663"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01664",
+    "param": "BenchmarkTest01664",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01664"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01665",
+    "param": "BenchmarkTest01665",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01665"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01666",
+    "param": "BenchmarkTest01666",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01666"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01667",
+    "param": "BenchmarkTest01667",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01667"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01668",
+    "param": "BenchmarkTest01668",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01668"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01669",
+    "param": "BenchmarkTest01669",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01669"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01670",
+    "param": "BenchmarkTest01670",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01670"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01671",
+    "param": "BenchmarkTest01671",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01671"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01672",
+    "param": "BenchmarkTest01672",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01672"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01673",
+    "param": "BenchmarkTest01673",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01673"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01674",
+    "param": "BenchmarkTest01674",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01674"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01685",
+    "param": "BenchmarkTest01685",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01685"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01686",
+    "param": "BenchmarkTest01686",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01686"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01687",
+    "param": "BenchmarkTest01687",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01687"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01688",
+    "param": "BenchmarkTest01688",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01688"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01689",
+    "param": "BenchmarkTest01689",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01689"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01690",
+    "param": "BenchmarkTest01690",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01690"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01691",
+    "param": "BenchmarkTest01691",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01691"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01692",
+    "param": "BenchmarkTest01692",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01692"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01693",
+    "param": "BenchmarkTest01693",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01693"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01712",
+    "param": "BenchmarkTest01712",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01712"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01713",
+    "param": "BenchmarkTest01713",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01713"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01714",
+    "param": "BenchmarkTest01714",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01714"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01715",
+    "param": "BenchmarkTest01715",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01715"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01716",
+    "param": "BenchmarkTest01716",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01716"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01717",
+    "param": "BenchmarkTest01717",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01717"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01718",
+    "param": "BenchmarkTest01718",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01718"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01719",
+    "param": "BenchmarkTest01719",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01719"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01720",
+    "param": "BenchmarkTest01720",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01720"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01721",
+    "param": "BenchmarkTest01721",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01721"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01722",
+    "param": "BenchmarkTest01722",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01722"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01723",
+    "param": "BenchmarkTest01723",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01723"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01724",
+    "param": "BenchmarkTest01724",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01724"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01725",
+    "param": "BenchmarkTest01725",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01725"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01726",
+    "param": "BenchmarkTest01726",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01726"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01727",
+    "param": "BenchmarkTest01727",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01727"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01728",
+    "param": "BenchmarkTest01728",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01728"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01729",
+    "param": "BenchmarkTest01729",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01729"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01730",
+    "param": "BenchmarkTest01730",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01730"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01731",
+    "param": "BenchmarkTest01731",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01731"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01732",
+    "param": "BenchmarkTest01732",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01732"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01733",
+    "param": "BenchmarkTest01733",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01733"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01746",
+    "param": "BenchmarkTest01746",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01746"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01751",
+    "param": "BenchmarkTest01751",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest01751"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01756",
+    "param": "BenchmarkTest01756",
+    "type": "LDAPInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest01756"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01771",
+    "param": "BenchmarkTest01771",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01771"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01776",
+    "param": "BenchmarkTest01776",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest01776"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01791",
+    "param": "BenchmarkTest01791",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01791"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01796",
+    "param": "BenchmarkTest01796",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest01796"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01806",
+    "param": "BenchmarkTest01806",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01806"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01811",
+    "param": "BenchmarkTest01811",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01811"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest01816",
+    "param": "BenchmarkTest01816",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest01816"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02108",
+    "param": "BenchmarkTest02108",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02108"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02113",
+    "param": "BenchmarkTest02113",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02113"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02123",
+    "param": "BenchmarkTest02123",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02123"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02128",
+    "param": "BenchmarkTest02128",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02128"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02133",
+    "param": "BenchmarkTest02133",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02133"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02148",
+    "param": "BenchmarkTest02148",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02148"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02153",
+    "param": "BenchmarkTest02153",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02153"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02173",
+    "param": "BenchmarkTest02173",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02173"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02178",
+    "param": "BenchmarkTest02178",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02178"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02183",
+    "param": "BenchmarkTest02183",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02183"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02188",
+    "param": "BenchmarkTest02188",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02188"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02198",
+    "param": "BenchmarkTest02198",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02198"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02203",
+    "param": "BenchmarkTest02203",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02203"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02208",
+    "param": "BenchmarkTest02208",
+    "type": "LDAPInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest02208"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02223",
+    "param": "BenchmarkTest02223",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02223"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02228",
+    "param": "BenchmarkTest02228",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02228"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02233",
+    "param": "BenchmarkTest02233",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02233"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02238",
+    "param": "BenchmarkTest02238",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02238"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02243",
+    "param": "BenchmarkTest02243",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02243"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02253",
+    "param": "BenchmarkTest02253",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02253"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02268",
+    "param": "BenchmarkTest02268",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02268"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02273",
+    "param": "BenchmarkTest02273",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02273"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02278",
+    "param": "BenchmarkTest02278",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02278"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02283",
+    "param": "BenchmarkTest02283",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02283"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02288",
+    "param": "BenchmarkTest02288",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02288"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02377",
+    "param": "BenchmarkTest02377",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02377"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02382",
+    "param": "BenchmarkTest02382",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02382"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02397",
+    "param": "BenchmarkTest02397",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02397"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02402",
+    "param": "BenchmarkTest02402",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02402"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02407",
+    "param": "BenchmarkTest02407",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02407"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02412",
+    "param": "BenchmarkTest02412",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02412"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02432",
+    "param": "BenchmarkTest02432",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02432"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02452",
+    "param": "BenchmarkTest02452",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02452"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02462",
+    "param": "BenchmarkTest02462",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02462"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02467",
+    "param": "BenchmarkTest02467",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02467"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02472",
+    "param": "BenchmarkTest02472",
+    "type": "LDAPInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest02472"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02482",
+    "param": "BenchmarkTest02482",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02482"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02487",
+    "param": "BenchmarkTest02487",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02487"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02492",
+    "param": "BenchmarkTest02492",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02492"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02512",
+    "param": "BenchmarkTest02512",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02512"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02517",
+    "param": "BenchmarkTest02517",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02517"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02532",
+    "param": "BenchmarkTest02532",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02532"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02537",
+    "param": "BenchmarkTest02537",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02537"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02542",
+    "param": "BenchmarkTest02542",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02542"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02553",
+    "param": "BenchmarkTest02553",
+    "type": "LDAPInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest02553"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02554",
+    "param": "BenchmarkTest02554",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02554"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02555",
+    "param": "BenchmarkTest02555",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02555"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02556",
+    "param": "BenchmarkTest02556",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02556"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02557",
+    "param": "BenchmarkTest02557",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02557"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02558",
+    "param": "BenchmarkTest02558",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02558"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02559",
+    "param": "BenchmarkTest02559",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02559"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02560",
+    "param": "BenchmarkTest02560",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02560"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02561",
+    "param": "BenchmarkTest02561",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02561"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02562",
+    "param": "BenchmarkTest02562",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02562"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02563",
+    "param": "BenchmarkTest02563",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02563"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02564",
+    "param": "BenchmarkTest02564",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02564"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02565",
+    "param": "BenchmarkTest02565",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02565"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02566",
+    "param": "BenchmarkTest02566",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02566"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02567",
+    "param": "BenchmarkTest02567",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02567"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02568",
+    "param": "BenchmarkTest02568",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02568"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02569",
+    "param": "BenchmarkTest02569",
+    "type": "PathTraversal",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02569"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02570",
+    "param": "BenchmarkTest02570",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02570"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02571",
+    "param": "BenchmarkTest02571",
+    "type": "LDAPInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest02571"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02572",
+    "param": "BenchmarkTest02572",
+    "type": "LDAPInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 90,
+    "tc": "BenchmarkTest02572"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02578",
+    "param": "BenchmarkTest02578",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02578"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02579",
+    "param": "BenchmarkTest02579",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02579"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02580",
+    "param": "BenchmarkTest02580",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02580"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02581",
+    "param": "BenchmarkTest02581",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02581"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02582",
+    "param": "BenchmarkTest02582",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02582"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02583",
+    "param": "BenchmarkTest02583",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02583"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02584",
+    "param": "BenchmarkTest02584",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02584"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02585",
+    "param": "BenchmarkTest02585",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02585"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02586",
+    "param": "BenchmarkTest02586",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02586"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02587",
+    "param": "BenchmarkTest02587",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02587"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02588",
+    "param": "BenchmarkTest02588",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02588"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02589",
+    "param": "BenchmarkTest02589",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02589"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02590",
+    "param": "BenchmarkTest02590",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02590"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02591",
+    "param": "BenchmarkTest02591",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02591"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02592",
+    "param": "BenchmarkTest02592",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02592"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02593",
+    "param": "BenchmarkTest02593",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02593"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02594",
+    "param": "BenchmarkTest02594",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02594"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02595",
+    "param": "BenchmarkTest02595",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02595"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02596",
+    "param": "BenchmarkTest02596",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02596"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02597",
+    "param": "BenchmarkTest02597",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02597"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02598",
+    "param": "BenchmarkTest02598",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02598"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02599",
+    "param": "BenchmarkTest02599",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02599"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02600",
+    "param": "BenchmarkTest02600",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02600"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02601",
+    "param": "BenchmarkTest02601",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02601"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02608",
+    "param": "BenchmarkTest02608",
+    "type": "XSS",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02608"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02609",
+    "param": "BenchmarkTest02609",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02609"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02610",
+    "param": "BenchmarkTest02610",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02610"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02611",
+    "param": "BenchmarkTest02611",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02611"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02612",
+    "param": "BenchmarkTest02612",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02612"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02613",
+    "param": "BenchmarkTest02613",
+    "type": "CommandInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02613"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02625",
+    "param": "BenchmarkTest02625",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02625"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02626",
+    "param": "BenchmarkTest02626",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02626"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02627",
+    "param": "BenchmarkTest02627",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02627"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02628",
+    "param": "BenchmarkTest02628",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02628"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02629",
+    "param": "BenchmarkTest02629",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02629"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02630",
+    "param": "BenchmarkTest02630",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02630"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02631",
+    "param": "BenchmarkTest02631",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02631"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02632",
+    "param": "BenchmarkTest02632",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02632"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02633",
+    "param": "BenchmarkTest02633",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02633"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02634",
+    "param": "BenchmarkTest02634",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02634"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02635",
+    "param": "BenchmarkTest02635",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02635"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02636",
+    "param": "BenchmarkTest02636",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02636"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02637",
+    "param": "BenchmarkTest02637",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02637"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02638",
+    "param": "BenchmarkTest02638",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02638"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02639",
+    "param": "BenchmarkTest02639",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02639"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02640",
+    "param": "BenchmarkTest02640",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02640"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02641",
+    "param": "BenchmarkTest02641",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02641"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02642",
+    "param": "BenchmarkTest02642",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02642"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02643",
+    "param": "BenchmarkTest02643",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02643"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02644",
+    "param": "BenchmarkTest02644",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02644"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02645",
+    "param": "BenchmarkTest02645",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02645"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02646",
+    "param": "BenchmarkTest02646",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02646"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02647",
+    "param": "BenchmarkTest02647",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02647"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02648",
+    "param": "BenchmarkTest02648",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02648"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02649",
+    "param": "BenchmarkTest02649",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02649"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02650",
+    "param": "BenchmarkTest02650",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02650"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02651",
+    "param": "BenchmarkTest02651",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02651"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02652",
+    "param": "BenchmarkTest02652",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02652"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02653",
+    "param": "BenchmarkTest02653",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02653"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02654",
+    "param": "BenchmarkTest02654",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02654"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02655",
+    "param": "BenchmarkTest02655",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02655"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02656",
+    "param": "BenchmarkTest02656",
+    "type": "SQLInjection",
+    "vulnerable": true,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02656"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02657",
+    "param": "BenchmarkTest02657",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02657"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02667",
+    "param": "BenchmarkTest02667",
+    "type": "PathTraversal",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 22,
+    "tc": "BenchmarkTest02667"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02682",
+    "param": "BenchmarkTest02682",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02682"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02687",
+    "param": "BenchmarkTest02687",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02687"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02692",
+    "param": "BenchmarkTest02692",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02692"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02697",
+    "param": "BenchmarkTest02697",
+    "type": "CommandInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 78,
+    "tc": "BenchmarkTest02697"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02712",
+    "param": "BenchmarkTest02712",
+    "type": "XSS",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 79,
+    "tc": "BenchmarkTest02712"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02727",
+    "param": "BenchmarkTest02727",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02727"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02732",
+    "param": "BenchmarkTest02732",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02732"
+  },
+  {
+    "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02737",
+    "param": "BenchmarkTest02737",
+    "type": "SQLInjection",
+    "vulnerable": false,
+    "vector": "getparam",
+    "cwe": 89,
+    "tc": "BenchmarkTest02737"
+  }
+]

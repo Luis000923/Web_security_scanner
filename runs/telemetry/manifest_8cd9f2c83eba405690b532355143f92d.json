@@ -1,0 +1,67 @@
+{
+  "manifest_version": 1,
+  "run_id": "8cd9f2c83eba405690b532355143f92d",
+  "created_at": "2026-09-09T18:27:06.949124+00:00",
+  "git_commit": "33e97db9e53ffbed70a17e9a7d2c06afdf3139b0",
+  "global_seed": null,
+  "corpus": {
+    "sha256": "6d3e4c270d57eca4fc899def2c7ac846ef834a9b1192d2ab5e5750f9409dfedc",
+    "files": [
+      "command_injection.json",
+      "crlf.json",
+      "deserialization.json",
+      "idor.json",
+      "ldap.json",
+      "log4shell.json",
+      "nosql_injection.json",
+      "open_redirect.json",
+      "path_traversal.json",
+      "sql_injection.json",
+      "ssrf.json",
+      "ssti.json",
+      "xss.json",
+      "xxe.json"
+    ],
+    "num_files": 14
+  },
+  "config": {
+    "core": {
+      "rate_limit": 0.0,
+      "verify_ssl": true,
+      "allow_private_redirects": false
+    },
+    "testers": {
+      "payload_delay": 0.0,
+      "max_payloads": 200,
+      "allow_destructive": false,
+      "waf_bypass_transforms": [],
+      "interleave": true,
+      "priority": true,
+      "payload_order": "natural",
+      "runtime_confirm": true,
+      "adaptive_sorting": true,
+      "ai_enabled": true,
+      "ai_verify": true,
+      "ai_synthesize": true,
+      "ai_backend": null,
+      "ai_base_url": null,
+      "ai_model": null,
+      "ai_fp_threshold": 0.75
+    },
+    "recon": {
+      "max_urls": 1000,
+      "max_depth": 3,
+      "jitter": 0.0,
+      "parse_js": true,
+      "use_sitemap": true,
+      "use_browser": true,
+      "browser_nav_timeout": 15.0,
+      "browser_max_pages": 6
+    },
+    "global_seed": null,
+    "telemetry": {
+      "enabled": true,
+      "dir": "runs/telemetry"
+    }
+  }
+}
