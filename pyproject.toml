@@ -27,6 +27,22 @@ browser = [
 experiments = [
     "rich>=13.0",
 ]
+# Agentic AI subsystem (ai_module/). The LLM triage agent is OFF by default in
+# the scanner and is enabled per-run with ``--enable-ai-triaging``. Only the
+# lightweight client + structured-decoding layer is needed to *use* a remote
+# OpenAI-compatible inference endpoint:
+#   uv pip install -e ".[ai]"
+ai = [
+    "aiohttp>=3.8.0",
+    "pydantic>=2.0",
+]
+# Local constrained decoding / in-process transformers backend (heavy, GPU):
+#   uv pip install -e ".[ai,ai-local]"
+ai-local = [
+    "torch>=2.6.0",
+    "transformers>=4.48.0",
+    "outlines>=0.1.0",
+]
 dev = [
     "pytest",
     "pytest-asyncio",
@@ -50,11 +66,12 @@ dev = [
 webscanner = "web_security_scanner.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["web_security_scanner*"]
+include = ["web_security_scanner*", "ai_module*"]
 
 [tool.setuptools.package-data]
 "web_security_scanner.PAYLOAD" = ["*.json", "data/*.json"]
 "web_security_scanner.wordlists" = ["*.json"]
+"ai_module.prompts" = ["*.md", "*.txt"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -64,7 +81,7 @@ pythonpath = [".", "tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-extend-exclude = ["Documentacion", "web_security_scanner/reports", "tools", "testbed", "metrics", "runs", "paper"]
+extend-exclude = ["Documentacion", "web_security_scanner/reports", "tools", "testbed", "metrics", "runs", "paper", "ai_module"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]

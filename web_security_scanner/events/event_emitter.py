@@ -13,6 +13,11 @@ class ScanEventType(Enum):
     SCAN_COMPLETE = auto()
     ERROR = auto()
     LOG_MESSAGE = auto()
+    # Emitted once per candidate finding that reached the LLM triage agent
+    # (``--enable-ai-triaging``), whether the agent kept or dropped it. Carries
+    # a ``decision`` dict so the orchestrator can build an audit trail of the
+    # agent's false-positive suppressions / false-negative risk for the report.
+    AI_TRIAGE_DECISION = auto()
 
 class ScanEventEmitter:
     """

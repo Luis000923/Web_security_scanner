@@ -96,7 +96,21 @@ CONDITIONS: dict[str, list[str]] = {
     # Phase 3.3: pin the a-priori order (disable the live feedback loop) so the
     # graded run is directly comparable to `baseline` (adaptive ON).
     "no-adaptive-sorting": ["--no-adaptive-sorting"],
+    # LLM triage agent: identical heuristic engine to `baseline`, plus the
+    # false-positive triage stage. Diff `baseline` vs `ai-triage` to read off
+    # the real FP-suppression rate and any FN the model introduced (the oracle
+    # prints both from the report's `ai_triage` audit block). The inference
+    # backend is selected out-of-band — set AI_AGENT_BACKEND / AI_AGENT_BASE_URL
+    # in the environment, or pass `--extra-args "--ai-backend openai ..."`.
+    "ai-triage": ["--enable-ai-triaging"],
+    # + agentic payload synthesis when a parameter's static list is exhausted.
+    "ai-triage-synth": ["--enable-ai-triaging", "--ai-synthesize"],
 }
+
+# The ablation arms that run without any external dependency. The ai-triage*
+# arms need a reachable inference backend, so they are opt-in via an explicit
+# --conditions list rather than part of the default sweep.
+DEFAULT_CONDITIONS = [c for c in CONDITIONS if not c.startswith("ai-triage")]
 
 # Mandatory keys on every per-probe telemetry JSONL row (see
 # core/telemetry_async.py). Used by :func:`validate_jsonl` to prove the adaptive
@@ -108,7 +122,16 @@ TELEMETRY_REQUIRED_KEYS = (
 )
 
 CSV_COLUMNS = ["budget", "condition", "TP", "FP", "FN",
-               "Precision", "Recall", "F1", "FPR", "run_dir", "status", "timestamp"]
+               "Precision", "Recall", "F1", "FPR",
+               # LLM triage audit (populated only for the ai-triage* conditions):
+               #   AI_Triaged        candidates that reached the model
+               #   AI_Suppressed     findings the model dropped as false positives
+               #   AI_FP_Suppressed  of those, ones that were NOT ground-truth vulns
+               #   AI_FN_Introduced  of those, real vulns the model hid (the cost)
+               #   AI_Recall_NoAgent recall the heuristic engine alone would score
+               "AI_Triaged", "AI_Suppressed", "AI_FP_Suppressed",
+               "AI_FN_Introduced", "AI_Recall_NoAgent",
+               "run_dir", "status", "timestamp"]
 
 
 # --------------------------------------------------------------------------
@@ -464,6 +487,16 @@ def validate_jsonl(jsonl: Path) -> tuple[bool, str]:
                   f"{len(seen_ctx)} payload families")
 
 
+def newest_json_report(run_dir: Path) -> Path | None:
+    """The scanner's final JSON report (``<output>/scan_*.json``), if any.
+
+    Carries the ``ai_triage`` audit block for the --enable-ai-triaging runs.
+    """
+    reports = sorted((run_dir / "report").glob("scan_*.json"),
+                     key=lambda p: p.stat().st_mtime)
+    return reports[-1] if reports else None
+
+
 def run_oracle(jsonl: Path, ground_truth: Path, run_dir: Path) -> dict:
     metrics_path = run_dir / "metrics.json"
     cmd = [
@@ -472,6 +505,9 @@ def run_oracle(jsonl: Path, ground_truth: Path, run_dir: Path) -> dict:
         "--ground-truth", str(ground_truth),
         "--json-out", str(metrics_path),
     ]
+    report = newest_json_report(run_dir)
+    if report is not None:
+        cmd += ["--report", str(report)]
     subprocess.run(cmd, check=True, capture_output=True, text=True)
     return json.loads(metrics_path.read_text(encoding="utf-8"))
 
@@ -486,6 +522,8 @@ def metrics_to_row(budget: int, condition: str, run_dir: Path,
     except ValueError:
         run_dir_str = str(run_dir)   # results dir lives outside the repo tree
 
+    ai = m.get("ai_triage") or {}
+
     return {
         "budget": budget,
         "condition": condition,
@@ -496,6 +534,11 @@ def metrics_to_row(budget: int, condition: str, run_dir: Path,
         "Recall": num(m.get("recall")),
         "F1": num(m.get("f1_score")),
         "FPR": num(m.get("fpr")),
+        "AI_Triaged": ai.get("candidates_triaged", ""),
+        "AI_Suppressed": ai.get("suppressed", ""),
+        "AI_FP_Suppressed": ai.get("fp_suppressed", ""),
+        "AI_FN_Introduced": ai.get("fn_introduced", ""),
+        "AI_Recall_NoAgent": num(ai.get("recall_without_agent")),
         "run_dir": run_dir_str,
         "status": status,
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -525,7 +568,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--csv", default=str(REPO_ROOT / "testbed" / "experiment_results.csv"))
     ap.add_argument("--target-list", default=str(REPO_ROOT / "testbed" / "benchmark_targets.json"))
     ap.add_argument("--budgets", default=",".join(map(str, DEFAULT_BUDGETS)))
-    ap.add_argument("--conditions", default=",".join(CONDITIONS))
+    ap.add_argument("--conditions", default=",".join(DEFAULT_CONDITIONS),
+                    help="Comma list. Add 'ai-triage' / 'ai-triage-synth' "
+                         "explicitly (they need a reachable inference backend).")
     ap.add_argument("--compose-file", default=str(REPO_ROOT / "testbed" / "docker-compose.yml"))
     ap.add_argument("--skip-precondition", action="store_true")
     ap.add_argument("--scan-timeout", type=int, default=7200)

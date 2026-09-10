@@ -88,6 +88,11 @@ def generate_json_report(scan_data: dict[str, Any], output_dir: str = "reports")
         ],
         "map_report": scan_data.get("map_report"),
     }
+    # LLM triage audit trail (present only when --enable-ai-triaging was used);
+    # tools/eval_oracle.py reads it to score the real false-positive
+    # suppression rate and any false negatives the model introduced.
+    if scan_data.get("ai_triage") is not None:
+        payload["ai_triage"] = scan_data["ai_triage"]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
     return str(path)

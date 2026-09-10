@@ -511,6 +511,76 @@ def first_tp_analysis(meta: dict, gt: "oracle.GroundTruth") -> dict:
 # TASK 3 — publication figures
 # ---------------------------------------------------------------------------
 
+def ai_triage_analysis(csv_path: Path) -> dict:
+    """False-positive suppression / false-negative cost of the LLM triage agent.
+
+    Reads the graded CSV directly (the ``AI_*`` columns written by
+    ``run_experiments.metrics_to_row``) and, per budget, contrasts the
+    ``ai-triage`` / ``ai-triage-synth`` arms with ``baseline``:
+
+      * ``fp_suppression_rate`` — real false positives removed, as a fraction
+        of ``baseline`` FP at that budget;
+      * ``fn_introduced`` — real vulnerabilities the model hid;
+      * ``recall_delta`` — recall(with agent) - recall(without agent), read off
+        the audit block so it is exact rather than inferred from FP/FN.
+
+    Returns ``{"available": False, ...}`` when the CSV predates the agent or
+    has no ai-triage rows, so the caller can print a one-line note and move on.
+    """
+    if not csv_path.exists():
+        return {"available": False, "reason": "no graded CSV"}
+    df = pd.read_csv(csv_path).rename(columns=str.lower)
+    if "ai_suppressed" not in df.columns:
+        return {"available": False, "reason": "CSV has no AI_* columns (pre-agent run)"}
+    if "status" in df.columns:
+        df = df[df["status"].astype(str).eq("ok")]
+
+    def _num(series):
+        return pd.to_numeric(series, errors="coerce")
+
+    ai_arms = sorted({c for c in df["condition"].astype(str)
+                      if c.startswith("ai-triage")})
+    if not ai_arms:
+        return {"available": False, "reason": "no ai-triage rows in CSV"}
+
+    per_budget: dict[str, Any] = {}
+    for budget, grp in df.groupby("budget"):
+        base = grp[grp["condition"].astype(str).eq("baseline")]
+        base_fp = float(_num(base["fp"]).mean()) if not base.empty else float("nan")
+        base_recall = float(_num(base["recall"]).mean()) if not base.empty else float("nan")
+        arms: dict[str, Any] = {}
+        for arm in ai_arms:
+            rows = grp[grp["condition"].astype(str).eq(arm)]
+            if rows.empty:
+                continue
+            suppressed = float(_num(rows["ai_suppressed"]).mean())
+            fp_suppressed = float(_num(rows["ai_fp_suppressed"]).mean())
+            fn_introduced = float(_num(rows["ai_fn_introduced"]).mean())
+            recall_with = float(_num(rows["recall"]).mean())
+            recall_without = float(_num(rows["ai_recall_noagent"]).mean())
+            arms[arm] = {
+                "candidates_triaged": float(_num(rows["ai_triaged"]).mean()),
+                "suppressed": suppressed,
+                "fp_suppressed": fp_suppressed,
+                "fn_introduced": fn_introduced,
+                "suppression_precision": (fp_suppressed / suppressed
+                                          if suppressed else float("nan")),
+                "fp_suppression_rate": (fp_suppressed / base_fp
+                                        if base_fp else float("nan")),
+                "recall_with_agent": recall_with,
+                "recall_without_agent": recall_without,
+                "recall_delta": recall_with - recall_without,
+                "precision_baseline": base_recall and float(_num(base["precision"]).mean()),
+            }
+        if arms:
+            per_budget[str(int(budget))] = {
+                "baseline_fp": base_fp,
+                "baseline_recall": base_recall,
+                "arms": arms,
+            }
+    return {"available": True, "arms": ai_arms, "per_budget": per_budget}
+
+
 def _academic_style():
     import matplotlib
     matplotlib.use("Agg")
@@ -833,6 +903,26 @@ def main(argv=None) -> int:
     (args.analysis_dir / "early_recall.json").write_text(
         json.dumps(early, indent=2, default=_json_default), encoding="utf-8")
     print(f"  wrote {args.analysis_dir / 'early_recall.json'}")
+
+    # ---- TASK 2c — LLM triage: FP suppression vs FN cost -------------------
+    print("\n=== TASK 2c — LLM triage agent (--enable-ai-triaging) ===")
+    ai = ai_triage_analysis(args.csv)
+    if not ai.get("available"):
+        print(f"  n/a: {ai.get('reason')}")
+    else:
+        for budget, blk in sorted(ai["per_budget"].items(), key=lambda kv: int(kv[0])):
+            print(f"\n budget {budget}: baseline FP={blk['baseline_fp']:.1f}  "
+                  f"recall={blk['baseline_recall']:.3f}")
+            for arm, e in blk["arms"].items():
+                print(f"   {arm:>16s}: suppressed {e['suppressed']:.1f} "
+                      f"({e['fp_suppressed']:.1f} real FP, "
+                      f"{e['fn_introduced']:.1f} FN introduced)  "
+                      f"FP-suppression {100 * e['fp_suppression_rate']:.0f}%  "
+                      f"recall {e['recall_without_agent']:.3f}->{e['recall_with_agent']:.3f} "
+                      f"(Δ{e['recall_delta']:+.3f})")
+    (args.analysis_dir / "ai_triage.json").write_text(
+        json.dumps(ai, indent=2, default=_json_default), encoding="utf-8")
+    print(f"  wrote {args.analysis_dir / 'ai_triage.json'}")
 
     # ---- TASK 3 --------------------------------------------------------------
     if not args.no_figures:

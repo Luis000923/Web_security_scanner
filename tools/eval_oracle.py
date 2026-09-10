@@ -316,6 +316,92 @@ def evaluate(findings: set[Tuple3], gt: GroundTruth) -> Metrics:
 
 
 # --------------------------------------------------------------------------
+# LLM triage-agent audit (--enable-ai-triaging)
+# --------------------------------------------------------------------------
+
+def load_ai_triage(path: str | Path) -> dict | None:
+    """Return the ``ai_triage`` audit block from a final JSON report, or None.
+
+    Telemetry JSONL and bare vuln lists have no audit trail, so this simply
+    returns ``None`` for them (the scan ran without the agent, or the block
+    was never emitted).
+    """
+    try:
+        parsed = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if isinstance(parsed, dict):
+        block = parsed.get("ai_triage")
+        if isinstance(block, dict) and block.get("enabled"):
+            return block
+    return None
+
+
+@dataclass
+class AITriageMetrics:
+    """How the LLM triage stage changed the raw heuristic verdict set.
+
+    ``fp_suppressed``  — a suppressed candidate that is NOT a ground-truth
+                          positive: the agent correctly removed a false
+                          positive.
+    ``fn_introduced``  — a suppressed candidate that IS a ground-truth
+                          positive AND is not otherwise reported: the agent
+                          hid a real vulnerability (the cost of the stage).
+    """
+
+    triaged: int
+    suppressed: set[Tuple3]
+    fp_suppressed: set[Tuple3]
+    fn_introduced: set[Tuple3]
+    backend: str | None = None
+    fp_threshold: float | None = None
+
+    @property
+    def suppression_precision(self) -> float | None:
+        n = len(self.suppressed)
+        return len(self.fp_suppressed) / n if n else None
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "backend": self.backend,
+            "fp_threshold": self.fp_threshold,
+            "candidates_triaged": self.triaged,
+            "suppressed": len(self.suppressed),
+            "fp_suppressed": len(self.fp_suppressed),
+            "fn_introduced": len(self.fn_introduced),
+            "suppression_precision": self.suppression_precision,
+        }
+
+
+def evaluate_ai_triage(block: dict, reported: set[Tuple3],
+                       gt: GroundTruth) -> AITriageMetrics:
+    """Grade the agent's suppressions against ground truth.
+
+    ``reported`` is the *final* deduped finding set (post-suppression); a
+    suppressed key that another probe re-reported does not count as a lost
+    detection.
+    """
+    decisions = block.get("decisions") or []
+    suppressed: set[Tuple3] = set()
+    for d in decisions:
+        if not d.get("dropped"):
+            continue
+        suppressed.add(_finding_key(d.get("url", ""),
+                                    d.get("parameter") or d.get("param"),
+                                    d.get("type", "")))
+    fn_introduced = (suppressed & gt.positives) - reported
+    fp_suppressed = suppressed - gt.positives
+    return AITriageMetrics(
+        triaged=int(block.get("total_candidates_triaged", len(decisions))),
+        suppressed=suppressed,
+        fp_suppressed=fp_suppressed,
+        fn_introduced=fn_introduced,
+        backend=block.get("backend"),
+        fp_threshold=block.get("fp_threshold"),
+    )
+
+
+# --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
 
@@ -342,6 +428,10 @@ def main(argv: list[str] | None = None) -> int:
                          help="Print every FP/FN tuple, not just the counts.")
     parser.add_argument("--json-out", default=None, metavar="FILE.json",
                          help="Also write the metrics dict as JSON to this path.")
+    parser.add_argument("--report", default=None, metavar="FILE.json",
+                         help="Final JSON report to read the '--enable-ai-triaging' "
+                              "audit trail from (defaults to --results when that is "
+                              "itself a JSON report).")
     args = parser.parse_args(argv)
 
     try:
@@ -357,6 +447,10 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     metrics = evaluate(findings, gt)
+
+    ai_block = load_ai_triage(args.report or args.results)
+    ai_metrics = (evaluate_ai_triage(ai_block, findings, gt)
+                  if ai_block is not None else None)
 
     print("=" * 60)
     print("  eval_oracle.py — Phase 4 evaluation report")
@@ -377,6 +471,30 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  FPR:        {_fmt(metrics.fpr)}{fpr_note}")
     print("=" * 60)
 
+    if ai_metrics is not None:
+        n_sup = len(ai_metrics.suppressed)
+        # Recall the heuristic engine alone would have scored (add back the
+        # real positives the agent suppressed and no other probe re-found).
+        tp_without_ai = metrics.tp | ai_metrics.fn_introduced
+        denom = len(gt.positives)
+        recall_without_ai = len(tp_without_ai) / denom if denom else None
+        print("  LLM triage agent (--enable-ai-triaging)")
+        print(f"    backend / fp-threshold:    {ai_metrics.backend} / "
+              f"{ai_metrics.fp_threshold}")
+        print(f"    candidates triaged:        {ai_metrics.triaged}")
+        print(f"    findings suppressed:       {n_sup}")
+        print(f"    -> real false positives:   {len(ai_metrics.fp_suppressed)}  "
+              f"(suppression precision {_fmt(ai_metrics.suppression_precision)})")
+        print(f"    -> false negatives added:  {len(ai_metrics.fn_introduced)}  "
+              f"(real vulns the model hid)")
+        print(f"    recall  without agent:     {_fmt(recall_without_ai)}")
+        print(f"    recall  with agent:        {_fmt(metrics.recall)}")
+        print("=" * 60)
+        if args.verbose and ai_metrics.fn_introduced:
+            print("\n-- False Negatives introduced by the LLM --")
+            for k in sorted(ai_metrics.fn_introduced):
+                print(f"  {_fmt_key(k)}")
+
     if args.verbose:
         if metrics.fp:
             print("\n-- False Positives --")
@@ -389,8 +507,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {_fmt_key(k)}")
 
     if args.json_out:
+        payload = metrics.as_dict()
+        if ai_metrics is not None:
+            payload["ai_triage"] = ai_metrics.as_dict()
+            tp_without_ai = metrics.tp | ai_metrics.fn_introduced
+            payload["ai_triage"]["recall_without_agent"] = (
+                len(tp_without_ai) / len(gt.positives) if gt.positives else None
+            )
         Path(args.json_out).write_text(
-            json.dumps(metrics.as_dict(), indent=2) + "\n", encoding="utf-8"
+            json.dumps(payload, indent=2) + "\n", encoding="utf-8"
         )
         print(f"\n[*] Metrics written to {args.json_out}")
 

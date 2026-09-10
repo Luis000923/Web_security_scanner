@@ -146,6 +146,36 @@ def _build_parser() -> argparse.ArgumentParser:
                      help="Seed random.seed() at startup for full reproducibility "
                           "of random payload order, User-Agent rotation and "
                           "payload mutations.")
+
+    ai = scan.add_argument_group(
+        "LLM triage agent (ai_module)",
+        "OFF by default. --enable-ai-triaging routes every heuristic candidate "
+        "through the fine-tuned triage model before the finding is emitted; a "
+        "confident false-positive verdict suppresses it. Transparent "
+        "degradation: if ai_module isn't installed or the inference backend is "
+        "unreachable the scan silently continues on the deterministic engine. "
+        "Use it to A/B the detection metrics with and without the agent.")
+    ai.add_argument("--enable-ai-triaging", dest="enable_ai_triaging",
+                    action="store_true",
+                    help="Enable the LLM false-positive triage stage.")
+    ai.add_argument("--ai-synthesize", dest="ai_synthesize", action="store_true",
+                    help="Also let the agent propose adapted payloads when a "
+                         "parameter's static list is exhausted with no hit "
+                         "(implies --enable-ai-triaging).")
+    ai.add_argument("--ai-no-verify", dest="ai_no_verify", action="store_true",
+                    help="With --ai-synthesize: keep payload synthesis but skip "
+                         "the false-positive triage stage.")
+    ai.add_argument("--ai-backend", default=None,
+                    choices=["openai", "transformers", "echo"],
+                    help="AgentClient backend (default: env AI_AGENT_BACKEND or 'openai').")
+    ai.add_argument("--ai-base-url", default=None, metavar="URL",
+                    help="OpenAI-compatible endpoint for the 'openai' backend "
+                         "(default: http://127.0.0.1:8000/v1).")
+    ai.add_argument("--ai-model", default=None, metavar="NAME",
+                    help="Model / adapter name passed to the backend.")
+    ai.add_argument("--ai-fp-threshold", type=float, default=0.75, metavar="0-1",
+                    help="Minimum agent confidence required to discard a finding "
+                         "as a false positive (default: 0.75).")
     return parser
 
 
@@ -254,6 +284,15 @@ def _build_config(args) -> dict:
         "runtime_confirm": getattr(args, "runtime_confirm", True),
         # Phase 3 live heuristic ordering (adaptive feedback loop).
         "adaptive_sorting": getattr(args, "adaptive_sorting", True),
+        # LLM triage agent (opt-in via --enable-ai-triaging / --ai-synthesize).
+        "ai_enabled": (getattr(args, "enable_ai_triaging", False)
+                       or getattr(args, "ai_synthesize", False)),
+        "ai_verify": not getattr(args, "ai_no_verify", False),
+        "ai_synthesize": getattr(args, "ai_synthesize", False),
+        "ai_backend": getattr(args, "ai_backend", None),
+        "ai_base_url": getattr(args, "ai_base_url", None),
+        "ai_model": getattr(args, "ai_model", None),
+        "ai_fp_threshold": getattr(args, "ai_fp_threshold", 0.75),
     }
     recon = {
         "max_urls": args.max_urls,

@@ -55,9 +55,16 @@ class WebSecurityScanner:
         # Phase 1 telemetry sink; created per-scan in ``run_scan`` when
         # ``config['telemetry']['enabled']`` is set.
         self.telemetry: TelemetryWorker | None = None
+        # LLM triage agent (opt-in). ``ai_client`` is built in ``_start_ai_agent``
+        # only when ``--enable-ai-triaging`` was passed and the backend is
+        # healthy; ``ai_triage_decisions`` is the per-scan audit trail of every
+        # keep / drop verdict, surfaced in the results dict for the oracle.
+        self.ai_client: Any = None
+        self.ai_triage_decisions: list[dict[str, Any]] = []
 
         # Subscribe mapper to vulnerabilities
         self.event_emitter.on(ScanEventType.VULNERABILITY_FOUND, self._on_vulnerability_found)
+        self.event_emitter.on(ScanEventType.AI_TRIAGE_DECISION, self._on_ai_triage_decision)
 
     def _on_vulnerability_found(self, **kwargs):
         """Collect vulnerabilities for the report."""
@@ -65,6 +72,12 @@ class WebSecurityScanner:
         if vuln:
             self.vulnerabilities.append(vuln)
             self.mapper.vulnerabilities.append(vuln)
+
+    def _on_ai_triage_decision(self, **kwargs):
+        """Collect the LLM triage audit trail for the report / oracle."""
+        decision = kwargs.get('decision')
+        if decision:
+            self.ai_triage_decisions.append(decision)
 
     async def initialize(self):
         """
@@ -106,6 +119,7 @@ class WebSecurityScanner:
         # Reset per-scan state so repeated scans don't accumulate findings
         self.vulnerabilities = []
         self.mapper.vulnerabilities = []
+        self.ai_triage_decisions = []
 
         await self.event_emitter.emit(ScanEventType.SCAN_START, url=target_url)
         await self.core.start()
@@ -113,6 +127,11 @@ class WebSecurityScanner:
         # Phase 1: spin up the telemetry worker (needs the running loop) and
         # hand it to every tester before any payload is fired.
         await self._start_telemetry()
+
+        # LLM triage agent (opt-in): build the AgentClient and attach it to
+        # every tester when --enable-ai-triaging is set and the backend is
+        # healthy. Transparent degradation otherwise.
+        await self._start_ai_agent()
 
         # Phase 3: snapshot the reproducibility manifest (corpus hash, RNG
         # seed, full config, git commit) before Phase 1/2 probing starts.
@@ -229,6 +248,29 @@ class WebSecurityScanner:
             },
             "map_report": map_report,
             "telemetry": self.telemetry.summary() if self.telemetry is not None else None,
+            "ai_triage": self._ai_triage_summary(),
+        }
+
+    def _ai_triage_summary(self) -> dict[str, Any] | None:
+        """Audit trail of the LLM triage agent for this scan, or ``None`` when
+        the agent was not active. Consumed by ``tools/eval_oracle.py`` to score
+        the real false-positive suppression rate and any false negatives the
+        model introduced against the OWASP Benchmark ground truth.
+        """
+        tcfg = self.config.get("testers", {}) or {}
+        if not tcfg.get("ai_enabled", False):
+            return None
+        decisions = list(self.ai_triage_decisions)
+        dropped = [d for d in decisions if d.get("dropped")]
+        return {
+            "enabled": True,
+            "active": self.ai_client is not None,
+            "backend": getattr(self.ai_client, "backend", None),
+            "fp_threshold": tcfg.get("ai_fp_threshold", 0.75),
+            "total_candidates_triaged": len(decisions),
+            "suppressed": len(dropped),
+            "kept": len(decisions) - len(dropped),
+            "decisions": decisions,
         }
 
     @staticmethod
@@ -254,6 +296,82 @@ class WebSecurityScanner:
                 seen.add(url)
                 out.append(url)
         return out
+
+    async def _start_ai_agent(self) -> None:
+        """Build the LLM triage ``AgentClient`` and attach it to every tester.
+
+        Opt-in: does nothing unless ``config['testers']['ai_enabled']`` is set
+        (CLI ``--enable-ai-triaging``). Transparent degradation — any of the
+        following logs one line and lets the scan continue on the deterministic
+        heuristics, never raising:
+
+            * ``ai_module`` / its deps not installed
+            * ``AgentClient`` constructor fails
+            * the inference backend fails its ``healthcheck()`` (server down)
+
+        Per-call failures after attach are absorbed inside the testers
+        (``_ai_triage`` / ``ai_supplemental_payloads``), so a mid-scan backend
+        outage also falls back cleanly.
+        """
+        tcfg = self.config.get("testers", {}) or {}
+        if not tcfg.get("ai_enabled", False):
+            return
+        if not (tcfg.get("ai_verify", True) or tcfg.get("ai_synthesize", False)):
+            self._logger.info(
+                "AI triage requested but both halves are disabled; running the "
+                "deterministic heuristic engine."
+            )
+            return
+        try:
+            from ai_module.agent_inference import AgentClient
+        except Exception as exc:  # noqa: BLE001
+            await self.event_emitter.emit(
+                ScanEventType.LOG_MESSAGE,
+                message=(f"AI triage unavailable ({exc}); falling back to "
+                         f"deterministic heuristics. Install with "
+                         f"`pip install -e \".[ai]\"`."),
+            )
+            return
+        kwargs: dict[str, Any] = {}
+        for src, dst in (("ai_backend", "backend"), ("ai_base_url", "base_url"),
+                         ("ai_model", "model")):
+            if tcfg.get(src):
+                kwargs[dst] = tcfg[src]
+        try:
+            client = AgentClient(**kwargs)
+        except Exception as exc:  # noqa: BLE001
+            await self.event_emitter.emit(
+                ScanEventType.LOG_MESSAGE,
+                message=(f"Could not build the AI AgentClient ({exc}); falling "
+                         f"back to deterministic heuristics."),
+            )
+            return
+
+        try:
+            healthy = await client.healthcheck()
+        except Exception as exc:  # noqa: BLE001 - defensive
+            healthy = False
+            self._logger.debug("AI healthcheck raised: %s", exc)
+        if not healthy:
+            await self.event_emitter.emit(
+                ScanEventType.LOG_MESSAGE,
+                message=(f"AI inference backend not reachable "
+                         f"(backend={client.backend} "
+                         f"url={getattr(client, 'base_url', 'n/a')}); falling "
+                         f"back to deterministic heuristics."),
+            )
+            return
+
+        self.ai_client = client
+        for tester in self.testers:
+            tester.ai_client = client
+        await self.event_emitter.emit(
+            ScanEventType.LOG_MESSAGE,
+            message=(f"AI triage active (backend={client.backend} "
+                     f"verify={bool(tcfg.get('ai_verify', True))} "
+                     f"synthesize={bool(tcfg.get('ai_synthesize', False))} "
+                     f"fp_threshold={tcfg.get('ai_fp_threshold', 0.75)})"),
+        )
 
     async def _start_telemetry(self) -> None:
         """Create + start the JSONL telemetry worker and attach it to testers.
