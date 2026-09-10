@@ -109,6 +109,71 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="Output language (default: en).")
     scan.add_argument("-v", "--verbose", action="store_true", help="Verbose logging.")
 
+    # --- Injection surface beyond GET query parameters ---
+    surf = scan.add_argument_group(
+        "injection surface",
+        "Enable injection testing in HTTP request headers and session cookies. "
+        "POST body / JSON injection points are supplied per-target through "
+        "--target-list entries ({vector, method, body, json, headers, cookies}).",
+    )
+    surf.add_argument("--inject-headers", nargs="?", const="__default__",
+                      default=None, metavar="H1,H2,...",
+                      help="Fuzz injectable request headers. Bare flag uses the "
+                           "default set (User-Agent, Referer, X-Forwarded-For, "
+                           "X-Forwarded-Host, X-Real-IP); pass a comma list to "
+                           "override.")
+    surf.add_argument("--inject-cookies", default=None, metavar="c1,c2 | c=val,...",
+                      help="Fuzz the named session cookies (comma list). "
+                           "'name=value' pairs seed a benign baseline value.")
+
+    # --- Authentication / session (scan protected zones) ---
+    au = scan.add_argument_group(
+        "authentication / session",
+        "Scan behind a login. Form-based login performs a POST up front and "
+        "reuses the resulting session cookie (JSESSIONID / sessionid / ...) or a "
+        "JWT on every subsequent request, recon crawl and payload probe. Static "
+        "cookies / a bearer token can be injected without any login. All of "
+        "this can also be supplied via --session-config (JSON or YAML); CLI "
+        "flags override the file. Credentials are never written to reports or "
+        "the reproducibility manifest.",
+    )
+    au.add_argument("--auth-url", default=None, metavar="URL",
+                    help="Login form action URL (POST target).")
+    au.add_argument("--auth-username", default=None)
+    au.add_argument("--auth-password", default=None,
+                    help="Login password. INSECURE on shared hosts (shell "
+                         "history / ps); prefer --auth-password-env or "
+                         "--session-config.")
+    au.add_argument("--auth-password-env", default=None, metavar="VAR",
+                    help="Read the login password from this environment variable.")
+    au.add_argument("--auth-username-field", default="username", metavar="NAME")
+    au.add_argument("--auth-password-field", default="password", metavar="NAME")
+    au.add_argument("--auth-field", action="append", default=None, metavar="k=v",
+                    help="Extra login form field (repeatable), e.g. "
+                         "--auth-field csrf_token=... --auth-field Login=Login.")
+    au.add_argument("--auth-type", choices=["form", "json"], default="form",
+                    help="Login body encoding (default: form / urlencoded).")
+    au.add_argument("--auth-token-path", default=None, metavar="DOTTED",
+                    help="Extract a token from the login JSON response at this "
+                         "dotted path (e.g. data.access_token) and send it as a "
+                         "header on every request.")
+    au.add_argument("--auth-token-header", default="Authorization", metavar="NAME")
+    au.add_argument("--auth-token-prefix", default="Bearer ", metavar="STR")
+    au.add_argument("--session-cookie", action="append", default=None,
+                    metavar="NAME=VALUE",
+                    help="Inject a static session cookie (repeatable).")
+    au.add_argument("--cookie-jar", default=None, metavar="FILE",
+                    help="Load cookies from a Netscape/Mozilla cookies.txt or a "
+                         "JSON file.")
+    au.add_argument("--session-config", default=None, metavar="FILE",
+                    help="JSON/YAML file with the full session configuration.")
+    au.add_argument("--auth-required", action="store_true",
+                    help="Abort the scan if authentication fails (default: warn "
+                         "and continue unauthenticated).")
+    au.add_argument("--no-reauth", dest="reauth", action="store_false",
+                    help="Disable transparent re-login when the session expires "
+                         "mid-scan.")
+
     # --- Phase 2: experiment control / ablation toggles ---
     exp = scan.add_argument_group(
         "experiment controls",
@@ -117,6 +182,16 @@ def _build_parser() -> argparse.ArgumentParser:
     exp.add_argument("--telemetry-dir", default=None, metavar="PATH",
                      help="Enable per-probe telemetry and write the JSONL run log "
                           "into this directory.")
+    exp.add_argument("--warmup", type=int, default=0, metavar="N",
+                     help="JVM-latency-bias mitigation: fire N discard requests "
+                          "per endpoint before any baseline / telemetry capture "
+                          "(default 0 = off). See testbed/THREATS_TO_VALIDITY.md.")
+    exp.add_argument("--baseline-samples", type=int, default=3, metavar="N",
+                     help="Benign latency samples collected per injection point "
+                          "for the time-based threshold (default 3).")
+    exp.add_argument("--latency-window", type=int, default=12, metavar="N",
+                     help="Rolling-window size for the robust (median+MAD) "
+                          "benign-latency variance estimate (default 12).")
     exp.add_argument("--no-interleave", dest="interleave", action="store_false",
                      help="Ablation: skip _interleave_by_context() in the payload "
                           "pipeline (payloads stay in corpus order per context).")
@@ -254,11 +329,116 @@ def _load_ua_file(path: str) -> list[str]:
     return [s.strip() for s in lines if s.strip() and not s.lstrip().startswith("#")]
 
 
+def _parse_cookie_spec(raw: str | None) -> dict[str, str] | None:
+    """``"sid,csrf"`` or ``"sid=abc,role=user"`` -> ``{name: value}``.
+
+    Bare names get a benign baseline value so the injection point still has a
+    template to mutate one field of.
+    """
+    if not raw:
+        return None
+    out: dict[str, str] = {}
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        name, _, value = part.partition("=")
+        out[name.strip()] = value.strip() if _ else "benign_baseline_123"
+    return out or None
+
+
+def _parse_kv_list(items: list[str] | None) -> dict[str, str]:
+    """``["a=1", "b=2"]`` -> ``{"a": "1", "b": "2"}`` (first ``=`` splits)."""
+    out: dict[str, str] = {}
+    for raw in items or []:
+        name, sep, value = str(raw).partition("=")
+        if sep:
+            out[name.strip()] = value.strip()
+    return out
+
+
+def _load_session_config(path: str) -> dict:
+    """Parse a --session-config file (JSON or YAML) into a plain dict."""
+    from web_security_scanner.core.session_async import _parse_structured
+
+    data = _parse_structured(Path(path).read_text(encoding="utf-8"), path)
+    if not isinstance(data, dict):
+        raise ValueError("session config must be a JSON/YAML object")
+    return data
+
+
+def _build_session_config(args) -> dict | None:
+    """Merge --session-config file (base) with CLI flags (override) into the
+    ``config['session']`` dict, or ``None`` when no auth/session option was set.
+    """
+    import os
+
+    base: dict = {}
+    if getattr(args, "session_config", None):
+        base = _load_session_config(args.session_config)
+
+    password = getattr(args, "auth_password", None)
+    if password is None and getattr(args, "auth_password_env", None):
+        password = os.environ.get(args.auth_password_env)
+
+    overrides = {
+        "login_url": getattr(args, "auth_url", None),
+        "username": getattr(args, "auth_username", None),
+        "password": password,
+        "username_field": getattr(args, "auth_username_field", None),
+        "password_field": getattr(args, "auth_password_field", None),
+        "submit_type": getattr(args, "auth_type", None),
+        "token_json_path": getattr(args, "auth_token_path", None),
+        "token_header": getattr(args, "auth_token_header", None),
+        "token_prefix": getattr(args, "auth_token_prefix", None),
+        "cookie_jar_file": getattr(args, "cookie_jar", None),
+    }
+    for key, value in overrides.items():
+        if value is not None:
+            base[key] = value
+
+    extra = _parse_kv_list(getattr(args, "auth_field", None))
+    if extra:
+        base["extra_fields"] = {**base.get("extra_fields", {}), **extra}
+
+    static = _parse_kv_list(getattr(args, "session_cookie", None))
+    if static:
+        base["static_cookies"] = {**base.get("static_cookies", {}), **static}
+
+    if getattr(args, "auth_required", False):
+        base["required"] = True
+    if getattr(args, "reauth", True) is False:
+        base["reauth"] = False
+
+    # Only return a config when it actually carries auth/session material.
+    has_material = any(base.get(k) for k in (
+        "login_url", "token", "static_cookies", "cookie_jar_file"))
+    return base if has_material else None
+
+
+def _parse_header_spec(raw: str | None):
+    """``None`` -> off; ``"__default__"`` -> default set sentinel; list -> names."""
+    if raw is None:
+        return None
+    if raw == "__default__":
+        return "__default__"
+    names = [h.strip() for h in raw.split(",") if h.strip()]
+    return names or "__default__"
+
+
 def _build_config(args) -> dict:
+    inject_headers = _parse_header_spec(getattr(args, "inject_headers", None))
+    inject_cookies = _parse_cookie_spec(getattr(args, "inject_cookies", None))
+    has_advanced_vectors = bool(
+        inject_headers or inject_cookies or getattr(args, "target_list", None)
+    )
     core = {
         "rate_limit": args.rate_limit,
         "verify_ssl": args.verify_ssl,
         "allow_private_redirects": args.allow_private_redirects,
+        # Body/header/cookie probes get the same SSRF pre-flight the redirect
+        # chain already enforces, so a mutated request can't be aimed inward.
+        "assert_public_target": has_advanced_vectors,
     }
     if args.threads is not None:
         core["max_concurrency"] = args.threads
@@ -277,6 +457,13 @@ def _build_config(args) -> dict:
         "waf_bypass_transforms": [
             t.strip() for t in getattr(args, "waf_bypass_transforms", "").split(",") if t.strip()
         ],
+        # Injection surface beyond the query string (Phase: multi-vector DAST).
+        "inject_headers": inject_headers,
+        "inject_cookies": inject_cookies,
+        # JVM latency-bias mitigation (OWASP Benchmark testbed).
+        "warmup_requests": getattr(args, "warmup", 0),
+        "baseline_latency_samples": getattr(args, "baseline_samples", 3),
+        "latency_window": getattr(args, "latency_window", 12),
         # Phase 2 ablation toggles (consumed by VulnerabilityTester).
         "interleave": getattr(args, "interleave", True),
         "priority": getattr(args, "priority", True),
@@ -305,6 +492,9 @@ def _build_config(args) -> dict:
         "browser_max_pages": getattr(args, "browser_max_pages", 6),
     }
     config: dict = {"core": core, "testers": testers, "recon": recon}
+    session_config = _build_session_config(args)
+    if session_config is not None:
+        config["session"] = session_config
     # Phase 3: carried through so the scanner can stamp the reproducibility
     # manifest with the exact seed this run was launched with (or None).
     config["global_seed"] = getattr(args, "global_seed", None)
@@ -325,6 +515,7 @@ def _load_target_list(path: str) -> list[dict]:
     are GET-oriented today so it is advisory). Raises ``ValueError`` on a
     malformed file so the CLI can report and exit cleanly.
     """
+    valid_vectors = {"getparam", "formparam", "jsonparam", "header", "cookie"}
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(raw, list):
         raise ValueError("target-list must be a JSON array of objects")
@@ -332,11 +523,23 @@ def _load_target_list(path: str) -> list[dict]:
     for i, entry in enumerate(raw):
         if not isinstance(entry, dict) or not entry.get("url"):
             raise ValueError(f"target-list entry {i} is missing a 'url' field")
-        out.append({
+        vector = str(entry.get("vector", "") or "").lower()
+        if vector and vector not in valid_vectors:
+            raise ValueError(
+                f"target-list entry {i}: unknown vector {vector!r}; "
+                f"expected one of {sorted(valid_vectors)}"
+            )
+        item = {
             "url": str(entry["url"]),
             "param": entry.get("param"),
             "method": str(entry.get("method", "GET")).upper(),
-        })
+        }
+        # Optional advanced-vector descriptors — carried through verbatim to
+        # WebSecurityScanner._targets_from_list.
+        for key in ("vector", "body", "json", "headers", "cookies"):
+            if entry.get(key) is not None:
+                item[key] = entry[key]
+        out.append(item)
     return out
 
 
@@ -378,6 +581,11 @@ async def _run_scan(args) -> int:
     )
 
     progress.clear()
+
+    if results.get("aborted") == "authentication":
+        print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} Authentication was required "
+              f"(--auth-required) but failed; scan aborted.", file=sys.stderr)
+        return 2
 
     formats = [f.strip() for f in args.format.split(",") if f.strip()]
     paths = await generate_reports_async(results, formats, output_dir=args.output)

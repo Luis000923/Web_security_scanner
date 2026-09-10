@@ -15,7 +15,7 @@ import asyncio
 
 from conftest import MockScanner
 
-from ai_module.agent_inference import AgentClient, TriageResult
+from ai_module.agent_inference import AgentClient, BatchingTriageClient, TriageResult
 from web_security_scanner.events.event_emitter import ScanEventEmitter, ScanEventType
 from web_security_scanner.modules.vulnerability_testers.sql_injection_async import (
     SQLInjectionTester,
@@ -308,6 +308,137 @@ def test_cli_ai_backend_options_forwarded():
              "--ai-fp-threshold", "0.9")
     assert t["ai_backend"] == "echo"
     assert t["ai_fp_threshold"] == 0.9
+
+
+# --------------------------------------------------------------------------- #
+# 5b. batched triage (one request per batch, not per finding)
+# --------------------------------------------------------------------------- #
+
+class _BatchSpyAgent:
+    """Counts batch_triage calls and the size of each batch."""
+
+    backend = "spy"
+
+    def __init__(self, *, boom=None, short=False):
+        self.batch_sizes = []
+        self._boom = boom
+        self._short = short
+        self.closed = False
+
+    async def batch_triage(self, findings, concurrency=4):
+        self.batch_sizes.append(len(findings))
+        await asyncio.sleep(0)
+        if self._boom:
+            raise self._boom
+        results = [TriageResult("TRUE_POSITIVE", 0.9, f["url"]) for f in findings]
+        return results[:-1] if self._short else results
+
+    async def aclose(self):
+        self.closed = True
+
+
+def test_concurrent_findings_collapse_into_one_batch():
+    async def go():
+        agent = _BatchSpyAgent()
+        client = BatchingTriageClient(agent, max_batch=8, linger=0.02)
+        results = await asyncio.gather(*[
+            client.triage_finding({"url": f"http://t/{i}"}) for i in range(6)
+        ])
+        await client.aclose()
+        return agent, client, results
+
+    agent, client, results = asyncio.run(go())
+    assert agent.batch_sizes == [6]          # one round trip, not six
+    assert client.batches == 1 and client.findings == 6
+    assert [r.reasoning for r in results] == [f"http://t/{i}" for i in range(6)]
+    assert agent.closed is True
+
+
+def test_batch_is_capped_at_max_batch():
+    async def go():
+        agent = _BatchSpyAgent()
+        client = BatchingTriageClient(agent, max_batch=3, linger=0.02)
+        await asyncio.gather(*[
+            client.triage_finding({"url": f"http://t/{i}"}) for i in range(7)
+        ])
+        return agent
+
+    assert asyncio.run(go()).batch_sizes == [3, 3, 1]
+
+
+def test_batch_failure_propagates_to_every_caller():
+    """Each caller must see the error so `_ai_triage` can keep its heuristic."""
+    async def go():
+        client = BatchingTriageClient(_BatchSpyAgent(boom=ConnectionRefusedError("down")),
+                                      max_batch=4, linger=0.01)
+        return await asyncio.gather(*[
+            client.triage_finding({"url": f"http://t/{i}"}) for i in range(4)
+        ], return_exceptions=True)
+
+    outcomes = asyncio.run(go())
+    assert len(outcomes) == 4
+    assert all(isinstance(o, ConnectionRefusedError) for o in outcomes)
+
+
+def test_short_backend_reply_never_leaves_a_caller_hanging():
+    async def go():
+        client = BatchingTriageClient(_BatchSpyAgent(short=True), max_batch=4,
+                                      linger=0.01)
+        return await asyncio.gather(*[
+            client.triage_finding({"url": f"http://t/{i}"}) for i in range(3)
+        ], return_exceptions=True)
+
+    outcomes = asyncio.run(go())
+    assert isinstance(outcomes[-1], RuntimeError)
+    assert all(isinstance(o, TriageResult) for o in outcomes[:-1])
+
+
+def test_batching_client_preserves_the_tester_contract():
+    """Dropped through a tester, a batched FP verdict still suppresses."""
+    agent = FakeAgent(triage=TriageResult("FALSE_POSITIVE", 0.95, "generic error"))
+
+    class _OneShotBatch:
+        backend = "wrap"
+
+        async def batch_triage(self, findings, concurrency=4):
+            return [await agent.triage_finding(f) for f in findings]
+
+    found, _, decisions = asyncio.run(
+        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+             {"ai_verify": True}, BatchingTriageClient(_OneShotBatch(), linger=0.0)))
+    assert found == []
+    assert decisions and decisions[0]["dropped"] is True
+
+
+def test_agent_client_reuses_one_http_session(monkeypatch):
+    import aiohttp
+
+    built = []
+    reply = ('{"verdict": "TRUE_POSITIVE", "confidence": 0.5, '
+             '"reasoning": "r", "next_step": ""}')
+
+    class _Sess(_FakeAiohttpSession):
+        closed = False
+
+        async def close(self):
+            _Sess.closed = True
+
+    def _factory(**kw):
+        built.append(kw)
+        return _Sess(reply, {})
+
+    monkeypatch.setattr(aiohttp, "ClientSession", _factory)
+    monkeypatch.setattr(aiohttp, "TCPConnector", lambda **kw: object())
+
+    async def go():
+        client = AgentClient(backend="openai")
+        for _ in range(3):
+            await client.triage_finding({"url": "http://t"})
+        await client.aclose()
+
+    asyncio.run(go())
+    assert len(built) == 1          # one session for three triage calls
+    assert _Sess.closed is True
 
 
 # --------------------------------------------------------------------------- #

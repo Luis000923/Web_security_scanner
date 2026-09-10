@@ -138,6 +138,16 @@ class TrainConfig:
         if self.lora_alpha is None:
             self.lora_alpha = 2 * self.lora_r
 
+    @property
+    def effective_lora_alpha(self) -> int:
+        """``lora_alpha`` as a concrete int.
+
+        The field stays ``int | None`` so ``None`` can mean "derive it", and
+        ``__post_init__`` fills it in — but that resolution is invisible to a
+        type checker, so every consumer that needs a real ``int`` reads it here.
+        """
+        return self.lora_alpha if self.lora_alpha is not None else 2 * self.lora_r
+
 
 # --------------------------------------------------------------------------- #
 # kwarg filtering — tolerate TRL / transformers renames across versions
@@ -254,7 +264,7 @@ def _build_model_unsloth(cfg: TrainConfig):
         model,
         r=cfg.lora_r,
         target_modules=cfg.target_modules,
-        lora_alpha=cfg.lora_alpha,
+        lora_alpha=cfg.effective_lora_alpha,
         lora_dropout=cfg.lora_dropout,
         bias="none",
         use_gradient_checkpointing="unsloth" if cfg.gradient_checkpointing else False,
@@ -321,7 +331,7 @@ def _build_model_hf(cfg: TrainConfig):
         model.enable_input_require_grads()
     lora = LoraConfig(
         r=cfg.lora_r,
-        lora_alpha=cfg.lora_alpha,
+        lora_alpha=cfg.effective_lora_alpha,
         lora_dropout=cfg.lora_dropout,
         bias="none",
         task_type="CAUSAL_LM",

@@ -50,6 +50,9 @@ dev = [
     "mypy",
     "ruff",
     "jsonschema>=4.20",
+    # ai_module.structured_inference imports pydantic at module scope, so the
+    # AI triage / curation test suites cannot even be collected without it.
+    "pydantic>=2.0",
 ]
 
 [dependency-groups]
@@ -60,6 +63,9 @@ dev = [
     "mypy",
     "ruff",
     "jsonschema>=4.20",
+    # ai_module.structured_inference imports pydantic at module scope, so the
+    # AI triage / curation test suites cannot even be collected without it.
+    "pydantic>=2.0",
 ]
 
 [project.scripts]
@@ -74,14 +80,22 @@ include = ["web_security_scanner*", "ai_module*"]
 "ai_module.prompts" = ["*.md", "*.txt"]
 
 [tool.pytest.ini_options]
+# `auto` lets plain `async def test_*` run without a per-test
+# `@pytest.mark.asyncio`; pinning the fixture loop scope silences the
+# pytest-asyncio >=0.21 "unset default loop scope" warning and keeps async
+# fixtures on the same loop as the test that uses them.
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = [".", "tests"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-extend-exclude = ["Documentacion", "web_security_scanner/reports", "tools", "testbed", "metrics", "runs", "paper", "ai_module"]
+# ``ai_module``, ``tools`` and ``testbed`` are first-class sources (the AI
+# subsystem, the experiment harness and the ground-truth generator), so they are
+# linted like the scanner package. Only generated / non-source trees are excluded.
+extend-exclude = ["Documentacion", "web_security_scanner/reports", "metrics", "runs", "paper"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
@@ -89,9 +103,15 @@ ignore = ["E501", "B008"]
 
 [tool.mypy]
 python_version = "3.10"
-files = ["web_security_scanner"]
+# The AI subsystem ships in the wheel and is wired into the scan pipeline
+# (--enable-ai-triaging), so it is type-checked alongside the scanner rather
+# than treated as an unverified script tree.
+files = ["web_security_scanner", "ai_module"]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = false
 warn_redundant_casts = true
 no_implicit_optional = true
+# Also type-check the bodies of un-annotated functions (catches indexing /
+# attribute mistakes the default "skip untyped defs" would let through).
+check_untyped_defs = true

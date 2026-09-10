@@ -216,7 +216,7 @@ class SecurityMetricsCallback(TrainerCallback):
         ref_total = ref_hit = 0                 # injected noise (REFUSAL)
         correct = graded = 0
 
-        for gold, pred in zip(golds, preds):
+        for gold, pred in zip(golds, preds, strict=False):
             if gold in _VALID:
                 graded += 1
                 correct += int(pred == gold)

@@ -26,6 +26,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -97,6 +98,96 @@ def git_commit() -> str:
     return proc.stdout.strip() or "unknown"
 
 
+_MASK = "***"
+
+# Value-level secret patterns. Key-name matching alone leaves a token that
+# travels inside an otherwise-innocent value — ``login_url`` carrying
+# ``?access_token=…``, an ``Authorization`` header stored under a neutral key, a
+# jar path with embedded basic-auth credentials. Each pattern rewrites only the
+# secret span, so the surrounding value stays legible in the manifest (a URL
+# still shows its host and path). Ordered: the more specific contexts first.
+_VALUE_SECRET_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    # scheme://user:password@host  ->  scheme://***:***@host
+    (re.compile(r"(?P<pre>://)[^/\s:@]+:[^/\s@]+(?P<post>@)"),
+     rf"\g<pre>{_MASK}:{_MASK}\g<post>"),
+    # Authorization-style header values: "Bearer <token>", "Basic <blob>".
+    (re.compile(r"(?i)\b(?P<scheme>bearer|basic|token)\s+[A-Za-z0-9._~+/=-]{8,}"),
+     rf"\g<scheme> {_MASK}"),
+    # Bare JWTs (header.payload.signature).
+    (re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}(?:\.[A-Za-z0-9_-]*)?"),
+     _MASK),
+    # Auth-bearing query/fragment parameters.
+    (re.compile(
+        r"(?i)(?P<pre>[?&#](?:access_token|refresh_token|id_token|api[-_]?key|"
+        r"apikey|auth|authorization|token|password|passwd|pwd|secret|"
+        r"client_secret|sig|signature|session|sessionid|sid)=)[^&#\s]+"),
+     rf"\g<pre>{_MASK}"),
+    # Provider-issued key formats that are secret wherever they appear.
+    (re.compile(r"\b(?:sk|rk)-[A-Za-z0-9_-]{16,}"), _MASK),
+    (re.compile(r"\bgh[pousr]_[A-Za-z0-9]{16,}"), _MASK),
+    (re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"), _MASK),
+    (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), _MASK),
+)
+
+
+def scrub_secret_values(text: str) -> str:
+    """Mask secret-looking spans inside a single string value.
+
+    Complements the key-name redaction: a credential embedded in a URL, a
+    header value or a free-form string is rewritten to ``***`` while the rest of
+    the value survives, so the manifest stays useful for reproducing the run
+    without persisting the secret. Returns ``text`` unchanged when nothing
+    matches.
+    """
+    for pattern, replacement in _VALUE_SECRET_PATTERNS:
+        text = pattern.sub(replacement, text)
+    return text
+
+
+# Substrings that mark any config key as secret-bearing.
+_SECRET_KEY_SUBSTR = ("password", "passwd", "secret", "credential", "api_key", "apikey")
+# Exact keys (the session subsystem's) whose value must not be persisted.
+_SECRET_KEY_EXACT = frozenset({
+    "token", "authorization", "static_cookies", "session_cookies",
+    "session_cookie", "cookie_jar_file", "cookie_jar", "auth_password",
+    # Bare request/response header names carrying session material. Exact-match
+    # (not substring) so a boolean like ``cookie_jar_unsafe`` is left intact.
+    "cookie", "set-cookie",
+})
+
+
+def _redact_config(value: Any, _key: str = "") -> Any:
+    """Deep copy of ``value`` with secret-bearing fields masked to ``"***"``.
+
+    Two independent passes, because either alone leaks:
+
+    * **by key name** — a dict value whose key contains a
+      password/secret/credential substring, or is one of the session
+      subsystem's exact secret keys, is dropped wholesale (so a ``password``
+      string or a ``static_cookies`` mapping never lands in the manifest);
+    * **by value shape** — every surviving string is run through
+      :func:`scrub_secret_values`, which masks a token embedded in an otherwise
+      ordinary value (``?access_token=…`` in a ``login_url``, a ``Bearer …``
+      header, a JWT, ``https://user:pass@host``).
+
+    Everything else is copied through unchanged.
+    """
+    lowered = _key.lower()
+    is_secret = _key and (
+        lowered in _SECRET_KEY_EXACT
+        or any(m in lowered for m in _SECRET_KEY_SUBSTR)
+    )
+    if is_secret:
+        return _MASK if value not in (None, "", {}, [], ()) else value
+    if isinstance(value, dict):
+        return {k: _redact_config(v, str(k)) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_redact_config(v, _key) for v in value]
+    if isinstance(value, str):
+        return scrub_secret_values(value)
+    return value
+
+
 def build_manifest(
     *,
     run_id: str,
@@ -121,7 +212,7 @@ def build_manifest(
             "files": corpus_files,
             "num_files": len(corpus_files),
         },
-        "config": config,
+        "config": _redact_config(config),
     }
 
 

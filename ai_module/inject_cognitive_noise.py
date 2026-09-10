@@ -156,7 +156,7 @@ def inject(
     security_system = _load_security_system()
     stats: list[dict[str, Any]] = []
 
-    for src, dst in zip(inputs, outputs):
+    for src, dst in zip(inputs, outputs, strict=True):
         real = _read_jsonl(src)
         k = _noise_count(len(real), ratio, share_of_output)
         noise = [_make_noise_row(rng, security_system) for _ in range(k)]

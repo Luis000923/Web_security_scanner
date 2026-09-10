@@ -101,7 +101,41 @@ class AgentClient:
     timeout: float = 60.0
     max_tokens: int = 768
     temperature: float = 0.2
+    # Max sockets the shared session keeps open to the inference server.
+    pool_limit: int = 8
     _hf: Any = field(default=None, repr=False, init=False)
+    _session: Any = field(default=None, repr=False, init=False)
+
+    # ------------------------------------------------------------------ #
+    # HTTP session (shared)
+    # ------------------------------------------------------------------ #
+
+    async def _get_session(self) -> Any:
+        """Lazily create — and then reuse — one ``aiohttp.ClientSession``.
+
+        A session per call meant a fresh TCP (and, off localhost, TLS) handshake
+        for every single finding triaged. Holding one keyed-alive pool across
+        the scan removes that per-call setup cost and lets
+        :meth:`batch_triage` actually overlap requests on live connections.
+        """
+        import aiohttp
+
+        sess = self._session
+        if sess is None or getattr(sess, "closed", False):
+            sess = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=self.timeout),
+                connector=aiohttp.TCPConnector(limit=max(1, self.pool_limit)),
+            )
+            self._session = sess
+        return sess
+
+    async def aclose(self) -> None:
+        """Close the shared session. Idempotent; safe if none was ever built."""
+        sess, self._session = self._session, None
+        if sess is not None and not getattr(sess, "closed", False):
+            close = getattr(sess, "close", None)
+            if close is not None:
+                await close()
 
     # ------------------------------------------------------------------ #
     # public API
@@ -121,13 +155,13 @@ class AgentClient:
         try:
             import aiohttp
 
-            timeout = aiohttp.ClientTimeout(total=min(self.timeout, 5.0))
-            async with aiohttp.ClientSession(timeout=timeout) as sess:
-                async with sess.get(
-                    f"{self.base_url}/models",
-                    headers={"Authorization": f"Bearer {self.api_key}"},
-                ) as resp:
-                    return resp.status < 500
+            sess = await self._get_session()
+            async with sess.get(
+                f"{self.base_url}/models",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                timeout=aiohttp.ClientTimeout(total=min(self.timeout, 5.0)),
+            ) as resp:
+                return bool(resp.status < 500)
         except Exception:  # noqa: BLE001 - unreachable / DNS / TLS / timeout
             return False
 
@@ -137,19 +171,23 @@ class AgentClient:
             f"{json.dumps(finding, ensure_ascii=False, indent=2)}\n\n"
             "Return the verdict as the required structured JSON object."
         )
-        text = await self._chat(
-            load_prompt("triage_system"), user,
-            response_format=openai_response_format(TriageOut),
-        )
         try:
+            text = await self._chat(
+                load_prompt("triage_system"), user,
+                response_format=openai_response_format(TriageOut),
+            )
             parsed = parse_triage(text)
-        except Exception:  # pragma: no cover - parse_triage never raises today;
-            # this is defense in depth so a future bug there can never crash a scan.
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            # The backend call (network / TLS / timeout) or a future parse bug:
+            # this method's contract is that it never raises into a scan, so
+            # fall back to the safe contingency verdict.
             return TriageResult(
                 verdict="UNCERTAIN", confidence=0.0,
-                reasoning="Structured triage parse failed catastrophically; "
+                reasoning=f"Structured triage unavailable ({type(exc).__name__}); "
                           "held to the safe contingency verdict.",
-                next_step="Investigate the backend's response format.", raw=text,
+                next_step="Investigate the backend's response format.", raw="",
             )
         verdict = parsed.verdict.value
         if verdict not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "UNCERTAIN"):
@@ -173,13 +211,15 @@ class AgentClient:
             f"Propose the {n} most informative next payloads, best first. "
             "Return them as the required structured JSON object."
         )
-        text = await self._chat(
-            load_prompt("payload_system"), user,
-            response_format=openai_response_format(PayloadOut),
-        )
         try:
+            text = await self._chat(
+                load_prompt("payload_system"), user,
+                response_format=openai_response_format(PayloadOut),
+            )
             parsed = parse_payloads(text)
-        except Exception:  # pragma: no cover - defense in depth, see triage_finding
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # backend failure or a future parse bug -> static corpus
             return []
         out: list[PayloadSuggestion] = []
         for item in parsed.payloads[:n]:
@@ -230,8 +270,6 @@ class AgentClient:
     async def _chat_openai(
         self, system: str, user: str, *, response_format: dict[str, Any] | None = None,
     ) -> str:
-        import aiohttp
-
         payload = {
             "model": self.model,
             "messages": [
@@ -246,14 +284,13 @@ class AgentClient:
             "response_format": response_format or {"type": "json_object"},
         }
         headers = {"Authorization": f"Bearer {self.api_key}"}
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
-        async with aiohttp.ClientSession(timeout=timeout) as sess:
-            async with sess.post(
-                f"{self.base_url}/chat/completions", json=payload, headers=headers
-            ) as resp:
-                resp.raise_for_status()
-                body = await resp.json()
-        return body["choices"][0]["message"]["content"]
+        sess = await self._get_session()
+        async with sess.post(
+            f"{self.base_url}/chat/completions", json=payload, headers=headers
+        ) as resp:
+            resp.raise_for_status()
+            body = await resp.json()
+        return str(body["choices"][0]["message"]["content"])
 
     def _chat_hf(self, system: str, user: str) -> str:
         if self._hf is None:
@@ -292,6 +329,123 @@ class AgentClient:
             {"verdict": "UNCERTAIN", "confidence": 0.0,
              "reasoning": "echo backend", "next_step": "use a real backend"}
         )
+
+
+class BatchingTriageClient:
+    """Coalesces concurrent per-finding triage calls into batched requests.
+
+    ``VulnerabilityTester.report_vulnerability`` consults the agent inline, once
+    per candidate, from whichever tester found it. Left alone that turns the
+    scan's tail into one full inference round trip per finding, serialised —
+    with several testers running concurrently, the backend sits idle between
+    them.
+
+    This wrapper keeps exactly the ``triage_finding(finding) -> TriageResult``
+    contract the testers duck-type against, but parks each caller on a future,
+    gathers everything that arrives within ``linger`` seconds (or ``max_batch``
+    findings, whichever lands first) and settles them all from a single
+    :meth:`AgentClient.batch_triage` — which fans out over the client's one
+    reusable HTTP session instead of a connection per finding.
+
+    Failure semantics are unchanged: a backend error propagates to every caller
+    in the batch, and ``_ai_triage`` catches it and keeps the heuristic verdict.
+    """
+
+    def __init__(self, agent: Any, *, max_batch: int = 8, linger: float = 0.05,
+                 concurrency: int = 4) -> None:
+        self._agent = agent
+        self._max_batch = max(1, int(max_batch))
+        self._linger = max(0.0, float(linger))
+        self._concurrency = max(1, int(concurrency))
+        self._pending: list[tuple[dict[str, Any], asyncio.Future[TriageResult]]] = []
+        self._flush_task: asyncio.Task[None] | None = None
+        self.batches = 0          # observability: batched calls actually issued
+        self.findings = 0         # findings routed through this wrapper
+
+    @property
+    def backend(self) -> Any:
+        return getattr(self._agent, "backend", None)
+
+    @property
+    def base_url(self) -> Any:
+        return getattr(self._agent, "base_url", None)
+
+    async def synthesize_payloads(self, context: dict[str, Any],
+                                  n: int = 5) -> list[PayloadSuggestion]:
+        """Pass-through: synthesis is already off the per-finding hot path."""
+        result = await self._agent.synthesize_payloads(context, n=n)
+        return list(result)
+
+    async def triage_finding(self, finding: dict[str, Any]) -> TriageResult:
+        fut: asyncio.Future[TriageResult] = asyncio.get_running_loop().create_future()
+        self._pending.append((finding, fut))
+        self.findings += 1
+        if self._flush_task is None or self._flush_task.done():
+            self._flush_task = asyncio.create_task(self._run_flush())
+        return await fut
+
+    async def aclose(self) -> None:
+        """Settle anything still queued, then close the wrapped agent."""
+        task = self._flush_task
+        if task is not None and not task.done():
+            try:
+                await task
+            except Exception:  # noqa: BLE001 - already delivered to the callers
+                pass
+        self._fail_pending(RuntimeError("triage client closed"))
+        close = getattr(self._agent, "aclose", None)
+        if close is not None:
+            await close()
+
+    # ---- internals ---------------------------------------------------
+
+    async def _run_flush(self) -> None:
+        try:
+            # Give concurrent callers a beat to join this batch — unless enough
+            # have already arrived to fill it.
+            if self._linger and len(self._pending) < self._max_batch:
+                await asyncio.sleep(self._linger)
+            while self._pending:
+                batch = self._pending[: self._max_batch]
+                del self._pending[: self._max_batch]
+                await self._settle(batch)
+        except BaseException as exc:  # cancellation included
+            self._fail_pending(exc)
+            raise
+
+    async def _settle(
+        self, batch: list[tuple[dict[str, Any], asyncio.Future[TriageResult]]]
+    ) -> None:
+        self.batches += 1
+        try:
+            results = await self._agent.batch_triage(
+                [f for f, _ in batch], concurrency=self._concurrency
+            )
+        except Exception as exc:  # noqa: BLE001 - each caller degrades on its own
+            self._settle_error(batch, exc)
+            return
+        for i, (_, fut) in enumerate(batch):
+            if fut.done():
+                continue
+            if i < len(results):
+                fut.set_result(results[i])
+            else:
+                fut.set_exception(RuntimeError(
+                    "triage backend returned fewer results than findings"
+                ))
+
+    @staticmethod
+    def _settle_error(
+        batch: list[tuple[dict[str, Any], asyncio.Future[TriageResult]]],
+        exc: BaseException,
+    ) -> None:
+        for _, fut in batch:
+            if not fut.done():
+                fut.set_exception(exc)
+
+    def _fail_pending(self, exc: BaseException) -> None:
+        pending, self._pending = self._pending, []
+        self._settle_error(pending, exc)
 
 
 # --------------------------------------------------------------------------- #

@@ -8,6 +8,12 @@ and consolidates the metrics into testbed/experiment_results.csv.
 Stdlib only. Designed to be re-run: an existing run directory is skipped
 unless --force is given, so an interrupted sweep resumes cheaply.
 
+Every run is prefixed with a warm-up phase (``--warmup``, default 20 discard
+requests per endpoint) to neutralise the OWASP Benchmark JVM's JIT warm-up
+latency bias before any baseline / telemetry capture. It is applied identically
+to all conditions, so it is a machine-bias control, not an ablation axis. See
+testbed/THREATS_TO_VALIDITY.md.
+
 --------------------------------------------------------------------------
 GRID
 --------------------------------------------------------------------------
@@ -574,6 +580,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--compose-file", default=str(REPO_ROOT / "testbed" / "docker-compose.yml"))
     ap.add_argument("--skip-precondition", action="store_true")
     ap.add_argument("--scan-timeout", type=int, default=7200)
+    ap.add_argument("--warmup", type=int, default=20, metavar="N",
+                    help="Discard requests per endpoint before baseline/telemetry "
+                         "capture — mitigates JVM JIT warm-up latency bias. "
+                         "Applied uniformly to every run (not an ablation axis). "
+                         "0 disables. See testbed/THREATS_TO_VALIDITY.md.")
     ap.add_argument("--extra-args", default="")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
@@ -602,6 +613,10 @@ def main(argv: list[str] | None = None) -> int:
     results_dir = Path(args.results_dir).resolve()
     csv_path = Path(args.csv)
     extra = args.extra_args.split() if args.extra_args else []
+    # Warm-up is a machine-bias control, applied identically to every condition
+    # so it removes a confound without becoming an ablation dimension.
+    if args.warmup and "--warmup" not in extra:
+        extra += ["--warmup", str(args.warmup)]
 
     target_list = Path(args.target_list)
     if not target_list.exists():

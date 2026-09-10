@@ -1,11 +1,14 @@
 import asyncio
+import json
 import logging
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from .core.manifest_async import write_manifest
 from .core.scanner_core_async import AsyncScannerCore, ScanConfig, SSRFRedirectError
+from .core.session_async import SessionConfig, SessionManager
 from .core.telemetry_async import TelemetryWorker
 from .events.event_emitter import ScanEventEmitter, ScanEventType
 from .modules.recon import ReconConfig, ReconEngine
@@ -61,6 +64,20 @@ class WebSecurityScanner:
         # keep / drop verdict, surfaced in the results dict for the oracle.
         self.ai_client: Any = None
         self.ai_triage_decisions: list[dict[str, Any]] = []
+
+        # Authenticated-scan session manager (form login / static cookies /
+        # bearer token). Built only when ``config['session']`` is present, so
+        # public scans are entirely unaffected.
+        self.session_manager: SessionManager | None = None
+        sess_cfg = self.config.get("session")
+        if sess_cfg:
+            try:
+                self.session_manager = SessionManager(
+                    SessionConfig.from_dict(sess_cfg),
+                    on_event=self._emit_session_event,
+                )
+            except (TypeError, ValueError) as exc:
+                self._logger.error("Invalid session configuration: %s", exc)
 
         # Subscribe mapper to vulnerabilities
         self.event_emitter.on(ScanEventType.VULNERABILITY_FOUND, self._on_vulnerability_found)
@@ -124,6 +141,11 @@ class WebSecurityScanner:
         await self.event_emitter.emit(ScanEventType.SCAN_START, url=target_url)
         await self.core.start()
 
+        # Establish the authenticated session (static cookies / form login /
+        # bearer token) before recon so protected zones are crawled too. A
+        # no-op when no --auth-* / --session-* option was given.
+        auth_ok = await self._authenticate(target_url)
+
         # Phase 1: spin up the telemetry worker (needs the running loop) and
         # hand it to every tester before any payload is fired.
         await self._start_telemetry()
@@ -140,14 +162,25 @@ class WebSecurityScanner:
         map_report = None
         map_data = {}
         technologies = {}
+        aborted: str | None = None
         try:
+            if not auth_ok:
+                aborted = "authentication"
+                raise RuntimeError(
+                    "authentication is required (--auth-required) but the login "
+                    "did not establish a session; aborting."
+                )
             self._logger.info(f"Starting scan on {target_url} with profile: {profile}")
 
-            scan_targets: list[str] = [target_url]
+            # Each entry is {"url": str, "kwargs": dict}; ``kwargs`` is splatted
+            # into ``tester.run_test`` so a target can carry a body/header/cookie
+            # injection descriptor. The recon path yields empty-kwargs entries.
+            scan_targets: list[dict[str, Any]] = [{"url": target_url, "kwargs": {}}]
 
             # --- Phase 2 bridge: static target list bypasses recon entirely -
             if target_list:
-                scan_targets = self._targets_from_list(target_list) or [target_url]
+                scan_targets = (self._targets_from_list(target_list)
+                                or [{"url": target_url, "kwargs": {}}])
                 msg = (f"Phase 1 recon skipped (--target-list): "
                        f"{len(scan_targets)} static target(s) queued.")
                 self._logger.info(msg)
@@ -170,7 +203,8 @@ class WebSecurityScanner:
                     self.mapper.max_urls = max_urls
                 recon_result = await self.recon.run(target_url)
                 map_data = recon_result.map_data
-                scan_targets = recon_result.targets or [target_url]
+                scan_targets = [{"url": u, "kwargs": {}}
+                                for u in (recon_result.targets or [target_url])]
                 await self._handle_dom_xss(recon_result)
                 if self.mapper.limit_reached:
                     msg = (f"Crawler abortado preventivamente por límite max_urls "
@@ -191,6 +225,10 @@ class WebSecurityScanner:
             # --- Phase 2: Vulnerability testing over discovered targets ----
             runnable = [t for t in self.testers if self._should_run_tester(t, profile)]
             if runnable:
+                # Explicit warm-up phase (JVM-latency-bias mitigation): fire
+                # discard requests at every endpoint before any baseline /
+                # telemetry capture. Opt-in via --warmup; no-op at 0.
+                await self._warmup_targets(scan_targets)
                 self._logger.debug(
                     f"Scheduling {len(runnable)} tester(s) over {len(scan_targets)} target(s)"
                 )
@@ -212,6 +250,9 @@ class WebSecurityScanner:
             self._logger.error(f"Scan failed: {e}")
             await self.event_emitter.emit(ScanEventType.ERROR, error=str(e))
         finally:
+            # Settle any in-flight triage batch before the loop goes away, so no
+            # caller is left parked on an unresolved future.
+            await self._stop_ai_agent()
             # Flush + await the telemetry writer BEFORE the session/loop go away
             # so no queued rows are lost.
             if self.telemetry is not None:
@@ -249,6 +290,7 @@ class WebSecurityScanner:
             "map_report": map_report,
             "telemetry": self.telemetry.summary() if self.telemetry is not None else None,
             "ai_triage": self._ai_triage_summary(),
+            "aborted": aborted,
         }
 
     def _ai_triage_summary(self) -> dict[str, Any] | None:
@@ -274,27 +316,65 @@ class WebSecurityScanner:
         }
 
     @staticmethod
-    def _targets_from_list(entries: list[dict[str, Any]]) -> list[str]:
-        """Turn ``[{url, param, method}, ...]`` into a deduped list of scan URLs.
+    def _targets_from_list(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Turn ``[{url, param, vector, method, body, json, headers, cookies}, ...]``
+        into a deduped list of ``{"url": str, "kwargs": dict}`` scan targets.
 
-        The vulnerability testers discover injectable parameters from the query
-        string (``get_query_params``), so an entry that names a ``param`` is
-        folded into the URL as ``?param=<probe>`` here. Entries with no ``param``
-        pass through untouched. ``method`` is currently advisory (the testers
-        issue GETs); a non-GET method is kept in the log for traceability.
+        ``kwargs`` is splatted into ``tester.run_test`` so a single target-list
+        entry can drive any injection vector:
+
+        - plain ``{url, param}`` (or ``vector: getparam``) -> the param is folded
+          into the query string as ``?param=1`` (legacy behaviour, empty kwargs);
+        - ``json`` (nested object) or ``vector: jsonparam`` -> a JSON POST body
+          form descriptor (``kwargs['form']`` with ``enctype='json'``); every
+          leaf of the structure becomes a ``jsonparam`` point;
+        - ``body`` (flat object) or ``vector: formparam`` -> an
+          ``application/x-www-form-urlencoded`` POST body form descriptor;
+        - ``headers`` (object) or ``vector: header`` -> ``kwargs['inject_headers']``
+          (a bare ``vector: header`` with a ``param`` injects just that header;
+          with neither, the builtin default header set);
+        - ``cookies`` (object) or ``vector: cookie`` -> ``kwargs['inject_cookies']``.
         """
-        seen: set[str] = set()
-        out: list[str] = []
+        seen: set[tuple] = set()
+        out: list[dict[str, Any]] = []
         for entry in entries or []:
             url = (entry or {}).get("url")
             if not url:
                 continue
+            vector = str(entry.get("vector") or "").lower()
             param = entry.get("param")
-            if param:
+            body = entry.get("body")
+            json_body = entry.get("json")
+            headers = entry.get("headers")
+            cookies = entry.get("cookies")
+            kwargs: dict[str, Any] = {}
+
+            if json_body is not None or vector == "jsonparam":
+                fields = json_body if json_body is not None else {str(param or "q"): "1"}
+                kwargs["form"] = {"action": url, "enctype": "json", "fields": fields}
+            elif body is not None or vector == "formparam":
+                fields = body if body is not None else {str(param or "q"): "1"}
+                kwargs["form"] = {"action": url, "enctype": "form", "fields": fields}
+
+            if headers is not None or vector == "header":
+                kwargs["inject_headers"] = (
+                    headers if headers is not None
+                    else ([str(param)] if param else "__default__")
+                )
+            if cookies is not None or vector == "cookie":
+                kwargs["inject_cookies"] = (
+                    cookies if cookies is not None
+                    else ({str(param): "1"} if param else {})
+                )
+
+            if not kwargs and param:
                 url = VulnerabilityTester.inject_param(url, str(param), "1")
-            if url not in seen:
-                seen.add(url)
-                out.append(url)
+
+            key = (url, json.dumps(kwargs, sort_keys=True, default=str))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append({"url": url, "kwargs": kwargs})
         return out
 
     async def _start_ai_agent(self) -> None:
@@ -323,7 +403,7 @@ class WebSecurityScanner:
             )
             return
         try:
-            from ai_module.agent_inference import AgentClient
+            from ai_module.agent_inference import AgentClient, BatchingTriageClient
         except Exception as exc:  # noqa: BLE001
             await self.event_emitter.emit(
                 ScanEventType.LOG_MESSAGE,
@@ -362,16 +442,89 @@ class WebSecurityScanner:
             )
             return
 
-        self.ai_client = client
+        # Findings arrive one at a time from whichever tester found them, but
+        # several testers run concurrently: wrap the client so those inline
+        # calls coalesce into batched requests over one reusable session
+        # instead of a serialised round trip (and connection) per finding.
+        batched = BatchingTriageClient(
+            client,
+            max_batch=int(tcfg.get("ai_batch_size", 8) or 8),
+            linger=float(tcfg.get("ai_batch_linger", 0.05) or 0.0),
+            concurrency=int(tcfg.get("ai_concurrency", 4) or 4),
+        )
+        self.ai_client = batched
         for tester in self.testers:
-            tester.ai_client = client
+            tester.ai_client = batched
         await self.event_emitter.emit(
             ScanEventType.LOG_MESSAGE,
             message=(f"AI triage active (backend={client.backend} "
                      f"verify={bool(tcfg.get('ai_verify', True))} "
                      f"synthesize={bool(tcfg.get('ai_synthesize', False))} "
+                     f"batch={batched._max_batch} "
                      f"fp_threshold={tcfg.get('ai_fp_threshold', 0.75)})"),
         )
+
+    async def _stop_ai_agent(self) -> None:
+        """Drain any queued triage batch and release the agent's HTTP session.
+
+        The client reference is kept so ``_ai_triage_summary`` can still report
+        that the agent was active for this run.
+        """
+        close = getattr(self.ai_client, "aclose", None)
+        if close is None:
+            return
+        try:
+            await close()
+        except Exception as exc:  # noqa: BLE001 - teardown must never fail a scan
+            self._logger.debug("Error closing the AI triage client: %s", exc)
+
+    async def _emit_session_event(self, message: str) -> None:
+        """Bridge SessionManager progress lines onto the scan event bus."""
+        await self.event_emitter.emit(ScanEventType.LOG_MESSAGE,
+                                      message=f"[auth] {message}")
+
+    async def _authenticate(self, target_url: str | None = None) -> bool:
+        """Apply static session material and perform the form/token login.
+
+        Returns ``False`` only when authentication was *required*
+        (``--auth-required``) and did not establish a session — the caller
+        aborts. In every other case (no auth configured, or auth configured but
+        best-effort) it returns ``True`` and the scan proceeds, authenticated if
+        it could be.
+        """
+        sm = self.session_manager
+        if sm is None:
+            return True
+
+        try:
+            sm.apply_static(self.core, target_url)
+        except Exception as exc:  # noqa: BLE001 - never abort on a bad jar file
+            self._logger.error("Failed to apply static session material: %s", exc)
+            await self.event_emitter.emit(
+                ScanEventType.ERROR, error=f"session setup failed: {exc}")
+
+        ok = True
+        if sm.cfg.does_form_login:
+            ok = await sm.authenticate(self.core, force=True)
+            if not ok:
+                await self.event_emitter.emit(
+                    ScanEventType.ERROR,
+                    error="Authentication failed; continuing unauthenticated."
+                    if not sm.cfg.required else "Authentication failed.",
+                )
+
+        # Attach for transparent mid-scan re-auth (no-op when reauth is off or
+        # this is a static-only session).
+        self.core.attach_session_manager(sm)
+
+        if sm.cfg.required and not ok:
+            return False
+        if sm.cfg.active and (ok or not sm.cfg.does_form_login):
+            await self.event_emitter.emit(
+                ScanEventType.LOG_MESSAGE,
+                message="[auth] session material attached to the HTTP core.",
+            )
+        return True
 
     async def _start_telemetry(self) -> None:
         """Create + start the JSONL telemetry worker and attach it to testers.
@@ -547,22 +700,65 @@ class WebSecurityScanner:
         """Run every tester against a single URL (kept for callers/tests)."""
         await self._dispatch_testers(testers, [target_url], max_duration)
 
+    async def _warmup_targets(self, targets: "Sequence[str | dict[str, Any]]") -> int:
+        """Fire N discard requests at each unique endpoint to prime the server.
+
+        Mitigates JVM JIT warm-up bias on the OWASP Benchmark testbed: without
+        it the first baseline latency samples per endpoint capture cold,
+        interpreted-bytecode responses. Controlled by
+        ``config['testers']['warmup_requests']`` (``--warmup``); ``0`` disables
+        it. Requests route through :meth:`AsyncScannerCore.warmup`, so the token
+        bucket, concurrency semaphore and SSRF guard all still apply, and
+        :meth:`~AsyncScannerCore.warmup` dedups per endpoint so a per-point
+        warm-up inside a tester never re-fires.
+        """
+        n = int((self.config.get("testers", {}) or {}).get("warmup_requests", 0) or 0)
+        if n <= 0:
+            return 0
+        urls = []
+        seen: set[str] = set()
+        for t in targets:
+            url = t["url"] if isinstance(t, dict) else t
+            if url not in seen:
+                seen.add(url)
+                urls.append(url)
+        issued = 0
+        for url in urls:
+            try:
+                issued += await self.core.warmup(url, n)
+            except asyncio.CancelledError:
+                raise
+            except SSRFRedirectError:
+                self._logger.warning("warm-up skipped for %s (SSRF guard)", url)
+            except Exception as exc:  # noqa: BLE001 - warm-up is best-effort
+                self._logger.debug("warm-up failed for %s: %s", url, exc)
+        await self.event_emitter.emit(
+            ScanEventType.LOG_MESSAGE,
+            message=(f"Warm-up phase: {issued} discard request(s) over "
+                     f"{len(urls)} endpoint(s) (N={n})."),
+        )
+        return issued
+
     async def _dispatch_testers(self, testers: list[VulnerabilityTester],
-                                targets: list[str], max_duration: float | None):
+                                targets: "Sequence[str | dict[str, Any]]",
+                                max_duration: float | None):
         """Run each tester against each discovered target through a bounded pool.
 
-        Work items are ``(tester, url)`` pairs, so the Phase 1 recon output
-        (URLs + parameters mined from HTML, JavaScript and the sitemap) is
-        ingested automatically by all 16 vulnerability testers. The pool bounds
-        fan-out and guarantees cancel+await of every task on timeout / Ctrl+C.
+        ``targets`` entries are either a bare URL string (Phase 1 recon output)
+        or a ``{"url": str, "kwargs": dict}`` mapping (a --target-list entry that
+        carries a body/header/cookie injection descriptor). ``kwargs`` is
+        splatted into ``run_test``. The pool bounds fan-out and guarantees
+        cancel+await of every task on timeout / Ctrl+C.
         """
-        pairs = [(tester, url) for url in targets for tester in testers]
+        norm = [t if isinstance(t, dict) else {"url": t, "kwargs": {}}
+                for t in targets]
+        pairs = [(tester, t) for t in norm for tester in testers]
         if not pairs:
             return
 
-        async def _worker(item: tuple[VulnerabilityTester, str]):
-            tester, url = item
-            await self._run_tester_safe(tester, url)
+        async def _worker(item: tuple[VulnerabilityTester, dict[str, Any]]):
+            tester, t = item
+            await self._run_tester_safe(tester, t["url"], **t.get("kwargs", {}))
 
         concurrency = min(len(pairs), self.MAX_TESTER_CONCURRENCY)
         run = self.core.run_worker_pool(pairs, _worker, concurrency=concurrency)
@@ -581,11 +777,17 @@ class WebSecurityScanner:
         else:
             await run
 
-    async def _run_tester_safe(self, tester: VulnerabilityTester, target_url: str):
-        """Run a single tester with error handling."""
+    async def _run_tester_safe(self, tester: VulnerabilityTester, target_url: str,
+                               **run_kwargs: Any):
+        """Run a single tester with error handling.
+
+        ``run_kwargs`` (e.g. ``form`` / ``inject_headers`` / ``inject_cookies``
+        from a --target-list entry) is forwarded to ``run_test`` so the tester
+        enumerates the extra injection vectors alongside the query string.
+        """
         try:
             await self.event_emitter.emit(ScanEventType.PROGRESS_UPDATE, message=f"Running {tester.name}...")
-            await tester.run_test(target_url)
+            await tester.run_test(target_url, **run_kwargs)
         except asyncio.CancelledError:
             raise
         except SSRFRedirectError as e:

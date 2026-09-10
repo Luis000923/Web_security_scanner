@@ -363,7 +363,7 @@ def classify_noise(row: dict[str, Any]) -> str | None:
     if "status_code" in row or "status" in row:
         status = row.get("status_code", row.get("status"))
         try:
-            code = int(status)
+            code = -1 if status is None else int(status)
         except (TypeError, ValueError):
             code = -1
         if code == 0:
@@ -461,7 +461,7 @@ def clean_rows(
     return kept, stats
 
 
-def dedup(samples: list["Sample"]) -> tuple[list["Sample"], int]:
+def dedup(samples: list[Sample]) -> tuple[list[Sample], int]:
     """Collapse samples that share a ``meta['_dedup']`` signature (or a rendered
     ``user``+``assistant`` hash when no explicit key was set)."""
     seen: set[str] = set()
@@ -1723,9 +1723,9 @@ def build_payload_samples(
         )
         traj[key].append(row)
 
-    for (_run, tester_key, base_url, param), seq in traj.items():
+    for (_run, _tester_key, base_url, param), seq in traj.items():
         seq.sort(key=lambda r: r.get("request_index", 0) or r.get("ts", 0))
-        for prev, nxt in zip(seq, seq[1:]):
+        for prev, nxt in zip(seq, seq[1:], strict=False):  # pairwise: seq[1:] is 1 shorter
             nxt_payload = nxt.get("payload") or _payload_from_url(nxt.get("url", ""), param)
             prev_payload = prev.get("payload") or _payload_from_url(prev.get("url", ""), param)
             if not nxt_payload or not prev_payload:
@@ -1778,11 +1778,11 @@ def build_payload_samples(
             # Dedup + split key is the observable prompt itself: two trajectory
             # steps that present an identical history collapse to one row and
             # can never land on opposite sides of the split.
-            key = hashlib.sha1(user.encode("utf-8")).hexdigest()
+            dedup_key = hashlib.sha1(user.encode("utf-8")).hexdigest()
             yield Sample(
                 system, user, assistant,
                 meta={"endpoint": endpoint, "param": gparam, "label": vclass,
-                      "_url": base_url, "_dedup": key},
+                      "_url": base_url, "_dedup": dedup_key},
             )
 
 

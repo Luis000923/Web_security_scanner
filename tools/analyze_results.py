@@ -13,6 +13,9 @@ and produces:
     testbed/analysis/summary_by_run.csv             per-run metrics + AUC + First-TP
     testbed/analysis/detection_cost_matrix.csv      per-GT-instance x condition
     testbed/analysis/stats.json                     Friedman / post-hoc / effect sizes
+                                                    + bias_mitigations block (JVM
+                                                    warm-up / robust latency
+                                                    variance; testbed/THREATS_TO_VALIDITY.md)
     testbed/analysis/early_recall.json              Phase 3.3: First-TP cost,
                                                     adaptive (baseline) vs static
                                                     (no-adaptive-sorting), paired
@@ -53,8 +56,9 @@ import json
 import math
 import sys
 import warnings
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -110,11 +114,11 @@ def discover_runs(results_dir: Path) -> list[RunInfo]:
         try:
             budget = int(budget_str)
         except ValueError:
-            warnings.warn(f"skip unparseable run dir: {d.name}")
+            warnings.warn(f"skip unparseable run dir: {d.name}", stacklevel=2)
             continue
         condition = SLUG_TO_CONDITION.get(slug)
         if condition is None:
-            warnings.warn(f"skip unknown condition slug {slug!r} in {d.name}")
+            warnings.warn(f"skip unknown condition slug {slug!r} in {d.name}", stacklevel=2)
             continue
         jsonls = sorted(d.glob("*.jsonl"), key=lambda p: p.stat().st_mtime)
         runs.append(RunInfo(budget, condition, d, jsonls[-1] if jsonls else None))
@@ -130,7 +134,7 @@ def load_telemetry(jsonl: Path) -> pd.DataFrame:
         try:
             rows.append(json.loads(line))
         except json.JSONDecodeError:
-            warnings.warn(f"bad JSONL line in {jsonl}")
+            warnings.warn(f"bad JSONL line in {jsonl}", stacklevel=2)
     df = pd.DataFrame(rows)
     if df.empty:
         return df
@@ -141,7 +145,7 @@ def load_telemetry(jsonl: Path) -> pd.DataFrame:
     return df
 
 
-def label_detections(df: pd.DataFrame, gt: "oracle.GroundTruth") -> pd.DataFrame:
+def label_detections(df: pd.DataFrame, gt: oracle.GroundTruth) -> pd.DataFrame:
     """Add gt_key / is_tp / is_trap_hit columns using the oracle's folding."""
     if df.empty:
         return df
@@ -198,7 +202,7 @@ def normalized_auc(xs: np.ndarray, ys: np.ndarray, total_pos: int) -> float:
     return float(trapz(y, x))
 
 
-def build_summary(runs: list[RunInfo], gt: "oracle.GroundTruth",
+def build_summary(runs: list[RunInfo], gt: oracle.GroundTruth,
                   csv_path: Path) -> tuple[pd.DataFrame, dict]:
     total_pos = len(gt.positives)
     total_traps = len(gt.traps)
@@ -271,7 +275,7 @@ def cliffs_delta(a, b) -> tuple[float, str]:
 
 
 def cost_matrix_for_budget(budget: int, per_run_costs: dict,
-                           gt: "oracle.GroundTruth") -> pd.DataFrame | None:
+                           gt: oracle.GroundTruth) -> pd.DataFrame | None:
     """Rows = every vulnerable GT instance; cols = conditions; value = detection
     cost (request_index of first hit), censored at budget+1 when never found.
     Returns None unless all four conditions ran at this budget."""
@@ -286,7 +290,83 @@ def cost_matrix_for_budget(budget: int, per_run_costs: dict,
     return pd.DataFrame(data, index=[str(k) for k in sorted(gt.positives)])
 
 
-def run_stats(meta: dict, gt: "oracle.GroundTruth") -> dict:
+# Static description of the machine-bias mitigations baked into the engine.
+# Emitted into stats.json so the paper's threats-to-validity section can cite
+# concrete, versioned knobs. See testbed/THREATS_TO_VALIDITY.md.
+_BIAS_MITIGATIONS_DOC = {
+    "jvm_warmup": {
+        "problem": "OWASP Benchmark runs on the JVM; the first requests to a "
+                   "cold endpoint execute interpreted bytecode and are far "
+                   "slower than steady state, inflating and destabilising the "
+                   "latency baseline captured right after enqueue.",
+        "mitigation": "Explicit warm-up phase: N discard requests per endpoint "
+                      "(scheme://netloc/path) before any baseline or telemetry "
+                      "capture. Routed through the rate limiter + concurrency "
+                      "semaphore + SSRF guard; emit no telemetry rows.",
+        "control": "--warmup N (scanner) / --warmup N (run_experiments, default "
+                   "20, applied uniformly to every condition).",
+        "config_key": "testers.warmup_requests",
+    },
+    "robust_baseline_variance": {
+        "problem": "JVM stop-the-world GC pauses add random multi-hundred-ms "
+                   "spikes. mean + k*stdev of a few samples is swung by a single "
+                   "spike (masks hits) or a single fast sample (invites false "
+                   "positives).",
+        "mitigation": "Time-based trigger uses median + sigma*1.4826*MAD "
+                      "(robust to one outlier in either direction) over the "
+                      "benign samples, plus a bounded rolling window (median+MAD "
+                      "of the most recent benign latencies) that re-estimates "
+                      "the bar mid-sweep as the JVM warms / GC pressure shifts.",
+        "control": "--baseline-samples N (default 3), --latency-window N "
+                   "(default 12); sigma = TIME_BASED_SIGMA (3.0).",
+        "config_key": "testers.baseline_latency_samples / testers.latency_window",
+    },
+    "two_sample_confirmation": {
+        "problem": "A single confirmation replay that happens to land on a GC "
+                   "pause can produce a spurious CONFIRMED verdict.",
+        "mitigation": "confirm_time_based() samples every stage twice (replays=2) "
+                      "and requires the delay to reproduce on ALL replays — the "
+                      "reduced-delay variant must track baseline+~2s on both, or "
+                      "the min original-payload replay must clear both "
+                      "baseline+threshold and the rolling upper bound.",
+        "control": "confirm_time_based(replays=2) — engine default.",
+        "config_key": None,
+    },
+}
+
+
+def bias_mitigations_block(runs: list[RunInfo]) -> dict:
+    """Build the ``stats.json`` bias-mitigations block.
+
+    Combines the static documentation with the *actual* per-run knobs read from
+    each run's ``manifest_*.json`` (``manifest_async`` snapshots the full
+    CLI-derived config), so the report records what really ran.
+    """
+    observed: dict[str, dict] = {}
+    notes: list[str] = []
+    for run in runs:
+        manifests = sorted(run.run_dir.glob("manifest_*.json"))
+        if not manifests:
+            continue
+        try:
+            cfg = json.loads(manifests[-1].read_text(encoding="utf-8"))
+            testers = (cfg.get("config") or {}).get("testers") or {}
+        except (OSError, json.JSONDecodeError, AttributeError):
+            continue
+        key = f"budget{run.budget}_{run.condition}"
+        observed[key] = {
+            "warmup_requests": testers.get("warmup_requests", 0),
+            "baseline_latency_samples": testers.get("baseline_latency_samples", 3),
+            "latency_window": testers.get("latency_window", 12),
+        }
+        if not testers.get("warmup_requests"):
+            notes.append(f"{key}: ran with warmup_requests=0 (JVM warm-up bias "
+                         f"NOT mitigated for this run)")
+    return {"description": _BIAS_MITIGATIONS_DOC, "observed": observed,
+            "notes": notes}
+
+
+def run_stats(meta: dict, gt: oracle.GroundTruth) -> dict:
     from scipy.stats import friedmanchisquare, wilcoxon
     from statsmodels.stats.multitest import multipletests
     try:
@@ -402,7 +482,7 @@ def _block_tests(mat: pd.DataFrame, friedmanchisquare, wilcoxon,
 
     if raw_p:
         rej, p_adj, *_ = multipletests(raw_p, method="fdr_bh")
-        for cond, r, pa in zip(pairs, rej, p_adj):
+        for cond, r, pa in zip(pairs, rej, p_adj, strict=True):
             detail[cond]["wilcoxon"]["p_value_bh"] = float(pa)
             detail[cond]["wilcoxon"]["reject_h0_bh"] = bool(r)
 
@@ -467,7 +547,7 @@ def _first_tp_block(base_costs: list[float], arm_costs: list[float],
     return res
 
 
-def first_tp_analysis(meta: dict, gt: "oracle.GroundTruth") -> dict:
+def first_tp_analysis(meta: dict, gt: oracle.GroundTruth) -> dict:
     """Early-recall study for the Phase 3 feedback loop.
 
     For every budget at which both ``baseline`` and ``no-adaptive-sorting`` ran,
@@ -628,7 +708,8 @@ def fig1_detection_vs_budget(summary: pd.DataFrame, fig_dir: Path):
     order_lbl = [_COND_LABELS_ES[c] for c in CONDITIONS]
 
     fig, ax = plt.subplots(figsize=(5.2, 3.4))
-    palette = dict(zip(order_lbl, sns.color_palette("colorblind", 4)))
+    palette = dict(zip(order_lbl, sns.color_palette("colorblind", len(order_lbl)),
+                       strict=True))
     for lbl in order_lbl:
         g = df[df["Condición"] == lbl].sort_values("x")
         if g.empty:
@@ -732,7 +813,7 @@ def fig3_cd_diagram(stats: dict, fig_dir: Path):
     plt.close(fig)
 
 
-def fig4_first_tp_ecdf(meta: dict, gt: "oracle.GroundTruth", fig_dir: Path):
+def fig4_first_tp_ecdf(meta: dict, gt: oracle.GroundTruth, fig_dir: Path):
     """ECDF of the per-instance First-TP request index: adaptive vs static.
 
     A curve that climbs earlier = vulnerabilities reached in fewer requests.
@@ -819,7 +900,8 @@ def main(argv=None) -> int:
         graded = pd.read_csv(args.csv).rename(columns=str.lower)
         ok = graded[graded.get("status", "ok").astype(str).eq("ok")] \
             if "status" in graded.columns else graded
-        keys = {(int(b), str(c)) for b, c in zip(ok["budget"], ok["condition"])}
+        keys = {(int(b), str(c))
+                for b, c in zip(ok["budget"], ok["condition"], strict=True)}
         kept = [r for r in runs if (r.budget, r.condition) in keys]
         dropped = sorted({(r.budget, r.condition) for r in runs} - keys)
         if dropped:
@@ -842,6 +924,9 @@ def main(argv=None) -> int:
     # ---- TASK 2 --------------------------------------------------------------
     print("\n=== TASK 2 — significance tests ===")
     stats = run_stats(meta, gt)
+    stats["bias_mitigations"] = bias_mitigations_block(runs)
+    for note in stats["bias_mitigations"]["notes"]:
+        print(f"  bias-note: {note}")
     for note in stats["notes"]:
         print(f"  note: {note}")
     for budget, block in stats["per_budget"].items():

@@ -40,8 +40,7 @@ import argparse
 import json
 import os
 import sys
-from dataclasses import dataclass, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass
 
 BYTES_PER_GIB = 1024 ** 3
 
@@ -95,7 +94,7 @@ def _env_override(var: str, default: str) -> str:
     return value or default
 
 
-def probe_vram(device: int = 0) -> tuple[Optional[float], str, str, int]:
+def probe_vram(device: int = 0) -> tuple[float | None, str, str, int]:
     """Return ``(vram_gib, status, device_name, device_count)``.
 
     ``vram_gib`` is ``None`` whenever no usable CUDA device was found, in which
@@ -123,7 +122,7 @@ def probe_vram(device: int = 0) -> tuple[Optional[float], str, str, int]:
         return None, STATUS_PROBE_FAILED, f"{exc.__class__.__name__}: {exc}", 0
 
 
-def select_for_vram(vram_gb: Optional[float]) -> tuple[str, int]:
+def select_for_vram(vram_gb: float | None) -> tuple[str, int]:
     """Map VRAM in GiB onto ``(model_id, tier)``. ``None`` -> CPU fallback."""
     if vram_gb is None:
         return _env_override(CPU_FALLBACK_ENV, CPU_FALLBACK_MODEL), 0
@@ -135,14 +134,16 @@ def select_for_vram(vram_gb: Optional[float]) -> tuple[str, int]:
     raise AssertionError("TIER_TABLE must end with an unbounded tier")
 
 
-def select(device: int = 0, simulated_vram_gb: Optional[float] = None) -> Selection:
+def select(device: int = 0, simulated_vram_gb: float | None = None) -> Selection:
     """Profile the hardware (or a simulated VRAM figure) and choose a model."""
+    vram: float | None
     if simulated_vram_gb is not None:
         vram, status, name, count = simulated_vram_gb, STATUS_CUDA, "simulated", 1
         detail = f"simulated {simulated_vram_gb:.2f} GiB"
     else:
         vram, status, name, count = probe_vram(device)
-        detail = name if status == STATUS_CUDA else name
+        # probe_vram already reports the reason in ``name`` when CUDA is absent.
+        detail = name
 
     model, tier = select_for_vram(vram)
     return Selection(
@@ -156,7 +157,7 @@ def select(device: int = 0, simulated_vram_gb: Optional[float] = None) -> Select
     )
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="ai_module.auto_select_model",
         description="Select a QLoRA base model that fits the local GPU.",

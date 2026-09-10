@@ -174,9 +174,9 @@ class StructuredLocalAgent:
             "AI_AGENT_HF_MODEL", "runs/qlora/merged"
         )
         self.dtype = dtype
-        self._model = None
-        self._triage_gen = None
-        self._payload_gen = None
+        self._model: Any = None
+        self._triage_gen: Any = None
+        self._payload_gen: Any = None
 
     def _ensure(self) -> None:
         if self._model is not None:

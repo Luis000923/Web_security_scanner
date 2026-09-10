@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import aiohttp
+from aiohttp.abc import AbstractResolver, ResolveResult
 
 # Small pool of legitimate, current desktop User-Agents. One is picked at
 # random per request (basic fingerprint rotation) unless the caller pinned a
@@ -41,6 +42,13 @@ _SOCKS_SCHEMES = ("socks5://", "socks5h://", "socks4://")
 MAX_RESPONSE_SIZE = 5 * 1024 * 1024        # 5 MiB
 _READ_CHUNK = 64 * 1024                     # 64 KiB per iter_chunked step
 
+# Caps on the two auxiliary caches that would otherwise grow for the whole scan.
+# A crawl that touches tens of thousands of distinct hosts/endpoints would keep
+# every one of them alive; these bound that at a few MB. Dropping an entry only
+# costs a re-resolution (which is re-validated) or a repeated warm-up burst.
+_MAX_RESOLVE_CACHE = 4096
+_MAX_WARMED_ENDPOINTS = 8192
+
 # ipaddress predicates that mark an address as "not a public destination".
 _BLOCKED_IP_PREDICATES = (
     "is_private", "is_loopback", "is_link_local",
@@ -56,6 +64,67 @@ class SSRFRedirectError(Exception):
     The request is aborted instead of letting the HTTP client chase an
     internal endpoint (e.g. the cloud metadata service at 169.254.169.254).
     """
+
+
+def _addrinfo(hostname: str, ip: str, port: int) -> ResolveResult:
+    """One aiohttp resolver record for an already-resolved literal address."""
+    family = socket.AF_INET6 if ipaddress.ip_address(ip).version == 6 else socket.AF_INET
+    return ResolveResult(
+        hostname=hostname,
+        host=ip,
+        port=port,
+        family=family,
+        proto=socket.IPPROTO_TCP,
+        flags=socket.AI_NUMERICHOST,
+    )
+
+
+class PinnedResolver(AbstractResolver):
+    """DNS resolver that hands aiohttp only addresses the SSRF guard vetted.
+
+    Without this, the guard is a TOCTOU check: :meth:`AsyncScannerCore.
+    _assert_public_url` resolves a hostname, validates the addresses, and then
+    passes the *name* to aiohttp — which resolves it a second time when it opens
+    the socket. An attacker controlling the zone can answer the first lookup
+    with a public address and the second with ``127.0.0.1`` or
+    ``169.254.169.254`` (classic DNS rebinding), and the connection lands on the
+    internal endpoint the guard just rejected.
+
+    Pinning closes that window: every name already in the core's
+    ``_resolve_cache`` — i.e. every host the guard has vetted — resolves to
+    exactly the addresses that were checked, so the socket cannot be pointed
+    anywhere else. A name the guard never saw (the first hop of a scan, which is
+    supplied by the operator rather than the target) is resolved here, vetted
+    under the same policy, and cached so any later redirect to it reuses this
+    answer.
+
+    Only the address is pinned: the request keeps its original URL, so TLS SNI
+    and certificate hostname verification still run against the real name.
+    """
+
+    def __init__(self, core: "AsyncScannerCore") -> None:
+        self._core = core
+
+    async def resolve(self, host: str, port: int = 0,
+                      family: int = socket.AF_INET) -> list[ResolveResult]:
+        # An IP literal never went through DNS; validate it directly.
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            pass
+        else:
+            self._core._assert_ip_allowed(host, host)
+            return [_addrinfo(host, host, port)]
+
+        ips = await self._core._resolve_host(host)
+        if not ips:
+            raise SSRFRedirectError(f"Host {host!r} resolved to no addresses")
+        for ip in sorted(ips):
+            self._core._assert_ip_allowed(ip, host)
+        return [_addrinfo(host, ip, port) for ip in sorted(ips)]
+
+    async def close(self) -> None:
+        return None
 
 
 @dataclass
@@ -85,6 +154,17 @@ class ScanConfig:
     # SSRF guard: when False, redirects whose target resolves to a non-public
     # IP are aborted with SSRFRedirectError.
     allow_private_redirects: bool = False
+    # aiohttp's default CookieJar silently drops cookies whose domain is a bare
+    # IP address (RFC 6265 §5.3). The testbed (and many internal targets) is
+    # reached by IP, so ``unsafe=True`` is the default here — authenticated
+    # scans of ``127.0.0.1:8443`` would otherwise never keep their JSESSIONID.
+    cookie_jar_unsafe: bool = True
+    # When True, the *initial* request URL is also run through the SSRF
+    # public-address check (the redirect chain is always checked). Off by
+    # default so ordinary GET scans of an explicitly-supplied target are
+    # unchanged; the advanced body/header/cookie vectors turn it on so a
+    # mutated request can never be aimed at an internal endpoint either.
+    assert_public_target: bool = False
 
 
 class TokenBucket:
@@ -216,7 +296,10 @@ class AsyncResponseCache:
             self._normalize_mapping(headers),
             self._normalize_mapping(cookies),
         ))
-        return hashlib.md5(key_data.encode()).hexdigest()
+        # SHA-256 (not MD5): the key derives from attacker-influenced URLs and
+        # header/cookie values, so a collision-resistant digest keeps a crafted
+        # request from shadowing an unrelated cached response.
+        return hashlib.sha256(key_data.encode()).hexdigest()
 
     def get(self, url: str, method: str, data: Any = None,
             headers: Any = None, cookies: Any = None) -> dict | None:
@@ -229,7 +312,7 @@ class AsyncResponseCache:
         return None
 
     def put(self, url: str, method: str, data: Any, response_data: dict,
-            headers: Any = None, cookies: Any = None):
+            headers: Any = None, cookies: Any = None) -> None:
         if len(self.cache) >= self.max_size:
             self._evict_old_entries()
 
@@ -237,17 +320,17 @@ class AsyncResponseCache:
         self.cache[key] = response_data
         self.access_times[key] = time.time()
 
-    def _remove(self, key):
-        if key in self.cache:
-            del self.cache[key]
-        if key in self.access_times:
-            del self.access_times[key]
+    def _remove(self, key: str) -> None:
+        self.cache.pop(key, None)
+        self.access_times.pop(key, None)
 
-    def _evict_old_entries(self):
+    def _evict_old_entries(self) -> None:
         if not self.access_times:
             return
         sorted_keys = sorted(self.access_times.items(), key=lambda x: x[1])
-        to_remove = int(len(sorted_keys) * 0.25)
+        # Always evict at least one entry: with a very small ``max_size`` the
+        # 25% batch would round down to 0 and the cache would grow unbounded.
+        to_remove = max(1, int(len(sorted_keys) * 0.25))
         for key, _ in sorted_keys[:to_remove]:
             self._remove(key)
 
@@ -273,8 +356,23 @@ class AsyncScannerCore:
                 rate=1.0 / config.rate_limit, capacity=config.rate_burst
             )
         self._logger = logging.getLogger(__name__)
-        # host -> {ip, ...}; avoids re-resolving on every redirect check.
-        self._resolve_cache: dict[str, set] = {}
+        # host -> {ip, ...}; avoids re-resolving on every redirect check AND
+        # pins the addresses handed to aiohttp (see PinnedResolver).
+        self._resolve_cache: dict[str, set[str]] = {}
+        # Hostnames supplied by the operator / crawler as a request target
+        # (rather than by a redirect the *target* chose). Scanning an internal
+        # host you own is legitimate, so these keep the historical policy: a
+        # private address is allowed unless ``assert_public_target`` is set.
+        self._trusted_hosts: set[str] = set()
+        # Endpoints (scheme://netloc/path) already given a warm-up burst, so a
+        # per-point warm-up call from a tester and the orchestrator's per-target
+        # pre-warm never double-fire against the same endpoint.
+        self._warmed_endpoints: set[str] = set()
+        # Authenticated-scan state (see core.session_async). ``_auth_headers``
+        # (e.g. a bearer token) is merged into every outgoing request; session
+        # cookies live in the aiohttp jar and are attached automatically.
+        self._session_manager: Any = None
+        self._auth_headers: dict[str, str] = {}
         # One-shot guard so the "TLS verification disabled" warning is logged
         # once per scanner, not once per connector rebuild.
         self._ssl_notice_emitted = False
@@ -319,6 +417,13 @@ class AsyncScannerCore:
         SOCKS support is optional: it needs the ``aiohttp_socks`` package. HTTP
         proxying does not go through the connector (it rides on the per-request
         ``proxy=`` kwarg), so this only special-cases socks URLs.
+
+        The TCP connector resolves through :class:`PinnedResolver` so the socket
+        can only be opened to an address the SSRF guard already vetted. Under a
+        proxy the scanner never resolves the target itself (the proxy does), so
+        pinning would only mis-apply the target policy to the proxy's own
+        address — the URL-level guard still runs, but the resolver is left
+        alone.
         """
         if self._is_socks_proxy():
             try:
@@ -332,9 +437,11 @@ class AsyncScannerCore:
                 self.config.proxy, ssl=self._ssl_param(),
                 limit=self.config.max_concurrency,
             )
+        resolver = None if self.config.proxy else PinnedResolver(self)
         return aiohttp.TCPConnector(
             limit=self.config.max_concurrency,
             ssl=self._ssl_param(),
+            resolver=resolver,
         )
 
     async def start(self):
@@ -344,7 +451,26 @@ class AsyncScannerCore:
             headers = dict(self.config.headers)
             if self.config.user_agent:
                 headers.setdefault("User-Agent", self.config.user_agent)
-            self.session = aiohttp.ClientSession(connector=connector, headers=headers)
+            # Explicit cookie jar so form-login / static session cookies persist
+            # across the whole scan and auto-attach to every probe.
+            self.session = aiohttp.ClientSession(
+                connector=connector, headers=headers,
+                cookie_jar=aiohttp.CookieJar(unsafe=self.config.cookie_jar_unsafe),
+            )
+
+    # ---- authenticated-session hooks --------------------------------
+
+    def attach_session_manager(self, manager: Any) -> None:
+        """Register a :class:`~...core.session_async.SessionManager` for
+        transparent mid-scan re-authentication."""
+        self._session_manager = manager
+
+    def set_auth_header(self, name: str, value: str) -> None:
+        """Persist a header (e.g. ``Authorization: Bearer …``) on every request."""
+        self._auth_headers[str(name)] = str(value)
+
+    def clear_auth_header(self, name: str) -> None:
+        self._auth_headers.pop(str(name), None)
 
     async def close(self):
         """Close the aiohttp session (idempotent)."""
@@ -383,15 +509,40 @@ class AsyncScannerCore:
             return True  # unparseable -> treat as unsafe
         return any(getattr(ip, pred, False) for pred in _BLOCKED_IP_PREDICATES)
 
-    async def _resolve_host(self, host: str) -> set:
-        if host in self._resolve_cache:
-            return self._resolve_cache[host]
+    def _assert_ip_allowed(self, ip: str, host: str) -> None:
+        """Connection-time policy check for one resolved address.
+
+        Enforced by :class:`PinnedResolver` on every socket the scanner opens,
+        which is what makes the guard TOCTOU-proof rather than advisory. A
+        private address is refused unless the operator opted in
+        (``allow_private_redirects``) or the hostname is one *they* pointed the
+        scanner at (``_trusted_hosts``) — a target-chosen redirect never
+        qualifies.
+        """
+        if self.config.allow_private_redirects or not self._ip_is_blocked(ip):
+            return
+        if host in self._trusted_hosts and not self.config.assert_public_target:
+            return
+        raise SSRFRedirectError(
+            f"Refusing to connect to {host!r}: resolves to non-public address {ip}"
+        )
+
+    async def _resolve_host(self, host: str) -> set[str]:
+        """Resolve ``host`` once and memoise it, so the address the SSRF guard
+        vetted is the same one :class:`PinnedResolver` later hands the socket."""
+        cached = self._resolve_cache.get(host)
+        if cached is not None:
+            return cached
         loop = asyncio.get_running_loop()
         try:
             infos = await loop.getaddrinfo(host, None, type=socket.SOCK_STREAM)
         except socket.gaierror as e:
-            raise SSRFRedirectError(f"Cannot resolve redirect host {host!r}: {e}") from e
-        ips = {info[4][0] for info in infos}
+            raise SSRFRedirectError(f"Cannot resolve host {host!r}: {e}") from e
+        ips = {str(info[4][0]) for info in infos}
+        # Bounded FIFO: dicts preserve insertion order, so the oldest entries go
+        # first. An evicted host is simply resolved (and re-vetted) again.
+        while len(self._resolve_cache) >= _MAX_RESOLVE_CACHE:
+            self._resolve_cache.pop(next(iter(self._resolve_cache)))
         self._resolve_cache[host] = ips
         return ips
 
@@ -418,7 +569,9 @@ class AsyncScannerCore:
 
     # ---- safe body reading -----------------------------------------
 
-    async def _safe_read(self, response: "aiohttp.ClientResponse") -> tuple:
+    async def _safe_read(
+        self, response: "aiohttp.ClientResponse"
+    ) -> tuple[str, bool, int]:
         """
         Read a response body defensively.
 
@@ -456,6 +609,54 @@ class AsyncScannerCore:
         text = body.decode(encoding or "utf-8", errors="ignore")
         return text, truncated, total
 
+    # ---- warm-up ---------------------------------------------------
+
+    @staticmethod
+    def _endpoint_key(url: str) -> str:
+        """Endpoint identity for warm-up dedup: scheme://netloc/path (no query)."""
+        parts = urllib.parse.urlsplit(url)
+        return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+    async def warmup(self, url: str, n: int, *, method: str = "GET",
+                     **kwargs: Any) -> int:
+        """Fire up to ``n`` discard requests at ``url`` to prime the server.
+
+        Mitigates JVM JIT warm-up bias on the OWASP Benchmark testbed: the first
+        hits to a cold endpoint run interpreted bytecode and are far slower than
+        steady state, which inflates and destabilises any latency baseline
+        captured straight after. These requests go through :meth:`request`
+        (``use_cache=False``), so the **token bucket, concurrency semaphore and
+        SSRF guard all still apply**; their responses are discarded and no
+        telemetry row is emitted.
+
+        Idempotent per endpoint (``scheme://netloc/path``) — a second call for
+        the same endpoint (e.g. from a different tester) is a no-op and returns
+        ``0``. Stops early on the first hard transport failure
+        (``status_code == 0``); propagates :class:`SSRFRedirectError` and
+        :class:`asyncio.CancelledError` untouched. Returns the number issued.
+        """
+        if n <= 0:
+            return 0
+        key = self._endpoint_key(url)
+        if key in self._warmed_endpoints:
+            return 0
+        if len(self._warmed_endpoints) >= _MAX_WARMED_ENDPOINTS:
+            # Bounded: at worst an old endpoint gets warmed a second time.
+            self._warmed_endpoints.clear()
+        self._warmed_endpoints.add(key)
+        issued = 0
+        for _ in range(n):
+            try:
+                resp = await self.request(method, url, use_cache=False, **kwargs)
+            except asyncio.CancelledError:
+                raise
+            except SSRFRedirectError:
+                raise
+            issued += 1
+            if not resp or resp.get("status_code", 0) == 0:
+                break
+        return issued
+
     # ---- request -----------------------------------------------------
 
     async def request(self, method: str, url: str, *,
@@ -483,7 +684,21 @@ class AsyncScannerCore:
             await self.start()
 
         follow_redirects = kwargs.pop("allow_redirects", True)
-        caller_headers = kwargs.pop("headers", None)
+        caller_headers_original = kwargs.pop("headers", None)
+        # Internal guard: a request replayed once after a transparent re-auth.
+        reauth_retry = kwargs.pop("_reauth_retry", False)
+
+        # Attach persistent auth headers (bearer token). Merged into
+        # ``caller_headers`` so the existing cross-host redirect scrubbing drops
+        # them at an origin boundary just like an injected header. Session
+        # cookies are handled per-domain by the aiohttp jar and need nothing
+        # here. An explicit caller header of the same name still wins.
+        if self._auth_headers:
+            caller_headers = dict(self._auth_headers)
+            if caller_headers_original:
+                caller_headers.update(caller_headers_original)
+        else:
+            caller_headers = caller_headers_original
 
         data = kwargs.get("data") or kwargs.get("json")
         cookies = kwargs.get("cookies")
@@ -492,8 +707,24 @@ class AsyncScannerCore:
             if cached:
                 return cached
 
+        # This URL was chosen by the operator / crawler, not by a redirect the
+        # target served, so PinnedResolver may let it resolve to a private
+        # address (scanning your own intranet is legitimate). Recorded before
+        # the pre-flight check so ``assert_public_target`` still overrides it.
+        first_hop_host = urllib.parse.urlparse(url).hostname
+        if first_hop_host:
+            self._trusted_hosts.add(first_hop_host)
+
+        # Optional pre-flight SSRF check on the first hop (redirects are always
+        # checked below). Applies identically to GET/POST/JSON/header/cookie
+        # probes — the mutated request never leaves before this passes.
+        if self.config.assert_public_target and not self.config.allow_private_redirects:
+            await self._assert_public_url(url)
+
         # Rate gate BEFORE taking a concurrency slot: waiting for a token must
-        # not hold a semaphore permit (that serialised everything before).
+        # not hold a semaphore permit (that serialised everything before). This
+        # gate and the semaphore below wrap EVERY request regardless of method
+        # or injection vector.
         if self._rate_bucket is not None:
             await self._rate_bucket.acquire()
 
@@ -513,6 +744,17 @@ class AsyncScannerCore:
                 "status_code": 0, "text": "", "headers": {},
                 "url": url, "elapsed": 0.0, "truncated": False, "error": str(e),
             }
+
+        # Transparent re-authentication: if the response looks logged-out and a
+        # session manager is attached, re-login once (rate-limited by the
+        # manager's cooldown) and replay this exact request a single time.
+        if (not reauth_retry and self._session_manager is not None
+                and self._session_manager.looks_logged_out(result)):
+            if await self._session_manager.maybe_reauth(self, result):
+                return await self.request(
+                    method, url, use_cache=False, allow_redirects=follow_redirects,
+                    headers=caller_headers_original, _reauth_retry=True, **kwargs,
+                )
 
         if use_cache and method.upper() == "GET" and result.get("status_code") == 200:
             self.cache.put(url, method, data, result, caller_headers, cookies)
@@ -560,9 +802,17 @@ class AsyncScannerCore:
         )
         current_method = method
         current_url = url
+        origin_host = urllib.parse.urlparse(url).hostname
         redirects = 0
         started = time.monotonic()
-        assert self.session is not None  # started by AsyncScannerCore.start()
+        # Not `assert`: this invariant must hold even under `python -O`, where
+        # assertions are stripped and a None session would surface as an opaque
+        # AttributeError deep inside the redirect loop.
+        if self.session is None:
+            raise RuntimeError(
+                "HTTP session not initialised; call AsyncScannerCore.start() "
+                "(or use the async context manager) before issuing requests"
+            )
 
         # An http(s):// proxy rides on the per-request kwarg; a socks proxy is
         # already baked into the connector, so it must not be passed here.
@@ -592,6 +842,18 @@ class AsyncScannerCore:
                 next_url = urllib.parse.urljoin(current_url, location)
                 if not self.config.allow_private_redirects:
                     await self._assert_public_url(next_url)
+                # Do not carry injected/session material across an origin
+                # boundary: a payload placed in a request header or a session
+                # cookie must not be replayed to a third-party host the target
+                # redirected us to.
+                if urllib.parse.urlparse(next_url).hostname != origin_host:
+                    if caller_headers or kwargs.get("cookies"):
+                        self._logger.debug(
+                            "Cross-host redirect %s -> %s: dropping injected "
+                            "headers/cookies", current_url, next_url,
+                        )
+                    caller_headers = None
+                    kwargs.pop("cookies", None)
                 redirects += 1
                 # 303 always -> GET; 301/302 -> GET for non-idempotent methods
                 # (matches how browsers and requests behave).

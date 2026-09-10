@@ -328,6 +328,16 @@ class BrowserRecon:
                 page.set_default_navigation_timeout(self.nav_timeout * 1000)
 
                 for target in self._nav_targets(base_url, params_by_url):
+                    # A goto() that only changes the fragment relative to the
+                    # current URL is a same-document navigation: the browser does
+                    # NOT reload and inline page scripts never re-run, so a
+                    # ``#<canary>`` variant would sail past the taint hooks.
+                    # Bounce through about:blank to force a full document load.
+                    if "#" in target:
+                        try:
+                            await page.goto("about:blank")
+                        except Exception:  # noqa: BLE001
+                            pass
                     try:
                         await page.goto(target, wait_until="networkidle")
                     except Exception as exc:  # noqa: BLE001 - timeouts, nav aborts
