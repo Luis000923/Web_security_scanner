@@ -134,3 +134,132 @@ def test_negative_simulated_vram_is_rejected():
     with pytest.raises(SystemExit) as exc:
         asm.main(["--simulate-vram-gb", "-1"])
     assert exc.value.code == 2
+
+
+# --- training recipe -------------------------------------------------------
+# The recipe is what makes a 4 GB Turing card usable: the model id alone says
+# nothing about precision, quantisation or batch size, and getting any of those
+# wrong on that card is a hard abort rather than a slow run.
+
+@pytest.mark.parametrize("vram_gb,four_bit,batch,accum,seq", [
+    (4.0,  True,  1, 16, 512),    # GTX 1650
+    (5.0,  True,  1, 16, 512),    # inclusive
+    (5.65, True,  2, 8,  768),    # measured RTX 4050
+    (7.0,  True,  2, 8,  768),    # inclusive
+    (12.0, True,  4, 4,  1024),
+    (16.0, True,  4, 4,  1024),   # inclusive
+    (31.4, False, 8, 2,  2048),   # measured RTX 5090
+])
+def test_recipe_scales_with_vram(vram_gb, four_bit, batch, accum, seq):
+    recipe = asm.build_recipe(vram_gb, (8, 6))
+    assert recipe.load_in_4bit is four_bit
+    assert (recipe.batch_size, recipe.grad_accum, recipe.max_seq_len) == (batch, accum, seq)
+
+
+def test_recipe_reproduces_the_workstation_knobs():
+    """The >16 GB tier must keep the values run_pipeline.sh used to hard-code.
+
+    Anything else would silently change the workstation runs the paper's
+    numbers came from.
+    """
+    recipe = asm.build_recipe(31.4, (12, 0))
+    assert recipe.load_in_4bit is False
+    assert recipe.precision == "bf16"
+    assert (recipe.batch_size, recipe.grad_accum, recipe.max_seq_len) == (8, 2, 2048)
+    assert recipe.merge_adapter is True
+
+
+@pytest.mark.parametrize("capability,precision,tf32", [
+    ((6, 1),  "fp16", False),   # Pascal
+    ((7, 5),  "fp16", False),   # Turing — GTX 1650, the case this exists for
+    ((8, 0),  "bf16", True),    # Ampere, the threshold
+    ((8, 6),  "bf16", True),
+    ((12, 0), "bf16", True),    # Blackwell
+    (None,    "fp16", False),   # unreadable -> assume the restrictive answer
+])
+def test_precision_follows_compute_capability(capability, precision, tf32):
+    recipe = asm.build_recipe(8.0, capability)
+    assert recipe.precision == precision
+    assert recipe.tf32 is tf32
+
+
+def test_cpu_recipe_never_asks_for_a_gpu_dtype():
+    recipe = asm.build_recipe(None, None)
+    assert recipe.precision == "fp32"    # fp16 on CPU is slower and unstable
+    assert recipe.tf32 is False
+    assert recipe.batch_size == 1
+
+
+def test_quantised_runs_do_not_promise_a_merged_model():
+    """peft cannot merge a LoRA losslessly back into 4-bit NF4 weights."""
+    assert asm.build_recipe(4.0, (7, 5)).merge_adapter is False
+    assert asm.build_recipe(31.4, (12, 0)).merge_adapter is True
+
+
+def test_recipe_env_lines_are_shell_safe():
+    lines = asm.build_recipe(4.0, (7, 5)).as_env_lines()
+    keys = dict(line.split("=", 1) for line in lines)
+    # run_pipeline.sh reads these with a case statement, one KEY=VALUE per line.
+    assert all(" " not in line for line in lines)
+    assert keys["LOAD_IN_4BIT"] == "1"
+    assert keys["PRECISION"] == "fp16"
+    assert keys["TF32"] == "0"
+    assert keys["MERGE_ADAPTER"] == "0"
+
+
+def test_num_workers_is_zero_on_windows(monkeypatch):
+    """Spawned DataLoader workers cost more than they save under MSYS/Windows."""
+    monkeypatch.setattr(asm.platform, "system", lambda: "Windows")
+    assert asm.build_recipe(8.0, (8, 6)).dataloader_num_workers == 0
+    monkeypatch.setattr(asm.platform, "system", lambda: "Linux")
+    assert asm.build_recipe(8.0, (8, 6)).dataloader_num_workers == 4
+
+
+def test_recipe_tiers_are_ordered_and_terminated():
+    bounds = [row[0] for row in asm.RECIPE_TABLE]
+    assert bounds[-1] is None
+    finite = [b for b in bounds if b is not None]
+    assert finite == sorted(finite)
+
+
+# --- CLI: the recipe format run_pipeline.sh parses -------------------------
+def test_recipe_format_is_key_value_lines(capsys):
+    asm.main(["--simulate-vram-gb", "4.0", "--simulate-capability", "7.5",
+              "--quiet", "--format", "recipe"])
+    out = capsys.readouterr().out.strip().splitlines()
+    parsed = dict(line.split("=", 1) for line in out)
+    assert parsed["MODEL"] == "unsloth/Qwen2.5-1.5B-Instruct-bnb-4bit"
+    assert parsed["CAPABILITY"] == "7.5"
+    assert parsed["PRECISION"] == "fp16"
+    assert parsed["BATCH_SIZE"] == "1"
+    assert parsed["MAX_SEQ_LEN"] == "512"
+
+
+def test_recipe_format_survives_having_no_gpu(capsys):
+    """The CPU path must still emit every key the shell branches on."""
+    asm.main(["--quiet", "--format", "recipe"])
+    parsed = dict(
+        line.split("=", 1)
+        for line in capsys.readouterr().out.strip().splitlines()
+    )
+    for key in ("MODEL", "PRECISION", "BATCH_SIZE", "GRAD_ACCUM", "MAX_SEQ_LEN",
+                "LORA_R", "OPTIM", "NUM_WORKERS", "ATTN_IMPL", "MERGE_ADAPTER", "TF32"):
+        assert key in parsed, f"{key} missing — run_pipeline.sh reads it"
+
+
+def test_bad_simulated_capability_is_rejected():
+    with pytest.raises(SystemExit) as exc:
+        asm.main(["--simulate-vram-gb", "8", "--simulate-capability", "turing"])
+    assert exc.value.code == 2
+
+
+def test_capability_probe_survives_missing_torch(monkeypatch):
+    real_import = builtins.__import__
+
+    def no_torch(name, *args, **kwargs):
+        if name == "torch":
+            raise ImportError("No module named 'torch'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_torch)
+    assert asm.probe_capability() is None

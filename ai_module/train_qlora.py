@@ -104,8 +104,17 @@ class TrainConfig:
     save_total_limit: int = 2
     early_stopping_patience: int = 2
     early_stopping_threshold: float = 0.0
-    # RTX 5090 knobs
-    bf16: bool = True
+    # Compute precision. "auto" (the default) resolves against the device's
+    # compute capability at build time: bf16 on Ampere and newer (sm_80+),
+    # fp16 on older CUDA silicon, fp32 with no GPU at all.
+    #
+    # This has to be a runtime decision, not a constant: Turing (sm_75 — GTX
+    # 1650/1660, RTX 20xx) exposes a perfectly usable CUDA device that torch
+    # allocates on happily, and then TrainingArguments aborts the run with
+    # "Your setup doesn't support bf16/gpu" the moment training starts.
+    precision: str = "auto"
+    # Ampere tensor-core TF32 matmul. Meaningless (and noisy) below sm_80.
+    tf32: bool = True
     # 4-bit quantization is now OFF by default (native bf16). Kept as an opt-in
     # escape hatch (``--load-in-4bit``) for smaller GPUs / multi-model VRAM
     # sharing; it forces the bitsandbytes NF4 load path in _build_model_hf.
@@ -162,15 +171,77 @@ def _supported_kwargs(target: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in kwargs.items() if k in allowed}
 
 
+# bf16 and TF32 both need Ampere (sm_80). Kept in sync with
+# ai_module.auto_select_model.BF16_MIN_CAPABILITY, which is what tells
+# run_pipeline.sh to pass --precision fp16 in the first place; this is the
+# in-process backstop for a direct `python -m ai_module.train_qlora` call.
+BF16_MIN_CAPABILITY = (8, 0)
+
+PRECISIONS = ("auto", "bf16", "fp16", "fp32")
+
+
+def _cuda_capability() -> tuple[int, int] | None:
+    """``(major, minor)`` for the current CUDA device, or ``None`` without one."""
+    try:
+        import torch
+
+        if not torch.cuda.is_available():
+            return None
+        major, minor = torch.cuda.get_device_capability()
+        return int(major), int(minor)
+    except Exception:
+        return None
+
+
+def _resolve_precision(precision: str) -> str:
+    """Turn ``"auto"`` into a concrete ``bf16`` / ``fp16`` / ``fp32``.
+
+    An explicit choice is honoured as given — except bf16 on hardware that
+    cannot do it, which is downgraded to fp16 with a warning rather than left
+    to fail deep inside the trainer.
+
+    The capability is read directly instead of via
+    ``torch.cuda.is_bf16_supported()``: since torch 2.6 that helper counts
+    *emulated* bf16 and answers True on sm_75, which is precisely the case we
+    are trying to catch.
+    """
+    cap = _cuda_capability()
+    if precision == "auto":
+        if cap is None:
+            return "fp32"
+        return "bf16" if cap >= BF16_MIN_CAPABILITY else "fp16"
+    if precision == "bf16" and cap is not None and cap < BF16_MIN_CAPABILITY:
+        print(f"warn: sm_{cap[0]}{cap[1]} has no bf16 — falling back to fp16")
+        return "fp16"
+    if precision in ("bf16", "fp16") and cap is None:
+        print(f"warn: no CUDA device — {precision} would be slow and unstable "
+              f"on CPU, falling back to fp32")
+        return "fp32"
+    return precision
+
+
+def _torch_dtype(precision: str):
+    import torch
+
+    return {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
+
+
 def _tune_cuda_for_blackwell() -> None:
-    """Enable TF32 / flash-sdp and sane allocator behaviour for sm_120."""
+    """Enable TF32 / flash-sdp and sane allocator behaviour for the local GPU.
+
+    TF32 is gated on sm_80: asking a Turing card for it is at best ignored and
+    at worst logs a warning per matmul. The SDPA backends and the expandable
+    allocator are safe everywhere and matter most on the small cards, where
+    fragmentation is what turns a fitting run into an OOM.
+    """
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     try:
         import torch
 
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-        torch.set_float32_matmul_precision("high")
+        tf32_ok = (_cuda_capability() or (0, 0)) >= BF16_MIN_CAPABILITY
+        torch.backends.cuda.matmul.allow_tf32 = tf32_ok
+        torch.backends.cudnn.allow_tf32 = tf32_ok
+        torch.set_float32_matmul_precision("high" if tf32_ok else "highest")
         if hasattr(torch.backends.cuda, "enable_flash_sdp"):
             torch.backends.cuda.enable_flash_sdp(True)
         if hasattr(torch.backends.cuda, "enable_cudnn_sdp"):
@@ -244,10 +315,13 @@ def _load_dataset(path: Path, tokenizer: Any, text_field: str):
 def _build_model_unsloth(cfg: TrainConfig):
     from unsloth import FastLanguageModel
 
+    precision = _resolve_precision(cfg.precision)
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=cfg.base_model,
         max_seq_length=cfg.max_seq_len,
-        dtype=None,  # auto -> bf16 on Blackwell
+        # None would let Unsloth pick, which lands on bf16 wherever torch claims
+        # (possibly emulated) support; pass the resolved dtype instead.
+        dtype=None if precision == "fp32" else _torch_dtype(precision),
         load_in_4bit=cfg.load_in_4bit,
     )
     model = FastLanguageModel.get_peft_model(
@@ -271,13 +345,18 @@ def _build_model_hf(cfg: TrainConfig):
     # Native bf16 by default; NF4 4-bit only when explicitly requested. The
     # 5090 has the VRAM for the full bf16 base, which trains faster and avoids
     # the quantization-error floor that caps LoRA quality.
+    precision = _resolve_precision(cfg.precision)
+    dtype = _torch_dtype(precision)
+    print(f"compute precision: {precision}"
+          f"{' (4-bit NF4 base weights)' if cfg.load_in_4bit else ''}")
+
     bnb = None
     if cfg.load_in_4bit:
         bnb = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_compute_dtype=dtype,
             # Never silently spill the quantized model to CPU/disk: a partial
             # dispatch makes Accelerate raise "Some modules are dispatched on the
             # CPU or the disk" instead of OOMing loudly. QLoRA needs every base
@@ -300,8 +379,8 @@ def _build_model_hf(cfg: TrainConfig):
     tokenizer.padding_side = "right"  # required for training with bnb / SDPA / FA2
     model = AutoModelForCausalLM.from_pretrained(
         cfg.base_model,
-        quantization_config=bnb,          # None -> full bf16 load
-        torch_dtype=torch.bfloat16,
+        quantization_config=bnb,          # None -> full-precision load
+        torch_dtype=dtype,
         attn_implementation=cfg.attn_impl,
         device_map=device_map,
     )
@@ -338,6 +417,8 @@ def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
     if not smoke and _tensorboard_available():
         report_to = ["tensorboard"]
 
+    precision = _resolve_precision(cfg.precision)
+
     # Per-epoch validation is what makes early stopping / best-checkpoint
     # selection possible; without an eval set both are silently disabled
     # (``load_best_model_at_end`` requires eval_strategy == save_strategy).
@@ -356,8 +437,10 @@ def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
         warmup_ratio=0.0 if smoke else cfg.warmup_ratio,
         weight_decay=cfg.weight_decay,
         lr_scheduler_type="constant" if smoke else "cosine",
-        bf16=cfg.bf16,
-        tf32=True,
+        # Exactly one of these may be true; fp32 leaves both false.
+        bf16=precision == "bf16",
+        fp16=precision == "fp16",
+        tf32=cfg.tf32 and (_cuda_capability() or (0, 0)) >= BF16_MIN_CAPABILITY,
         logging_steps=1 if smoke else 10,
         save_strategy=save_strategy,
         save_total_limit=cfg.save_total_limit,
@@ -455,6 +538,77 @@ def _attach_early_stopping(trainer, cfg, *, have_eval: bool) -> None:
           f"eval rounds on eval_loss")
 
 
+def _is_oom(exc: BaseException) -> bool:
+    """True for a CUDA out-of-memory failure, however torch spelled it.
+
+    ``torch.cuda.OutOfMemoryError`` only exists from torch 2.0 and is not
+    importable without torch, so match on the class name and fall back to the
+    message for the plain ``RuntimeError`` that older stacks (and some
+    bitsandbytes paths) still raise.
+    """
+    if type(exc).__name__ == "OutOfMemoryError":
+        return True
+    return isinstance(exc, RuntimeError) and "out of memory" in str(exc).lower()
+
+
+def _shrink_for_oom(cfg: TrainConfig) -> TrainConfig | None:
+    """Halve the memory footprint of one step, or ``None`` if already minimal.
+
+    Micro-batch first, with grad-accum doubled to hold the tokens-per-step
+    budget constant — that keeps the optimiser schedule comparable to the run
+    that OOMed. Only once the batch is down to 1 do we start cutting the
+    sequence length, which does change what the model sees.
+    """
+    from dataclasses import replace
+
+    if cfg.batch_size > 1:
+        return replace(cfg, batch_size=cfg.batch_size // 2,
+                       grad_accum=cfg.grad_accum * 2)
+    if cfg.max_seq_len > 256:
+        return replace(cfg, max_seq_len=cfg.max_seq_len // 2)
+    return None
+
+
+def _release_cuda(*objects: Any) -> None:
+    """Drop references and hand the VRAM back before retrying."""
+    import gc
+
+    for obj in objects:
+        try:
+            del obj
+        except Exception:  # pragma: no cover - defensive
+            pass
+    gc.collect()
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
+    except Exception:  # pragma: no cover - defensive
+        pass
+
+
+def _oom_advice(cfg: TrainConfig) -> str:
+    """What the operator should try next, given what this run already used."""
+    tips = []
+    if not cfg.load_in_4bit:
+        tips.append("--load-in-4bit  (4-bit NF4 base weights — the single biggest saving)")
+    if cfg.batch_size > 1:
+        tips.append(f"--batch-size 1 --grad-accum {cfg.batch_size * cfg.grad_accum}")
+    if cfg.max_seq_len > 512:
+        tips.append(f"--max-seq-len {cfg.max_seq_len // 2}")
+    if cfg.lora_r > 8:
+        tips.append(f"--lora-r {cfg.lora_r // 2}")
+    if not cfg.gradient_checkpointing:
+        tips.append("gradient checkpointing (currently off)")
+    tips.append("a smaller base model, e.g. --base-model "
+                "unsloth/Qwen2.5-0.5B-Instruct-bnb-4bit")
+    tips.append("closing anything else using the GPU (a browser or the desktop "
+                "compositor can hold back several hundred MB)")
+    return "\n".join(f"    - {t}" for t in tips)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base-model", default=TrainConfig.base_model)
@@ -495,6 +649,21 @@ def main(argv: list[str] | None = None) -> int:
                          "lobotomy recipe keeps every security sample isolated)")
     ap.add_argument("--no-packing", action="store_true",
                     help="explicit no-op; packing is already off by default")
+    ap.add_argument("--precision", choices=PRECISIONS, default=TrainConfig.precision,
+                    help="compute precision (default: auto — bf16 on sm_80+, "
+                         "fp16 on older CUDA cards such as Turing/GTX 16xx, "
+                         "fp32 with no GPU)")
+    ap.add_argument("--no-tf32", dest="tf32", action="store_false",
+                    help="disable the Ampere TF32 matmul path (auto-disabled "
+                         "below sm_80 regardless)")
+    ap.add_argument("--attn-impl", default=None, choices=("sdpa", "eager", "flash_attention_2"),
+                    help="attention kernel (default: sdpa; --flash-attn is a "
+                         "shorthand for flash_attention_2)")
+    ap.add_argument("--oom-retries", type=int, default=1, metavar="N",
+                    help="on a CUDA out-of-memory error, retry N times with the "
+                         "micro-batch halved and grad-accum doubled (default: 1; "
+                         "0 disables). The token budget per optimiser step is "
+                         "preserved, so the schedule stays comparable.")
     ap.add_argument("--load-in-4bit", action="store_true",
                     help="opt back into bitsandbytes NF4 4-bit base (OFF by "
                          "default; native bf16 fits on the 32 GB RTX 5090)")
@@ -541,7 +710,10 @@ def main(argv: list[str] | None = None) -> int:
         early_stopping_threshold=args.early_stopping_threshold,
         packing=args.packing and not args.no_packing,
         load_in_4bit=args.load_in_4bit,
-        attn_impl="flash_attention_2" if args.flash_attn else "sdpa",
+        precision=args.precision,
+        tf32=args.tf32,
+        attn_impl=(args.attn_impl
+                   or ("flash_attention_2" if args.flash_attn else "sdpa")),
         use_unsloth=args.use_unsloth,
         merge_adapter=args.merge_adapter,
         seed=args.seed,
@@ -579,9 +751,39 @@ def main(argv: list[str] | None = None) -> int:
         if cfg.eval and not smoke else None
     )
 
-    sft_config = _build_sft_config(cfg, smoke=smoke, have_eval=eval_ds is not None)
-    trainer = _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds, cfg)
-    trainer.train()
+    attempt = 0
+    while True:
+        sft_config = _build_sft_config(cfg, smoke=smoke, have_eval=eval_ds is not None)
+        trainer = _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds, cfg)
+        try:
+            trainer.train()
+            break
+        except Exception as exc:
+            if not _is_oom(exc):
+                raise
+            smaller = _shrink_for_oom(cfg) if attempt < args.oom_retries else None
+            if smaller is None:
+                print(f"\nCUDA out of memory with batch-size={cfg.batch_size} "
+                      f"grad-accum={cfg.grad_accum} max-seq-len={cfg.max_seq_len} "
+                      f"4bit={cfg.load_in_4bit}.\nTry:\n{_oom_advice(cfg)}")
+                raise
+            attempt += 1
+            print(f"\nCUDA out of memory — retry {attempt}/{args.oom_retries} with "
+                  f"batch-size {cfg.batch_size} -> {smaller.batch_size}, "
+                  f"grad-accum {cfg.grad_accum} -> {smaller.grad_accum}, "
+                  f"max-seq-len {cfg.max_seq_len} -> {smaller.max_seq_len}")
+            cfg = smaller
+            # The model itself is unchanged by these knobs; it is the trainer's
+            # optimiser state and activation buffers that have to go.
+            model.zero_grad(set_to_none=True)
+            _release_cuda(trainer, sft_config)
+
+    if attempt:
+        # The run that finished is not the one whose config we wrote before the
+        # first attempt; make the record match what actually trained.
+        (cfg.output_dir / "train_config.json").write_text(
+            json.dumps({k: str(v) for k, v in cfg.__dict__.items()}, indent=2)
+        )
 
     if smoke:
         print(f"smoke test OK — {cfg.max_steps} steps ran on "

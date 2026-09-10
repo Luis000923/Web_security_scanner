@@ -28,7 +28,13 @@
 #                             <=16 GB -> Qwen2.5-7B-Instruct-bnb-4bit
 #                             >16 GB  -> Qwen2.5-14B-Instruct-bnb-4bit
 #                           so a 6 GB RTX 4050 and a 32 GB RTX 5090 both work
-#                           without editing the script.
+#                           without editing the script. The same probe also
+#                           derives the *training knobs* (see --no-auto-tune):
+#                           4-bit weights, fp16 instead of bf16 on pre-Ampere
+#                           cards, micro-batch and sequence length.
+#   --no-auto-tune          do NOT apply the hardware-derived training knobs
+#                           (precision, 4-bit, batch/accum/seq-len, LoRA rank);
+#                           fall back to train_qlora.py's own defaults
 #   --no-install            do NOT auto-install missing ML deps; abort instead
 #   --no-cuda-torch         when auto-installing, skip the explicit CUDA 12.8
 #                           torch wheel (use whatever ".[ai]" resolves)
@@ -45,6 +51,9 @@
 # Env:
 #   TORCH_INDEX_URL   torch wheel index for the auto-install
 #                     (default: https://download.pytorch.org/whl/cu128)
+#   TORCH_SPEC        torch requirement to install (default: "torch"). Pin it
+#                     when the newest build has dropped your GPU's compute
+#                     capability, e.g. TORCH_SPEC="torch==2.7.1".
 #
 set -Eeuo pipefail
 
@@ -90,6 +99,7 @@ EPOCHS=3
 BASE_MODEL=""            # empty => auto-select from the detected VRAM
 BASE_MODEL_EXPLICIT=0
 NO_INSTALL=0
+AUTO_TUNE=1
 NO_CUDA_TORCH=0
 SKIP_MODEL_DL=0
 MODEL_RETRIES=3
@@ -99,6 +109,7 @@ SKIP_TRAIN=0
 NO_VERIFY=0
 ALLOW_ROOT=0
 TORCH_INDEX_URL="${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu128}"
+TORCH_SPEC="${TORCH_SPEC:-torch}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -107,6 +118,7 @@ while [[ $# -gt 0 ]]; do
         --epochs)         EPOCHS="${2:?}"; shift 2 ;;
         --base-model)     BASE_MODEL="${2:?}"; BASE_MODEL_EXPLICIT=1; shift 2 ;;
         --no-install)     NO_INSTALL=1; shift ;;
+        --no-auto-tune)   AUTO_TUNE=0; shift ;;
         --no-cuda-torch)  NO_CUDA_TORCH=1; shift ;;
         --skip-model-dl)  SKIP_MODEL_DL=1; shift ;;
         --model-retries)  MODEL_RETRIES="${2:?}"; shift 2 ;;
@@ -235,8 +247,8 @@ fi
 install_ml_stack() {
     info "auto-installing the AI stack into .venv …"
     if [[ "$NO_CUDA_TORCH" -eq 0 ]]; then
-        info "  torch from ${TORCH_INDEX_URL}"
-        uv pip install torch --index-url "$TORCH_INDEX_URL"
+        info "  ${TORCH_SPEC} from ${TORCH_INDEX_URL}"
+        uv pip install "$TORCH_SPEC" --index-url "$TORCH_INDEX_URL"
     fi
     uv pip install -e ".[ai]"
 }
@@ -272,6 +284,56 @@ the uv output above"
             ;;
     esac
 fi
+
+# ---------------------------------------------------------------------------
+# 1b. can torch actually launch a kernel on this GPU?
+#
+# torch.cuda.is_available() only proves a driver and a device exist. A wheel
+# built after PyTorch retired this GPU's compute capability imports fine,
+# reports the device correctly, and then fails at the first launch with "no
+# kernel image is available for execution on the device" — after the model
+# download and several minutes of setup. One 8-element tensor answers it now.
+# ---------------------------------------------------------------------------
+step "CUDA kernel check"
+
+# --quiet keeps uv's own "Building ... / Installed n packages" chatter out of
+# the capture; the grep is the belt to that braces, since the probe prints
+# exactly one line with a known prefix and a traceback prints none.
+kernel_raw="$(uv run --quiet python - <<'KERNEL_PROBE_PY' 2>&1 || true
+import torch
+if not torch.cuda.is_available():
+    print("NOCUDA " + torch.__version__)
+else:
+    try:
+        torch.zeros(8, device="cuda").sum().item()
+        cap = torch.cuda.get_device_capability()
+        print("OK %s sm_%d%d" % (torch.__version__, cap[0], cap[1]))
+    except Exception as exc:
+        print("FAIL %s %s: %s" % (torch.__version__, type(exc).__name__, exc))
+KERNEL_PROBE_PY
+)"
+kernel_probe="$(printf '%s\n' "$kernel_raw" | grep -E '^(OK|NOCUDA|FAIL) ' | tail -n 1)"
+[[ -n "$kernel_probe" ]] || kernel_probe="$kernel_raw"
+
+case "$kernel_probe" in
+    OK*)
+        ok "torch can launch kernels here (${kernel_probe#OK })"
+        ;;
+    NOCUDA*)
+        warn "torch has no CUDA support (${kernel_probe#NOCUDA }) — training will run on the CPU"
+        warn "re-install with: uv pip install torch --index-url ${TORCH_INDEX_URL}"
+        ;;
+    *"no kernel image"*|*"not compatible with the current PyTorch"*)
+        die "torch installed but has no kernels for this GPU:
+    ${kernel_probe}
+PyTorch drops old compute capabilities as it moves on. Install the last build
+that still ships them, then re-run:
+    uv pip install 'torch==2.7.1' --index-url ${TORCH_INDEX_URL}"
+        ;;
+    *)
+        warn "CUDA kernel probe inconclusive: ${kernel_probe}"
+        ;;
+esac
 
 # ---------------------------------------------------------------------------
 # 2. dataset (re)generation
@@ -325,31 +387,106 @@ ok "eval : ${VAL_DS}"
 # ---------------------------------------------------------------------------
 step "Hardware profiling & base-model selection"
 
-if [[ "$BASE_MODEL_EXPLICIT" -eq 1 ]]; then
-    ok "base model pinned by --base-model: ${BASE_MODEL}"
-    info "auto-selection skipped"
+# --format recipe prints KEY=VALUE lines: the model *and* the training knobs
+# that fit the probed device. Parsed with a read loop rather than `eval` so a
+# surprising value can never execute.
+AUTO_VRAM=""; AUTO_TIER=""; AUTO_DEVICE=""; AUTO_STATUS=""; AUTO_CAPABILITY=""
+R_LOAD_IN_4BIT=""; R_PRECISION=""; R_BATCH_SIZE=""; R_GRAD_ACCUM=""
+R_MAX_SEQ_LEN=""; R_LORA_R=""; R_OPTIM=""; R_NUM_WORKERS=""; R_ATTN_IMPL=""
+R_MERGE_ADAPTER=""; R_TF32=""; AUTO_MODEL=""
+
+recipe=""
+if ! recipe="$(uv run python -m ai_module.auto_select_model --format recipe --quiet 2>/dev/null)"; then
+    recipe=""
+fi
+
+if [[ -n "$recipe" ]]; then
+    while IFS='=' read -r key value; do
+        case "$key" in
+            MODEL)                  AUTO_MODEL="$value" ;;
+            TIER)                   AUTO_TIER="$value" ;;
+            VRAM_GB)                AUTO_VRAM="$value" ;;
+            CAPABILITY)             AUTO_CAPABILITY="$value" ;;
+            DEVICE)                 AUTO_DEVICE="$value" ;;
+            STATUS)                 AUTO_STATUS="$value" ;;
+            LOAD_IN_4BIT)           R_LOAD_IN_4BIT="$value" ;;
+            PRECISION)              R_PRECISION="$value" ;;
+            BATCH_SIZE)             R_BATCH_SIZE="$value" ;;
+            GRAD_ACCUM)             R_GRAD_ACCUM="$value" ;;
+            MAX_SEQ_LEN)            R_MAX_SEQ_LEN="$value" ;;
+            LORA_R)                 R_LORA_R="$value" ;;
+            OPTIM)                  R_OPTIM="$value" ;;
+            NUM_WORKERS)            R_NUM_WORKERS="$value" ;;
+            ATTN_IMPL)              R_ATTN_IMPL="$value" ;;
+            MERGE_ADAPTER)          R_MERGE_ADAPTER="$value" ;;
+            TF32)                   R_TF32="$value" ;;
+        esac
+    done <<<"$recipe"
 else
-    # --format tsv keeps the machine-readable profile on one line:
-    #   vram_gb <TAB> tier <TAB> model <TAB> device <TAB> status
+    # An older checkout (or a broken ML stack) has no --format recipe. The model
+    # id alone is still enough to run with train_qlora.py's own defaults.
+    warn "auto_select_model --format recipe unavailable — falling back to the model id only"
+    AUTO_TUNE=0
     autosel=""
     if ! autosel="$(uv run python -m ai_module.auto_select_model --format tsv --quiet)"; then
         die "ai_module.auto_select_model failed to run — re-run with an explicit \
 '--base-model NAME' to bypass hardware profiling"
     fi
-    IFS=$'\t' read -r AUTO_VRAM AUTO_TIER BASE_MODEL AUTO_DEVICE AUTO_STATUS <<<"$autosel"
+    IFS=$'\t' read -r AUTO_VRAM AUTO_TIER AUTO_MODEL AUTO_DEVICE AUTO_STATUS <<<"$autosel"
+fi
 
-    [[ -n "$BASE_MODEL" ]] || die "auto_select_model returned no model name (got: '${autosel}')"
-
-    if [[ "$AUTO_TIER" == "0" ]]; then
-        # Step 1 already installed and verified torch, so reaching the CPU tier
-        # here means the GPU is not usable — say so instead of quietly
-        # fine-tuning a toy model on a workstation that has a 5090 in it.
-        warn "no usable GPU detected (${AUTO_STATUS}) — falling back to a CPU-sized model"
-        warn "training will be extremely slow; check 'nvidia-smi' and the torch CUDA build"
-    fi
-    info "[INFO] Hardware profiling: ${AUTO_VRAM} GB VRAM detected (${AUTO_DEVICE}, tier ${AUTO_TIER})."
+if [[ "$BASE_MODEL_EXPLICIT" -eq 1 ]]; then
+    ok "base model pinned by --base-model: ${BASE_MODEL}"
+    info "model auto-selection skipped (the hardware knobs below still apply)"
+else
+    [[ -n "$AUTO_MODEL" ]] || die "auto_select_model returned no model name"
+    BASE_MODEL="$AUTO_MODEL"
     ok "Auto-selected model: ${BASE_MODEL}"
     info "pass '--base-model NAME' to override this choice"
+fi
+
+if [[ "$AUTO_TIER" == "0" ]]; then
+    # Step 1 already installed and verified torch, so reaching the CPU tier
+    # here means the GPU is not usable — say so instead of quietly
+    # fine-tuning a toy model on a workstation that has a 5090 in it.
+    warn "no usable GPU detected (${AUTO_STATUS}) — falling back to a CPU-sized model"
+    warn "training will be extremely slow; check 'nvidia-smi' and the torch CUDA build"
+fi
+info "[INFO] Hardware profiling: ${AUTO_VRAM:-?} GB VRAM detected (${AUTO_DEVICE:-?}${AUTO_CAPABILITY:+, sm_${AUTO_CAPABILITY//./}}, tier ${AUTO_TIER:-?})."
+
+# ---------------------------------------------------------------------------
+# 3b. hardware-derived training knobs
+#
+# A 4 GB Turing card and a 32 GB Blackwell card cannot share a batch size, a
+# sequence length or even a compute dtype — sm_75 has no bf16 at all. The knobs
+# come from the same probe that picked the model, so the two can never drift
+# apart, and --no-auto-tune falls back to train_qlora.py's own defaults.
+# ---------------------------------------------------------------------------
+TRAIN_ARGS=()
+if [[ "$AUTO_TUNE" -eq 1 && -n "$R_PRECISION" ]]; then
+    TRAIN_ARGS+=(
+        --precision   "$R_PRECISION"
+        --batch-size  "$R_BATCH_SIZE"
+        --grad-accum  "$R_GRAD_ACCUM"
+        --max-seq-len "$R_MAX_SEQ_LEN"
+        --lora-r      "$R_LORA_R"
+        --optim       "$R_OPTIM"
+        --num-workers "$R_NUM_WORKERS"
+        --attn-impl   "$R_ATTN_IMPL"
+    )
+    [[ "$R_LOAD_IN_4BIT" == "1" ]] && TRAIN_ARGS+=(--load-in-4bit)
+    [[ "$R_TF32" == "1" ]] || TRAIN_ARGS+=(--no-tf32)
+    ok "hardware knobs: precision=${R_PRECISION} 4bit=${R_LOAD_IN_4BIT} \
+batch=${R_BATCH_SIZE} accum=${R_GRAD_ACCUM} seq=${R_MAX_SEQ_LEN} lora_r=${R_LORA_R}"
+    if [[ "$R_PRECISION" == "fp16" && -n "$AUTO_CAPABILITY" ]]; then
+        info "sm_${AUTO_CAPABILITY//./} predates Ampere: bf16 and TF32 are off, fp16 is used instead"
+    fi
+    if [[ "$R_MERGE_ADAPTER" != "1" ]]; then
+        info "adapter merging disabled: a LoRA cannot be merged losslessly back \
+into 4-bit NF4 weights — serve the adapter on top of the base model instead"
+    fi
+else
+    warn "hardware auto-tuning disabled — using train_qlora.py defaults"
 fi
 
 # ---------------------------------------------------------------------------
@@ -387,11 +524,14 @@ if [[ "$SKIP_SMOKE" -eq 1 ]]; then
     warn "skipped (--skip-smoke)"
 else
     rm -rf "$SMOKE_DIR"
+    # Same knobs as the real run: a smoke test that trains at a different batch
+    # size or precision proves nothing about whether the real run will fit.
     uv run python -m ai_module.train_qlora \
         --base-model "$BASE_MODEL" \
         --dataset "$TRAIN_DS" \
         --output-dir "$SMOKE_DIR" \
-        --max-steps 5
+        --max-steps 5 \
+        ${TRAIN_ARGS[@]+"${TRAIN_ARGS[@]}"}
     ok "smoke test OK — kernels, bitsandbytes 4-bit and the data pipeline respond"
 fi
 
@@ -403,18 +543,26 @@ step "Full QLoRA fine-tune"
 if [[ "$SKIP_TRAIN" -eq 1 ]]; then
     warn "skipped (--skip-train)"
 else
+    merge_args=()
+    [[ "$AUTO_TUNE" -eq 0 || "$R_MERGE_ADAPTER" == "1" ]] && merge_args+=(--merge-adapter)
+
     info "base-model : ${BASE_MODEL}"
     info "output-dir : ${OUT_DIR}"
-    info "knobs      : --epochs ${EPOCHS} --max-seq-len 2048 --batch-size 8 --grad-accum 2 --eval --merge-adapter"
+    info "knobs      : --epochs ${EPOCHS} ${TRAIN_ARGS[*]-} ${merge_args[*]-}"
     uv run python -m ai_module.train_qlora \
         --base-model "$BASE_MODEL" \
         --dataset "$TRAIN_DS" --eval "$VAL_DS" \
         --output-dir "$OUT_DIR" \
-        --epochs "$EPOCHS" --batch-size 8 --grad-accum 2 --max-seq-len 2048 \
-        --merge-adapter
+        --epochs "$EPOCHS" \
+        ${TRAIN_ARGS[@]+"${TRAIN_ARGS[@]}"} \
+        ${merge_args[@]+"${merge_args[@]}"}
     ok "fine-tune complete"
     info "adapter : ${OUT_DIR}/adapter/"
-    info "merged  : ${OUT_DIR}/merged/"
+    if [[ ${#merge_args[@]} -gt 0 ]]; then
+        info "merged  : ${OUT_DIR}/merged/"
+    else
+        info "no merged model: the 4-bit base cannot absorb the adapter losslessly"
+    fi
 fi
 
 # ---------------------------------------------------------------------------

@@ -56,15 +56,67 @@ in the repo root:
   retry the partial / corrupt blobs are purged from the cache and the Xet
   accelerator is disabled so the retry falls back to plain HTTPS. Tune with
   `--model-retries N`; force plain HTTPS from the start with `--no-xet`;
+- probes the GPU once and derives **both** the base model and the training knobs
+  from it (`ai_module/auto_select_model.py --format recipe`): VRAM picks the
+  model size and the batch/sequence budget, compute capability picks the numeric
+  format. Pre-Ampere cards (sm_75 — GTX 1650/1660, RTX 20xx) have no bf16 unit at
+  all, so they get fp16 + 4-bit NF4 weights instead of aborting inside
+  `TrainingArguments`; `--no-auto-tune` falls back to `train_qlora.py`'s own
+  defaults. On a 32 GB accelerator the derived knobs are exactly the values the
+  script used to hard-code, so nothing changes there;
+- launches one throwaway CUDA kernel before downloading anything, because
+  `torch.cuda.is_available()` does not tell you whether the wheel still ships
+  code for your architecture — a mismatch otherwise surfaces as "no kernel image
+  is available for execution on the device" minutes into the run. Pin an older
+  build with `TORCH_SPEC="torch==2.7.1"` when it does;
 - runs the QLoRA smoke test and then the full fine-tune, aborting in red on any
-  failure and printing the total wall-clock time.
+  failure and printing the total wall-clock time. A CUDA out-of-memory error is
+  retried once with the micro-batch halved and grad-accum doubled (constant
+  tokens per step), then reported with the exact flags to try next.
 
 ```bash
 ./run_pipeline.sh                 # verify/install env → fetch model → smoke → full triage fine-tune
 ./run_pipeline.sh --regen-data    # + regenerate datasets first (synthetic x40)
 ./run_pipeline.sh --task payload --epochs 3
+./run_pipeline.sh --no-auto-tune  # ignore the hardware-derived knobs
 ./run_pipeline.sh --help
 ```
+
+Inspect the plan for the current machine without running anything:
+
+```bash
+uv run python -m ai_module.auto_select_model --format recipe
+# MODEL=unsloth/Qwen2.5-1.5B-Instruct-bnb-4bit
+# PRECISION=fp16          <- sm_75 has no bf16
+# LOAD_IN_4BIT=1
+# BATCH_SIZE=1 GRAD_ACCUM=16 MAX_SEQ_LEN=512 ...
+
+# or simulate another machine
+uv run python -m ai_module.auto_select_model --format recipe \
+    --simulate-vram-gb 4 --simulate-capability 7.5
+```
+
+### Windows
+
+`setup_windows.ps1` is the one file you need on a bare Windows machine: it
+pre-flights the host, installs Git / Python 3.11 / uv, obtains the source, and
+runs the pipeline — through Git Bash, or through an equivalent native PowerShell
+path when Git Bash could not be installed.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup_windows.ps1
+.\check_windows_env.ps1                                  # read-only pre-flight
+.\setup_windows.ps1 -Proxy http://proxy.campus.edu:8080  # filtered network
+.\setup_windows.ps1 -SourceZip D:\repo.zip               # GitHub unreachable
+.\setup_windows.ps1 -TorchSpec "torch==2.7.1"            # older GPU architecture
+```
+
+Every install route has a fallback (uv comes from astral.sh, PyPI *or* winget;
+the source from `git clone`, an HTTPS zip *or* a local zip), every network
+failure is classified — DNS, TLS, proxy, timeout — and paired with the remedy for
+that classification, and the whole run is transcribed to a log file. A campus
+network that filters `github.com` while leaving PyPI and Hugging Face reachable
+is a warning with instructions, not an abort.
 
 The manual steps below are still the reference for what each phase does.
 
