@@ -179,3 +179,18 @@ def test_curated_entries_have_cwe(doc):
         for e in lst:
             if "source:legacy" not in e.get("tags", []):
                 assert re.match(r"^CWE-\d+$", e.get("cwe", "")), f"{e['id']} missing CWE"
+
+
+MIN_SIGNATURES_PER_CATEGORY = 30
+
+
+def test_no_category_falls_below_minimum_signature_count(doc):
+    # Guards against corpus asymmetry silently regressing (e.g. deserialization/idor
+    # historically had only 6-7 signatures against sql_injection's 500+).
+    thin = {
+        cat: len(lst) for cat, lst in doc["categories"].items()
+        if len(lst) < MIN_SIGNATURES_PER_CATEGORY
+    }
+    assert not thin, (
+        f"categories below the {MIN_SIGNATURES_PER_CATEGORY}-signature floor: {thin}"
+    )

@@ -12,6 +12,8 @@ from aiohttp import web
 from web_security_scanner.core import manifest_async
 from web_security_scanner.core.scanner_core_async import AsyncScannerCore, ScanConfig
 from web_security_scanner.core.session_async import (
+    PRIMARY_ROLE,
+    IdentityPool,
     SessionConfig,
     SessionManager,
     _walk_dotted,
@@ -55,6 +57,34 @@ def test_looks_logged_out():
     assert sm.looks_logged_out({"status_code": 200, "url": "http://h/x",
                                 "text": "<h1>Please sign in</h1>"})
     assert not sm.looks_logged_out({"status_code": 200, "url": "http://h/x", "text": "ok"})
+
+
+def test_session_config_identities_rejects_primary_role_key():
+    with pytest.raises(ValueError, match="reserved primary role"):
+        SessionConfig(identities={PRIMARY_ROLE: {"login_url": "http://h/login"}})
+
+
+def test_session_config_identities_accepted_and_parsed_from_dict():
+    cfg = SessionConfig.from_dict({
+        "login_url": "http://h/login", "username": "admin", "password": "p",
+        "identities": {"B": {"login_url": "http://h/login",
+                              "username": "bob", "password": "q"}},
+    })
+    assert set(cfg.identities) == {"B"}
+    assert cfg.identities["B"]["username"] == "bob"
+
+
+def test_identity_pool_resolves_primary_role_without_starting_anything():
+    """A pool with zero secondary identities must resolve ``PRIMARY_ROLE`` to
+    the primary core it was built with, and nothing else -- the common case
+    of a scan with no ``session.identities`` configured never touches network
+    or constructs a secondary ``AsyncScannerCore``."""
+    primary_core = object()  # identity suffices; IdentityPool never calls it here
+    pool = IdentityPool(primary_core)
+    assert pool.get(PRIMARY_ROLE) is primary_core
+    assert pool.get("B") is None
+    assert pool.roles == [PRIMARY_ROLE]
+    assert pool.secondary_roles == []
 
 
 def test_manifest_redacts_session_secrets():
@@ -142,11 +172,17 @@ async def auth_app():
     returns a token; /expiring is 401 until a re-login flips a flag."""
     state = {"reauth_seen": 0, "expired": True}
 
+    # Two independent users, each getting their own session cookie value, so
+    # a test can tell which authenticated identity a later request rode in on.
+    creds = {("admin", "hunter2"): "SESSION-OK", ("bob", "wonderland"): "SESSION-OK-B"}
+
     async def login(request):
         data = await request.post()
-        if data.get("user") == "admin" and data.get("pw") == "hunter2":
+        key = (data.get("user"), data.get("pw"))
+        cookie = creds.get(key)
+        if cookie:
             resp = web.Response(text="welcome")
-            resp.set_cookie("JSESSIONID", "SESSION-OK")
+            resp.set_cookie("JSESSIONID", cookie)
             state["expired"] = False
             return resp
         return web.Response(status=403, text="bad creds")
@@ -155,6 +191,26 @@ async def auth_app():
         if request.cookies.get("JSESSIONID") == "SESSION-OK":
             return web.Response(text="secret area")
         return web.Response(status=401, text="Please sign in")
+
+    async def idor_resource(request):
+        # Deliberately vulnerable: any authenticated session (admin's OR
+        # bob's) sees admin's data -- object-level access control is missing
+        # entirely. Mirrors a broken ``/api/profile?id=<admin's id>`` endpoint.
+        if request.cookies.get("JSESSIONID") in creds.values():
+            return web.Response(text="email admin@corp.com username admin profile data")
+        return web.Response(status=401, text="Please sign in")
+
+    async def safe_resource(request):
+        # Correctly isolated: each session sees only its own data. Padded to
+        # unambiguously different lengths (>10% apart) so the length-based
+        # response_differs_significantly heuristic reliably tells them apart.
+        owner_padding = {"SESSION-OK": ("admin", "a" * 80), "SESSION-OK-B": ("bob", "")}
+        entry = owner_padding.get(request.cookies.get("JSESSIONID"))
+        if entry is None:
+            return web.Response(status=401, text="Please sign in")
+        owner, padding = entry
+        return web.Response(
+            text=f"email {owner}@corp.com username {owner} profile data {padding}")
 
     async def jwt_login(request):
         return web.json_response({"data": {"access_token": "JWT-123"}})
@@ -175,6 +231,8 @@ async def auth_app():
     app.router.add_post("/jwt-login", jwt_login)
     app.router.add_get("/needs-bearer", needs_bearer)
     app.router.add_get("/expiring", expiring)
+    app.router.add_get("/idor-resource", idor_resource)
+    app.router.add_get("/safe-resource", safe_resource)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "127.0.0.1", 0)
@@ -379,4 +437,134 @@ async def test_auth_required_failure_aborts(auth_app):
     try:
         assert await scanner._authenticate(base) is False
     finally:
+        await scanner.core.close()
+
+
+# ---------------------------------------------------------------------------
+# Multi-identity (IdentityPool) — cross-session IDOR prerequisite
+# ---------------------------------------------------------------------------
+
+def _multi_identity_session_cfg(base: str) -> dict:
+    return {
+        "login_url": f"{base}/login", "username": "admin", "password": "hunter2",
+        "username_field": "user", "password_field": "pw",
+        "identities": {
+            "B": {"login_url": f"{base}/login", "username": "bob",
+                  "password": "wonderland", "username_field": "user",
+                  "password_field": "pw"},
+        },
+    }
+
+
+async def test_identity_pool_starts_secondary_identity_concurrently(auth_app):
+    base, _ = auth_app
+    core = _core()
+    await core.start()
+    try:
+        sm = SessionManager(SessionConfig.from_dict(_multi_identity_session_cfg(base)))
+        assert await sm.authenticate(core, force=True) is True  # role A (primary)
+
+        pool = IdentityPool(core)
+        await pool.start_all(sm.cfg.identities, core.config, target_url=base)
+        try:
+            assert pool.secondary_roles == ["B"]
+            core_b = pool.get("B")
+            assert core_b is not None and core_b is not core   # independent transport
+
+            # Role A's own view of the protected resource, and role B's --
+            # both authenticated, through two entirely separate ClientSessions.
+            r_a = await core.request("GET", f"{base}/protected", use_cache=False)
+            assert r_a["status_code"] == 200
+            r_b = await core_b.request("GET", f"{base}/idor-resource", use_cache=False)
+            assert r_b["status_code"] == 200
+        finally:
+            await pool.close()
+    finally:
+        await core.close()
+
+
+async def test_identity_pool_start_all_is_noop_without_identities(auth_app):
+    """Zero identities configured -> no secondary AsyncScannerCore is even
+    constructed (byte-identical to a single-identity scan)."""
+    base, _ = auth_app
+    core = _core()
+    await core.start()
+    try:
+        pool = IdentityPool(core)
+        await pool.start_all({}, core.config, target_url=base)
+        assert pool.secondary_roles == []
+        await pool.close()  # must not raise on an empty pool
+    finally:
+        await core.close()
+
+
+async def test_idor_tester_confirms_cross_session_bypass_via_real_identity_pool(auth_app):
+    """End-to-end: WebSecurityScanner wires an IdentityPool from
+    ``session.identities`` into every tester's config, and IDORTester uses it
+    to catch the deliberately-broken ``/idor-resource`` endpoint (any
+    authenticated session sees admin's data) against a real second aiohttp
+    login -- not a mock."""
+    from web_security_scanner.modules.vulnerability_testers.idor_tester_async import (
+        IDORTester,
+    )
+    from web_security_scanner.web_security_scanner_async import WebSecurityScanner
+
+    base, _ = auth_app
+    scanner = WebSecurityScanner({
+        "core": {"allow_private_redirects": True},
+        "session": _multi_identity_session_cfg(base),
+    })
+    await scanner.core.start()
+    try:
+        assert await scanner._authenticate(base) is True
+        assert scanner.identity_pool is not None
+        assert scanner.config["testers"]["identity_pool"] is scanner.identity_pool
+
+        tester = IDORTester(scanner.core, scanner.event_emitter, scanner.config["testers"])
+        found: list[dict] = []
+        from web_security_scanner.events.event_emitter import ScanEventType
+        scanner.event_emitter.on(
+            ScanEventType.VULNERABILITY_FOUND,
+            lambda **k: found.append(k.get("vulnerability")))
+
+        await tester.run_test(f"{base}/idor-resource?id=1")
+
+        assert len(found) == 1
+        assert found[0]["confidence"] == "CONFIRMED"
+        assert found[0]["payload"] == "cross-session:B"
+    finally:
+        if scanner.identity_pool is not None:
+            await scanner.identity_pool.close()
+        await scanner.core.close()
+
+
+async def test_idor_tester_no_finding_against_properly_isolated_resource(auth_app):
+    """Negative control: the same multi-identity setup against a *correctly*
+    isolated endpoint must not report anything."""
+    from web_security_scanner.modules.vulnerability_testers.idor_tester_async import (
+        IDORTester,
+    )
+    from web_security_scanner.web_security_scanner_async import WebSecurityScanner
+
+    base, _ = auth_app
+    scanner = WebSecurityScanner({
+        "core": {"allow_private_redirects": True},
+        "session": _multi_identity_session_cfg(base),
+    })
+    await scanner.core.start()
+    try:
+        assert await scanner._authenticate(base) is True
+        tester = IDORTester(scanner.core, scanner.event_emitter, scanner.config["testers"])
+        found: list[dict] = []
+        from web_security_scanner.events.event_emitter import ScanEventType
+        scanner.event_emitter.on(
+            ScanEventType.VULNERABILITY_FOUND,
+            lambda **k: found.append(k.get("vulnerability")))
+
+        await tester.run_test(f"{base}/safe-resource?id=1")
+
+        assert found == []
+    finally:
+        if scanner.identity_pool is not None:
+            await scanner.identity_pool.close()
         await scanner.core.close()

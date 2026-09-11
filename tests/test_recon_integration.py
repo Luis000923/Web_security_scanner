@@ -178,10 +178,6 @@ async def test_discovered_targets_reach_the_testers(monkeypatch):
     scanner.testers = [recorder]
 
     monkeypatch.setattr(scanner.mapper, "_discover_subdomains", lambda: _async_none())
-    monkeypatch.setattr(
-        scanner.mapper, "generate_map_async",
-        lambda *a, **k: _async_value("reports/fake_map.html"),
-    )
 
     results = await scanner.run_scan(BASE, generate_map=True)
 
@@ -194,7 +190,3 @@ async def test_discovered_targets_reach_the_testers(monkeypatch):
 
 async def _async_none():
     return None
-
-
-async def _async_value(value):
-    return value

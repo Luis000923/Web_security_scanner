@@ -32,6 +32,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import parse_qsl, urlparse, urlunparse
 
+from .spider_trap_heuristics import evaluate_url_for_trap
+
 try:  # pragma: no cover - exercised only where Playwright is installed
     from playwright.async_api import async_playwright
 except Exception:  # ImportError, or a broken partial install
@@ -49,6 +51,24 @@ MONITORED_SINKS = (
     "innerHTML", "outerHTML", "insertAdjacentHTML",
     "setTimeout", "setInterval",
 )
+
+def resolve_browser_page_cap(max_urls: int, requested: int | None = None) -> int:
+    """Derive the browser recon page-navigation cap from the crawler's shared
+    ``max_urls`` limit (Phase 3 anti-spider-trap policy in ``web_mapper_async``).
+
+    Browser recon used to carry its own independent ``--browser-max-pages``
+    default, disconnected from ``--max-urls``: a caller could shrink the
+    crawl budget to contain a spider trap while the headless-browser pass
+    kept navigating up to its own separate default, silently exceeding the
+    intended scope. Routing both through this single function means the
+    browser cap can never exceed the crawler's own hard limit, whatever the
+    caller passes.
+    """
+    max_urls = max(1, int(max_urls))
+    if requested is None:
+        return max(1, min(6, max_urls))
+    return max(1, min(int(requested), max_urls))
+
 
 # Injected via add_init_script; runs in the page before any site script. It only
 # *observes* — values are passed straight through to the original sink.
@@ -202,17 +222,37 @@ class BrowserRecon:
         nav_timeout: float = 15.0,
         settle_time: float = 2.0,
         max_pages: int = 6,
+        max_urls: int | None = None,
+        max_concurrent_pages: int = 3,
         same_origin_only: bool = True,
         logger: logging.Logger | None = None,
         scope: Any | None = None,
     ) -> None:
         self.nav_timeout = max(1.0, nav_timeout)
         self.settle_time = max(0.0, settle_time)
-        self.max_pages = max(1, max_pages)
+        # ``max_urls``, when given, is the same shared crawl-budget knob the
+        # standard crawler enforces (web_mapper_async.WebMapperAsync.max_urls) —
+        # see resolve_browser_page_cap() for why the two must not desync.
+        self.max_pages = (
+            resolve_browser_page_cap(max_urls, max_pages)
+            if max_urls is not None
+            else max(1, max_pages)
+        )
+        # Hard ceiling on how many Chromium tabs may be alive at once. Each open
+        # page is a renderer process: unbounded fan-out over the nav targets
+        # would spike host RAM/CPU, so navigations are gated by a semaphore
+        # sized from this value (never above the total page budget).
+        self.max_concurrent_pages = max(1, min(int(max_concurrent_pages), self.max_pages))
         self.same_origin_only = same_origin_only
         self._log = logger or logging.getLogger(__name__)
         # Optional object exposing ``host_in_scope(host) -> bool`` (ScopeEngine).
         self._scope = scope
+        # URLs discarded by the structural spider-trap heuristic instead of
+        # being fed into the SPA-endpoint / nav-target frontier.
+        self.trap_branches_pruned = 0
+        # Live/peak open-page accounting (observability + leak assertions).
+        self._open_pages = 0
+        self.peak_concurrent_pages = 0
 
     @staticmethod
     def available() -> bool:
@@ -240,6 +280,22 @@ class BrowserRecon:
         names = [k for k, _ in parse_qsl(parsed.query, keep_blank_values=True)]
         canonical = urlunparse(parsed._replace(fragment=""))
         return canonical, names
+
+    def _discard_if_trap(self, url: str) -> bool:
+        """True (and logs a warning) when ``url`` matches the structural
+        spider-trap heuristic - cyclic/repeated path segments, a high-entropy
+        token, or repetitive query params. Callers must skip adding such a
+        URL to the discovery/nav-target frontier, pruning that branch before
+        it ever consumes a page-navigation slot.
+        """
+        trap = evaluate_url_for_trap(url)
+        if trap.is_trap:
+            self.trap_branches_pruned += 1
+            self._log.warning(
+                f"Spider-trap heuristic ({trap.reason}): discarding "
+                f"browser-discovered URL {url}"
+            )
+        return trap.is_trap
 
     def _nav_targets(self, base_url: str, params_by_url: dict[str, list[str]]) -> list[str]:
         """Base URL plus canary-tagged variants that seed the taint sources."""
@@ -284,83 +340,140 @@ class BrowserRecon:
         try:
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch(headless=True)
-                context = await browser.new_context(ignore_https_errors=True)
-
-                findings: list[DomXssFinding] = []
-
-                async def _on_report(payload: str) -> None:
+                # Every resource below is released in a finally block: a failure
+                # anywhere in the pass must never strand a Chromium process or a
+                # context (long scan campaigns call explore() once per target).
+                try:
+                    context = await browser.new_context(ignore_https_errors=True)
                     try:
-                        data = json.loads(payload)
-                    except (TypeError, ValueError):
-                        return
-                    findings.append(DomXssFinding(
-                        url=str(data.get("url") or base_url),
-                        sink=str(data.get("sink") or "unknown"),
-                        source=str(data.get("source") or "unknown"),
-                        sample=str(data.get("sample") or "")[:240],
-                    ))
+                        findings: list[DomXssFinding] = []
 
-                await context.expose_function("__wssDomXssReport", _on_report)
-                await context.add_init_script(_INSTRUMENTATION)
+                        async def _on_report(payload: str) -> None:
+                            try:
+                                data = json.loads(payload)
+                            except (TypeError, ValueError):
+                                return
+                            findings.append(DomXssFinding(
+                                url=str(data.get("url") or base_url),
+                                sink=str(data.get("sink") or "unknown"),
+                                source=str(data.get("source") or "unknown"),
+                                sample=str(data.get("sample") or "")[:240],
+                            ))
 
-                def _on_request(request: Any) -> None:
-                    try:
-                        rtype = request.resource_type
-                        url = request.url
-                    except Exception:  # noqa: BLE001
-                        return
-                    if rtype not in ("xhr", "fetch"):
-                        return
-                    if not self._in_scope(url, origin_host):
-                        return
-                    canonical, names = self._split_params(url)
-                    result.xhr_endpoints.add(canonical)
-                    result.discovered_urls.add(canonical)
-                    if names:
-                        params_by_url.setdefault(canonical, [])
-                        for n in names:
-                            if n not in params_by_url[canonical]:
-                                params_by_url[canonical].append(n)
+                        await context.expose_function("__wssDomXssReport", _on_report)
+                        await context.add_init_script(_INSTRUMENTATION)
 
-                context.on("request", _on_request)
+                        def _on_request(request: Any) -> None:
+                            try:
+                                rtype = request.resource_type
+                                url = request.url
+                            except Exception:  # noqa: BLE001
+                                return
+                            if rtype not in ("xhr", "fetch"):
+                                return
+                            if not self._in_scope(url, origin_host):
+                                return
+                            canonical, names = self._split_params(url)
+                            if self._discard_if_trap(canonical):
+                                return
+                            result.xhr_endpoints.add(canonical)
+                            result.discovered_urls.add(canonical)
+                            if names:
+                                params_by_url.setdefault(canonical, [])
+                                for n in names:
+                                    if n not in params_by_url[canonical]:
+                                        params_by_url[canonical].append(n)
 
-                page = await context.new_page()
-                page.set_default_navigation_timeout(self.nav_timeout * 1000)
+                        context.on("request", _on_request)
 
-                for target in self._nav_targets(base_url, params_by_url):
-                    # A goto() that only changes the fragment relative to the
-                    # current URL is a same-document navigation: the browser does
-                    # NOT reload and inline page scripts never re-run, so a
-                    # ``#<canary>`` variant would sail past the taint hooks.
-                    # Bounce through about:blank to force a full document load.
-                    if "#" in target:
-                        try:
-                            await page.goto("about:blank")
-                        except Exception:  # noqa: BLE001
-                            pass
-                    try:
-                        await page.goto(target, wait_until="networkidle")
-                    except Exception as exc:  # noqa: BLE001 - timeouts, nav aborts
-                        self._log.debug("browser nav to %s failed: %s", target, exc)
-                        try:
-                            await page.goto(target, wait_until="domcontentloaded")
-                        except Exception:  # noqa: BLE001
-                            continue
-                    if self.settle_time:
-                        await asyncio.sleep(self.settle_time)
-                    result.visited.append(target)
-                    await self._harvest_dom(page, origin_host, result)
+                        targets = self._nav_targets(base_url, params_by_url)
+                        await self._visit_targets(context, targets, origin_host, result)
 
-                await context.close()
-                await browser.close()
-
-                result.dom_xss = findings
-                result.params_by_url = params_by_url
+                        result.dom_xss = findings
+                        result.params_by_url = params_by_url
+                    finally:
+                        await self._safe_close(context, "context")
+                finally:
+                    await self._safe_close(browser, "browser")
         except Exception as exc:  # noqa: BLE001 - Playwright runtime / browser missing
             self._log.warning("Browser recon failed (%s): %s", type(exc).__name__, exc)
             result.error = f"{type(exc).__name__}: {exc}"
 
         return result
+
+    async def _safe_close(self, handle: Any, label: str) -> None:
+        """Close a Playwright handle without ever raising.
+
+        Cleanup runs inside ``finally`` blocks, often while another exception
+        is propagating; letting a close() failure escape would mask the real
+        error and skip the remaining teardown steps.
+        """
+        try:
+            await handle.close()
+        except Exception as exc:  # noqa: BLE001
+            self._log.debug("closing browser %s failed: %s", label, exc)
+
+    async def _visit_targets(
+        self,
+        context: Any,
+        targets: list[str],
+        origin_host: str,
+        result: BrowserReconResult,
+    ) -> None:
+        """Navigate every target with at most ``max_concurrent_pages`` tabs open.
+
+        The semaphore is the hard resource gate: nav targets are processed
+        concurrently for throughput, but the number of live renderer processes
+        never exceeds the configured ceiling regardless of how many targets the
+        recon frontier produced.
+        """
+        semaphore = asyncio.Semaphore(self.max_concurrent_pages)
+
+        async def _guarded(target: str) -> None:
+            async with semaphore:
+                await self._visit_target(context, target, origin_host, result)
+
+        outcomes = await asyncio.gather(
+            *(_guarded(t) for t in targets), return_exceptions=True
+        )
+        for target, outcome in zip(targets, outcomes, strict=True):
+            if isinstance(outcome, BaseException):
+                self._log.debug("browser visit of %s failed: %s", target, outcome)
+
+    async def _visit_target(
+        self,
+        context: Any,
+        target: str,
+        origin_host: str,
+        result: BrowserReconResult,
+    ) -> None:
+        """Drive one target in its own page, closing it on every exit path.
+
+        A fresh page per target also removes the need for the old
+        ``about:blank`` bounce: the first navigation of a new page is always
+        cross-document, so a ``#<canary>`` variant can no longer slip past the
+        taint hooks as a same-document navigation.
+        """
+        page = await context.new_page()
+        self._open_pages += 1
+        self.peak_concurrent_pages = max(self.peak_concurrent_pages, self._open_pages)
+        try:
+            page.set_default_navigation_timeout(self.nav_timeout * 1000)
+            try:
+                await page.goto(target, wait_until="networkidle")
+            except Exception as exc:  # noqa: BLE001 - timeouts, nav aborts
+                self._log.debug("browser nav to %s failed: %s", target, exc)
+                try:
+                    await page.goto(target, wait_until="domcontentloaded")
+                except Exception:  # noqa: BLE001
+                    return
+            if self.settle_time:
+                await asyncio.sleep(self.settle_time)
+            result.visited.append(target)
+            await self._harvest_dom(page, origin_host, result)
+        finally:
+            self._open_pages -= 1
+            await self._safe_close(page, "page")
 
     async def _harvest_dom(
         self, page: Any, origin_host: str, result: BrowserReconResult
@@ -384,6 +497,8 @@ class BrowserRecon:
             if not self._in_scope(str(raw), origin_host):
                 continue
             canonical, names = self._split_params(str(raw))
+            if self._discard_if_trap(canonical):
+                continue
             result.discovered_urls.add(canonical)
             if names:
                 result.params_by_url.setdefault(canonical, [])

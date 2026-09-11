@@ -29,6 +29,7 @@ them from the reproducibility manifest.
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import http.cookiejar
 import json
 import logging
@@ -39,7 +40,14 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
+from .scanner_core_async import AsyncScannerCore, ScanConfig
+
 _LOG = logging.getLogger(__name__)
+
+# Reserved role name for the scan's primary identity (the pre-existing
+# single-``AsyncScannerCore`` flow). Never a key in ``IdentityPool``'s
+# secondary-identity dict -- it always resolves to the pool's ``primary_core``.
+PRIMARY_ROLE = "A"
 
 # Keys accepted from a --session-config file / config dict, mapped straight onto
 # SessionConfig fields. Anything else is ignored with a warning.
@@ -100,6 +108,18 @@ class SessionConfig:
     # Abort the scan (instead of warn-and-continue) if authentication fails.
     required: bool = False
 
+    # ---- multi-identity (cross-session) analysis -------------------------
+    # Secondary, concurrently-authenticated identities keyed by role name
+    # (e.g. ``"B"``), each a raw dict accepted by ``SessionConfig.from_dict``.
+    # Populated only via ``--session-config`` (JSON/YAML has no size limit a
+    # CLI flag would): every entry independently logs in with its own
+    # credentials/cookie jar and is driven through :class:`IdentityPool`,
+    # which testers reach as ``config['identity_pool']`` (see
+    # ``IDORTester._cross_session_check`` for the consumer). The primary
+    # identity described by *this* ``SessionConfig`` is always role ``"A"``
+    # (:data:`PRIMARY_ROLE`); this dict must not repeat that key.
+    identities: dict[str, dict[str, Any]] = field(default_factory=dict)
+
     def __post_init__(self) -> None:
         self.method = (self.method or "POST").upper()
         self.submit_type = (self.submit_type or "form").lower()
@@ -112,6 +132,11 @@ class SessionConfig:
         # logged-out detector to that same URL's path.
         if self.login_url and self.reauth_url_contains is None:
             self.reauth_url_contains = urllib.parse.urlparse(self.login_url).path or None
+        if PRIMARY_ROLE in self.identities:
+            raise ValueError(
+                f"session identities must not reuse the reserved primary role "
+                f"{PRIMARY_ROLE!r}"
+            )
 
     # ---- construction --------------------------------------------------
 
@@ -392,3 +417,148 @@ class SessionManager:
             return False
         await self._emit("Session appears to have expired — re-authenticating")
         return await self.authenticate(core)
+
+
+@dataclass(slots=True)
+class IdentityContext:
+    """One fully-independent authenticated identity: its own transport, cookie
+    jar and :class:`SessionManager`.
+
+    Distinct from the scan's primary identity (``role == PRIMARY_ROLE``,
+    reusing the orchestrator's pre-existing ``AsyncScannerCore``) in that a
+    *secondary* context owns a brand-new ``AsyncScannerCore`` -- a separate
+    ``aiohttp.ClientSession`` with its own connector and
+    :class:`aiohttp.CookieJar`, so Role B's cookies/bearer token can never leak
+    into Role A's requests or vice versa. This is the concrete mechanism that
+    makes an authenticated cross-session diff (e.g.
+    ``IDORTester._cross_session_check``) possible: the same GET, fired through
+    two contexts with two different logged-in users, is directly comparable.
+    """
+
+    role: str
+    core: AsyncScannerCore
+    manager: SessionManager
+
+    async def close(self) -> None:
+        """Release this identity's transport. Idempotent (``core.close`` is)."""
+        await self.core.close()
+
+
+class IdentityPool:
+    """Owns every *secondary* authenticated identity for a scan and starts
+    them concurrently alongside the pre-existing primary identity.
+
+    The primary identity (role :data:`PRIMARY_ROLE`, ``"A"``) is **not**
+    managed here -- it stays exactly the single shared
+    :class:`~...core.scanner_core_async.AsyncScannerCore` /
+    :class:`SessionManager` pair the orchestrator already builds, so a scan
+    with no ``identities`` configured is byte-identical to the pre-multi-
+    identity behaviour (no new object is even constructed). This class only
+    comes into play when ``SessionConfig.identities`` is non-empty, and it
+    resolves role ``"A"`` back to that same primary core via :meth:`get` so
+    tester code can address both roles uniformly.
+
+    Each secondary identity gets its own ``AsyncScannerCore`` (own
+    ``aiohttp.ClientSession`` + ``CookieJar`` + auth-header dict) built from a
+    *copy* of the scan's base :class:`~...core.scanner_core_async.ScanConfig`
+    (``dataclasses.replace`` -- same timeouts/proxy/SSRF policy, independent
+    mutable fields), authenticated with its own :class:`SessionConfig`. Login
+    round trips run concurrently (``asyncio.gather``) since they are
+    independent network calls against (typically) the same login endpoint
+    with different credentials.
+    """
+
+    def __init__(
+        self,
+        primary_core: AsyncScannerCore,
+        *,
+        on_event: Callable[[str], Awaitable[None]] | None = None,
+    ) -> None:
+        self.primary_core = primary_core
+        self._on_event = on_event
+        self._secondary: dict[str, IdentityContext] = {}
+
+    @property
+    def roles(self) -> list[str]:
+        """All identity roles known to this pool, primary included."""
+        return [PRIMARY_ROLE, *sorted(self._secondary)]
+
+    @property
+    def secondary_roles(self) -> list[str]:
+        """Role names of every started secondary identity (primary excluded)."""
+        return sorted(self._secondary)
+
+    def get(self, role: str) -> AsyncScannerCore | None:
+        """The :class:`AsyncScannerCore` authenticated as ``role``, or ``None``
+        if that role was never started (e.g. a scan run without
+        ``identities`` configured, or a typo'd role name)."""
+        if role == PRIMARY_ROLE:
+            return self.primary_core
+        ctx = self._secondary.get(role)
+        return ctx.core if ctx else None
+
+    async def start_one(
+        self,
+        role: str,
+        cfg: SessionConfig,
+        base_config: ScanConfig,
+        *,
+        target_url: str | None = None,
+    ) -> IdentityContext:
+        """Stand up and authenticate a single secondary identity.
+
+        Mirrors the primary-identity bootstrap in
+        ``WebSecurityScanner._authenticate`` (apply static material, then form
+        login if configured) but against a freshly-built, fully independent
+        ``AsyncScannerCore`` so this identity's cookies/token never touch the
+        primary session's jar. Best-effort: a failed login is logged (never
+        raised) and the context is still returned/stored so a scan does not
+        abort over one secondary identity a target happens to reject -- the
+        consuming tester is expected to check ``manager._authenticated``
+        (via ``SessionManager.authenticate``'s return value, already observed
+        here) before trusting a diff against this role.
+        """
+        core = AsyncScannerCore(dataclasses.replace(base_config))
+        await core.start()
+        manager = SessionManager(cfg, on_event=self._on_event)
+        try:
+            manager.apply_static(core, target_url)
+        except Exception as exc:  # noqa: BLE001 - a bad jar file must not abort the scan
+            _LOG.error("identity %r: failed to apply static session material: %s", role, exc)
+        if cfg.does_form_login:
+            await manager.authenticate(core, force=True)
+        core.attach_session_manager(manager)
+        ctx = IdentityContext(role=role, core=core, manager=manager)
+        self._secondary[role] = ctx
+        return ctx
+
+    async def start_all(
+        self,
+        identities: dict[str, dict[str, Any]],
+        base_config: ScanConfig,
+        *,
+        target_url: str | None = None,
+    ) -> None:
+        """Start every secondary identity in ``identities`` concurrently.
+
+        ``identities`` is ``SessionConfig.identities`` from the *primary*
+        session config: ``{role: raw_session_config_dict}``. No-op for an
+        empty dict, so callers can invoke this unconditionally.
+        """
+        if not identities:
+            return
+        await asyncio.gather(*(
+            self.start_one(role, SessionConfig.from_dict(raw), base_config,
+                           target_url=target_url)
+            for role, raw in identities.items()
+        ))
+
+    async def close(self) -> None:
+        """Close every secondary identity's transport. Never raises: teardown
+        must not fail a scan that otherwise completed. The primary core is
+        the orchestrator's responsibility and is not touched here."""
+        for ctx in self._secondary.values():
+            try:
+                await ctx.close()
+            except Exception as exc:  # noqa: BLE001 - best-effort teardown
+                _LOG.debug("identity %r: error closing session: %s", ctx.role, exc)

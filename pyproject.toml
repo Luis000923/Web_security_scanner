@@ -18,6 +18,7 @@ dependencies = [
     "colorama>=0.4.0",
     "pyyaml>=6.0",
     "dnspython>=2.3.0",
+    "reportlab>=4.0",
 ]
 
 [project.optional-dependencies]
@@ -95,7 +96,7 @@ target-version = "py310"
 # ``ai_module``, ``tools`` and ``testbed`` are first-class sources (the AI
 # subsystem, the experiment harness and the ground-truth generator), so they are
 # linted like the scanner package. Only generated / non-source trees are excluded.
-extend-exclude = ["Documentacion", "web_security_scanner/reports", "metrics", "runs", "paper"]
+extend-exclude = ["Documentacion", "metrics", "runs", "paper"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]

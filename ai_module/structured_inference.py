@@ -194,7 +194,7 @@ class StructuredLocalAgent:
         except AttributeError:
             from outlines import generate, models  # type: ignore
 
-            self._model = models.transformers(self.model_id)
+            self._model = models.transformers(self.model_id)  # type: ignore[operator]
             self._triage_gen = generate.json(self._model, TriageOut)
             self._payload_gen = generate.json(self._model, PayloadOut)
 

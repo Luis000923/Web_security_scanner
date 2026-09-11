@@ -82,6 +82,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -551,8 +552,62 @@ def metrics_to_row(budget: int, condition: str, run_dir: Path,
     }
 
 
+# The pre-AI_* schema (kept only to repair CSVs written before those columns
+# existed). AI_* was inserted right before run_dir/status/timestamp, so a row
+# under either schema can be recovered by its field *count* alone.
+_LEGACY_CSV_COLUMNS = ["budget", "condition", "TP", "FP", "FN",
+                       "Precision", "Recall", "F1", "FPR",
+                       "run_dir", "status", "timestamp"]
+
+
+def _migrate_csv_schema(csv_path: Path) -> None:
+    """Rewrite ``csv_path`` under the current ``CSV_COLUMNS`` header.
+
+    Handles a file whose header is stale AND whose rows are individually a
+    mix of the legacy 12-column schema and the current 17-column one (some
+    runs appended new-schema rows via DictWriter without ever rewriting the
+    old header on disk — a raw DictReader keyed off that stale header would
+    silently misalign every new-schema row). Each row is decoded positionally
+    by its own length instead of trusting the file's header line.
+    """
+    with csv_path.open("r", newline="", encoding="utf-8") as fh:
+        raw_rows = list(csv.reader(fh))
+    if not raw_rows:
+        return
+    migrated: list[dict] = []
+    for raw in raw_rows[1:]:  # skip whatever header is on disk
+        if not raw:
+            continue
+        if len(raw) == len(CSV_COLUMNS):
+            migrated.append(dict(zip(CSV_COLUMNS, raw, strict=True)))
+        elif len(raw) == len(_LEGACY_CSV_COLUMNS):
+            migrated.append(dict(zip(_LEGACY_CSV_COLUMNS, raw, strict=True)))
+        else:
+            warnings.warn(
+                f"append_csv: dropping unparseable row with {len(raw)} "
+                f"field(s) during schema migration: {raw!r}", stacklevel=2)
+    with csv_path.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
+        w.writeheader()
+        w.writerows(migrated)
+
+
 def append_csv(csv_path: Path, row: dict) -> None:
+    """Append one row, migrating an older (narrower) header in place first.
+
+    ``CSV_COLUMNS`` has grown over time (the AI_* audit columns were added
+    after some CSVs already existed on disk). A raw append with the new
+    fieldnames against an old header produces a ragged CSV that ``pandas``
+    refuses to parse. Detect that mismatch and rewrite the file under the
+    current schema — missing cells backfill empty, matching how DictWriter
+    already treats a row missing a key.
+    """
     new_file = not csv_path.exists()
+    if not new_file:
+        with csv_path.open("r", newline="", encoding="utf-8") as fh:
+            existing_header = next(csv.reader(fh), [])
+        if existing_header != CSV_COLUMNS:
+            _migrate_csv_schema(csv_path)
     with csv_path.open("a", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
         if new_file:

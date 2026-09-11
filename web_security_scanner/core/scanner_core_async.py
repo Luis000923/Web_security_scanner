@@ -954,10 +954,10 @@ class AsyncScannerCore:
         those propagate immediately, same as before.
         """
         attempts = max(1, self.config.max_retries + 1)
-        throttle_on = self.config.adaptive_throttle and host
+        throttle_on = self.config.adaptive_throttle and host is not None
         result: dict[str, Any] = {}
         for attempt in range(attempts):
-            if throttle_on:
+            if throttle_on and host is not None:
                 await self._host_backoff.wait_if_needed(host)
             try:
                 async with self._semaphore:
@@ -980,7 +980,7 @@ class AsyncScannerCore:
             throttled = bool(throttle_on and status in (429, 503))
             transient = status == 0
             host_delay = 0.0
-            if throttle_on:
+            if throttle_on and host is not None:
                 if throttled:
                     host_delay = self._host_backoff.penalize(
                         host, retry_after=result.get("headers", {}).get("Retry-After"),

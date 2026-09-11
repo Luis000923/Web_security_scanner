@@ -19,7 +19,9 @@ from colorama import init as colorama_init
 
 from .banner import print_banner
 from .events.event_emitter import ScanEventType
-from .reports import generate_reports_async
+from .modules.exploit_engine import DEFAULT_MAX_TARGETS
+from .modules.recon.browser_engine import resolve_browser_page_cap
+from .report_generator import generate_reports_async
 from .utils.i18n import i18n
 from .utils.validation import InvalidTargetError, validate_target_url
 from .web_security_scanner_async import WebSecurityScanner
@@ -94,8 +96,39 @@ def _build_parser() -> argparse.ArgumentParser:
                            "is not installed.")
     scan.add_argument("--browser-nav-timeout", type=float, default=15.0,
                       help="Per-page navigation timeout for --browser (seconds).")
-    scan.add_argument("--browser-max-pages", type=int, default=6,
-                      help="Max page navigations for the --browser recon pass.")
+    scan.add_argument("--browser-max-pages", type=int, default=None,
+                      help="Max page navigations for the --browser recon pass. "
+                           "Defaults to a small fraction of --max-urls and is "
+                           "always clamped to it, so the headless-browser pass "
+                           "can never outrun the crawler's own spider-trap cap.")
+    scan.add_argument("--browser-max-concurrent-pages", type=int, default=3,
+                      help="Max Chromium tabs open at once during the --browser "
+                           "pass (default: 3). Each tab is a renderer process; "
+                           "raise it for speed, lower it on constrained hosts.")
+    # --- Sensitive-file exposure detection ------------------------------
+    scan.add_argument("--detect-sensitive-files", dest="detect_sensitive_files",
+                      action="store_true",
+                      help="Actively probe for exposed sensitive files (.env, "
+                           ".git/HEAD, database backups, web.config, ...) under "
+                           "the site root and crawled base paths. Non-destructive "
+                           "GET probes only, filtered against a soft-404 baseline.")
+    scan.add_argument("--sensitive-files-max-base-paths", type=int, default=6,
+                      help="Max discovered directories probed for sensitive "
+                           "files, in addition to the site root (default: 6).")
+    scan.add_argument("--sensitive-files-max-concurrent", type=int, default=8,
+                      help="Max concurrent sensitive-file probe requests (default: 8).")
+    # --- Server / infrastructure fingerprinting -------------------------
+    scan.add_argument("--fingerprint-server", dest="fingerprint_server",
+                      action="store_true",
+                      help="Fingerprint Server/X-Powered-By/Via headers and verify "
+                           "version-specific advisories (e.g. MS15-034/CVE-2015-1635) "
+                           "with a safe, non-destructive active probe.")
+    scan.add_argument("--no-fingerprint-active-probes", dest="fingerprint_active_probes",
+                      action="store_false", default=True,
+                      help="Disable the active Safe PoC Probe step for "
+                           "--fingerprint-server. Advisories that require active "
+                           "confirmation are silently skipped rather than reported "
+                           "on banner alone.")
     scan.add_argument("--proxy", default=None,
                       help="Route all traffic through a proxy "
                            "(http://host:port or socks5://host:port).")
@@ -103,8 +136,14 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="File with one User-Agent per line; rotated per request.")
     scan.add_argument("-o", "--output", default="reports",
                       help="Output directory for reports (default: reports).")
-    scan.add_argument("-f", "--format", default="json,html",
-                      help="Report formats, comma-separated: json,html (default: both).")
+    scan.add_argument("--output-json", dest="output_json", action="store_true", default=True,
+                      help="Generate the structured JSON report (default: on).")
+    scan.add_argument("--no-output-json", dest="output_json", action="store_false",
+                      help="Skip the JSON report.")
+    scan.add_argument("--output-pdf", dest="output_pdf", action="store_true", default=True,
+                      help="Generate the executive/technical PDF report (default: on).")
+    scan.add_argument("--no-output-pdf", dest="output_pdf", action="store_false",
+                      help="Skip the PDF report.")
     scan.add_argument("--lang", choices=["en", "es"], default="en",
                       help="Output language (default: en).")
     scan.add_argument("-v", "--verbose", action="store_true", help="Verbose logging.")
@@ -135,7 +174,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "cookies / a bearer token can be injected without any login. All of "
         "this can also be supplied via --session-config (JSON or YAML); CLI "
         "flags override the file. Credentials are never written to reports or "
-        "the reproducibility manifest.",
+        "the reproducibility manifest. --session-config also accepts an "
+        "'identities' object ({\"B\": {login_url/username/password/...}}) to "
+        "start additional, fully independent authenticated sessions alongside "
+        "the primary one -- IDORTester uses these for an authenticated "
+        "A-vs-B cross-session diff (see core.session_async.IdentityPool); "
+        "there is no dedicated CLI flag for this, as it is JSON/YAML-only.",
     )
     au.add_argument("--auth-url", default=None, metavar="URL",
                     help="Login form action URL (POST target).")
@@ -251,6 +295,31 @@ def _build_parser() -> argparse.ArgumentParser:
     ai.add_argument("--ai-fp-threshold", type=float, default=0.75, metavar="0-1",
                     help="Minimum agent confidence required to discard a finding "
                          "as a false positive (default: 0.75).")
+
+    exploit = scan.add_argument_group(
+        "Exploit engine (Proof-of-Impact)",
+        "OFF by default. --enable-exploit-engine runs a bounded, adaptive pass "
+        "over the CRITICAL/HIGH surface targets found during recon: it picks "
+        "payloads matched to the fingerprinted database/language/server and "
+        "fires only non-destructive, low-intrusion vectors to classify each "
+        "attempt as CONFIRMED_EXPLOITABLE / POTENTIAL / SAFE. Never reads "
+        "--allow-destructive; it always excludes destructive payloads.")
+    exploit.add_argument("--enable-exploit-engine", dest="enable_exploit_engine",
+                         action="store_true",
+                         help="Enable the adaptive Proof-of-Impact exploitation engine.")
+    exploit.add_argument("--exploit-max-targets", type=int, default=DEFAULT_MAX_TARGETS,
+                         metavar="N",
+                         help=f"Max CRITICAL/HIGH surface targets the exploit engine "
+                              f"attempts per scan (default: {DEFAULT_MAX_TARGETS}).")
+    exploit.add_argument("--enable-waf-evasion", dest="enable_waf_evasion",
+                         action="store_true",
+                         help="Adaptive perimeter-evasion retry: when the exploit engine's "
+                              "probe hits an explicit WAF block (403/406), mutate the "
+                              "payload (case randomization, partial percent-encoding, SQL "
+                              "comment injection, double URL-encoding) and retry until the "
+                              "block clears or every mutation is exhausted.")
+    exploit.add_argument("--waf-evasion-max-retries", type=int, default=4, metavar="N",
+                         help="Max mutation attempts per blocked probe (default: 4).")
     return parser
 
 
@@ -480,6 +549,13 @@ def _build_config(args) -> dict:
         "ai_base_url": getattr(args, "ai_base_url", None),
         "ai_model": getattr(args, "ai_model", None),
         "ai_fp_threshold": getattr(args, "ai_fp_threshold", 0.75),
+        # Adaptive exploitation engine (opt-in via --enable-exploit-engine).
+        "enable_exploit_engine": getattr(args, "enable_exploit_engine", False),
+        "exploit_max_targets": getattr(args, "exploit_max_targets", DEFAULT_MAX_TARGETS),
+        # Perimeter-evasion adaptive retry for the exploit engine's probes
+        # (opt-in via --enable-waf-evasion).
+        "enable_waf_evasion": getattr(args, "enable_waf_evasion", False),
+        "waf_evasion_max_retries": getattr(args, "waf_evasion_max_retries", 4),
     }
     recon = {
         "max_urls": args.max_urls,
@@ -489,7 +565,19 @@ def _build_config(args) -> dict:
         "use_sitemap": args.sitemap,
         "use_browser": getattr(args, "use_browser", False),
         "browser_nav_timeout": getattr(args, "browser_nav_timeout", 15.0),
-        "browser_max_pages": getattr(args, "browser_max_pages", 6),
+        # Same source of truth as the standard crawler's spider-trap cap:
+        # derived from --max-urls so the two recon passes can't desync.
+        "browser_max_pages": resolve_browser_page_cap(
+            args.max_urls, getattr(args, "browser_max_pages", None)
+        ),
+        "browser_max_concurrent_pages": getattr(
+            args, "browser_max_concurrent_pages", 3
+        ),
+        "detect_sensitive_files": getattr(args, "detect_sensitive_files", False),
+        "sensitive_files_max_base_paths": getattr(args, "sensitive_files_max_base_paths", 6),
+        "sensitive_files_max_concurrent": getattr(args, "sensitive_files_max_concurrent", 8),
+        "fingerprint_server": getattr(args, "fingerprint_server", False),
+        "fingerprint_active_probes": getattr(args, "fingerprint_active_probes", True),
     }
     config: dict = {"core": core, "testers": testers, "recon": recon}
     session_config = _build_session_config(args)
@@ -587,7 +675,7 @@ async def _run_scan(args) -> int:
               f"(--auth-required) but failed; scan aborted.", file=sys.stderr)
         return 2
 
-    formats = [f.strip() for f in args.format.split(",") if f.strip()]
+    formats = [fmt for fmt, on in (("json", args.output_json), ("pdf", args.output_pdf)) if on]
     paths = await generate_reports_async(results, formats, output_dir=args.output)
 
     count = results["statistics"]["total_vulnerabilities"]
@@ -596,8 +684,6 @@ async def _run_scan(args) -> int:
           f"{tech_count} technology(ies) detected.{Style.RESET_ALL}")
     for fmt, path in paths.items():
         print(f"    {fmt.upper()} report: {path}")
-    if results.get("map_report"):
-        print(f"    MAP  report: {results['map_report']}")
 
     # Non-zero exit if any vulnerabilities found (useful for CI).
     return 1 if count > 0 else 0

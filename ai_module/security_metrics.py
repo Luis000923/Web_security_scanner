@@ -155,12 +155,17 @@ class SecurityMetricsCallback(TrainerCallback):
                     chunk, return_tensors="pt", padding=True, truncation=True,
                     max_length=2048,
                 ).to(device)
-                gen = model.generate(
-                    **enc,
-                    max_new_tokens=self.max_new_tokens,
-                    do_sample=False,               # deterministic eval
-                    pad_token_id=tok.pad_token_id or tok.eos_token_id,
-                )
+                # generate() runs outside Trainer's autocast context, but the
+                # 4-bit base model keeps lm_head in fp32 while hidden states are
+                # bf16 (bnb_4bit_compute_dtype) — without autocast here, the
+                # lm_head matmul sees mismatched dtypes and raises.
+                with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+                    gen = model.generate(
+                        **enc,
+                        max_new_tokens=self.max_new_tokens,
+                        do_sample=False,               # deterministic eval
+                        pad_token_id=tok.pad_token_id or tok.eos_token_id,
+                    )
                 # Slice off the prompt tokens; decode only the completion.
                 new = gen[:, enc["input_ids"].shape[1]:]
                 outs.extend(tok.batch_decode(new, skip_special_tokens=True))

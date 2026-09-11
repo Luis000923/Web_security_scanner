@@ -8,10 +8,12 @@ from typing import Any
 
 from .core.manifest_async import write_manifest
 from .core.scanner_core_async import AsyncScannerCore, ScanConfig, SSRFRedirectError
-from .core.session_async import SessionConfig, SessionManager
+from .core.session_async import IdentityPool, SessionConfig, SessionManager
 from .core.telemetry_async import TelemetryWorker
 from .events.event_emitter import ScanEventEmitter, ScanEventType
+from .modules.exploit_engine import DEFAULT_MAX_TARGETS, ExploitEngine
 from .modules.recon import ReconConfig, ReconEngine
+from .modules.recon.surface_correlator import PrioritizedTarget
 from .modules.registry import TesterRegistry
 from .modules.technology_detector import TechnologyDetector
 from .modules.vulnerability_testers.base_tester_async import VulnerabilityTester
@@ -64,11 +66,20 @@ class WebSecurityScanner:
         # keep / drop verdict, surfaced in the results dict for the oracle.
         self.ai_client: Any = None
         self.ai_triage_decisions: list[dict[str, Any]] = []
+        # Adaptive exploitation engine (opt-in, ``--enable-exploit-engine``).
+        # ``exploit_attempts`` is the per-scan Proof-of-Impact audit trail,
+        # threaded into the results dict as ``proof_of_impact`` for the report.
+        self.exploit_attempts: list[dict[str, Any]] = []
 
         # Authenticated-scan session manager (form login / static cookies /
         # bearer token). Built only when ``config['session']`` is present, so
         # public scans are entirely unaffected.
         self.session_manager: SessionManager | None = None
+        # Secondary (Role B, C, ...) authenticated identities for cross-session
+        # analysis (IDOR authenticated-A-vs-B). Built in ``_authenticate`` from
+        # ``session_manager.cfg.identities``; ``None`` when that dict is empty,
+        # so a scan without multi-identity config never constructs one.
+        self.identity_pool: IdentityPool | None = None
         sess_cfg = self.config.get("session")
         if sess_cfg:
             try:
@@ -79,9 +90,18 @@ class WebSecurityScanner:
             except (TypeError, ValueError) as exc:
                 self._logger.error("Invalid session configuration: %s", exc)
 
+        # Testers read tuning knobs (and, when configured, the identity pool)
+        # from this dict by reference (see VulnerabilityTester.__init__). It
+        # must exist and be the *same* object before ``initialize()`` builds
+        # the testers, so a later ``self.config['testers']['identity_pool'] =
+        # ...`` assignment in ``_authenticate`` (which runs after
+        # ``initialize()``) is visible to every already-constructed tester.
+        self.config.setdefault('testers', {})
+
         # Subscribe mapper to vulnerabilities
         self.event_emitter.on(ScanEventType.VULNERABILITY_FOUND, self._on_vulnerability_found)
         self.event_emitter.on(ScanEventType.AI_TRIAGE_DECISION, self._on_ai_triage_decision)
+        self.event_emitter.on(ScanEventType.EXPLOIT_ATTEMPT, self._on_exploit_attempt)
 
     def _on_vulnerability_found(self, **kwargs):
         """Collect vulnerabilities for the report."""
@@ -95,6 +115,12 @@ class WebSecurityScanner:
         decision = kwargs.get('decision')
         if decision:
             self.ai_triage_decisions.append(decision)
+
+    def _on_exploit_attempt(self, **kwargs):
+        """Collect the adaptive exploitation engine's Proof-of-Impact trail."""
+        attempt = kwargs.get('attempt')
+        if attempt:
+            self.exploit_attempts.append(attempt)
 
     async def initialize(self):
         """
@@ -121,7 +147,7 @@ class WebSecurityScanner:
         Run the full scan against the target URL.
 
         Returns a results dict: {target, profile, vulnerabilities, statistics,
-        map_report}. Honors an optional global ``max_duration`` (seconds) that
+        recon}. Honors an optional global ``max_duration`` (seconds) that
         caps total tester time even if individual testers wait on slow payloads.
 
         ``target_list`` (Phase 2): when provided, a list of ``{url, param,
@@ -137,6 +163,7 @@ class WebSecurityScanner:
         self.vulnerabilities = []
         self.mapper.vulnerabilities = []
         self.ai_triage_decisions = []
+        self.exploit_attempts = []
 
         await self.event_emitter.emit(ScanEventType.SCAN_START, url=target_url)
         await self.core.start()
@@ -159,9 +186,9 @@ class WebSecurityScanner:
         # seed, full config, git commit) before Phase 1/2 probing starts.
         await self._write_manifest()
 
-        map_report = None
         map_data = {}
         technologies = {}
+        prioritized_targets: list[PrioritizedTarget] = []
         aborted: str | None = None
         try:
             if not auth_ok:
@@ -203,19 +230,17 @@ class WebSecurityScanner:
                     self.mapper.max_urls = max_urls
                 recon_result = await self.recon.run(target_url)
                 map_data = recon_result.map_data
+                prioritized_targets = recon_result.prioritized_targets
                 scan_targets = [{"url": u, "kwargs": {}}
                                 for u in (recon_result.targets or [target_url])]
                 await self._handle_dom_xss(recon_result)
+                await self._handle_sensitive_files(recon_result)
+                await self._handle_server_fingerprint(recon_result)
                 if self.mapper.limit_reached:
                     msg = (f"Crawler abortado preventivamente por límite max_urls "
                            f"({self.mapper.max_urls}) / spider-trap; mapa parcial.")
                     self._logger.warning(msg)
                     await self.event_emitter.emit(ScanEventType.LOG_MESSAGE, message=msg)
-                map_report = await self.mapper.generate_map_async(map_data)
-                self._logger.info(f"Map generated at: {map_report}")
-                await self.event_emitter.emit(
-                    ScanEventType.LOG_MESSAGE, message=f"Report generated: {map_report}"
-                )
                 await self.event_emitter.emit(
                     ScanEventType.LOG_MESSAGE,
                     message=(f"Phase 2: {len(scan_targets)} target(s) queued for the "
@@ -239,6 +264,13 @@ class WebSecurityScanner:
             # Technology fingerprinting on the target's landing page. The GET is
             # cached, so the mapper (and any tester) reuses it for free.
             technologies = await self._detect_technologies(target_url)
+
+            # --- Exploit engine: adaptive, non-destructive Proof-of-Impact --
+            # validation of the CRITICAL/HIGH surface targets (opt-in via
+            # --enable-exploit-engine). No-op without prioritized targets
+            # (e.g. --target-list bypasses recon entirely).
+            if prioritized_targets:
+                await self._run_exploit_engine(technologies, prioritized_targets)
 
         except asyncio.CancelledError:
             # KeyboardInterrupt / external cancellation. Testers were already
@@ -269,6 +301,14 @@ class WebSecurityScanner:
                 await self.core.close()
             except Exception as e:
                 self._logger.debug(f"Error closing scanner core: {e}")
+            if self.identity_pool is not None:
+                # Secondary identities (session_async.IdentityPool) each own an
+                # independent AsyncScannerCore/aiohttp.ClientSession that the
+                # primary self.core.close() above never touches.
+                try:
+                    await self.identity_pool.close()
+                except Exception as e:  # pragma: no cover - defensive
+                    self._logger.debug(f"Error closing secondary identities: {e}")
             try:
                 await self.event_emitter.emit(ScanEventType.SCAN_COMPLETE)
             except Exception:
@@ -287,10 +327,33 @@ class WebSecurityScanner:
                 "total_vulnerabilities": len(self.vulnerabilities),
                 "total_technologies": sum(len(v) for v in technologies.values()),
             },
-            "map_report": map_report,
+            "recon": self._recon_summary(map_data),
             "telemetry": self.telemetry.summary() if self.telemetry is not None else None,
             "ai_triage": self._ai_triage_summary(),
+            "proof_of_impact": self.exploit_attempts,
             "aborted": aborted,
+        }
+
+    @staticmethod
+    def _recon_summary(map_data: dict[str, Any]) -> dict[str, Any]:
+        """Trim ``map_data`` down to the Phase 1 artifacts the report engine
+        needs (priority tree, sensitive files, server fingerprint, ...),
+        dropping fields already surfaced elsewhere in the results dict
+        (``structure``, ``technologies``, ``vulnerabilities``) so the final
+        report never serializes the same findings twice.
+        """
+        if not map_data:
+            return {}
+        return {
+            "base_domain": map_data.get("base_domain"),
+            "scan_timestamp": map_data.get("scan_timestamp"),
+            "subdomains": map_data.get("subdomains", []),
+            "js_endpoints": map_data.get("js_endpoints", []),
+            "sitemap_urls": map_data.get("sitemap_urls", []),
+            "priority_targets": map_data.get("priority_targets", []),
+            "sensitive_files": map_data.get("sensitive_files", []),
+            "server_fingerprint": map_data.get("server_fingerprint"),
+            "surface_priority": map_data.get("statistics", {}).get("surface_priority", {}),
         }
 
     def _ai_triage_summary(self) -> dict[str, Any] | None:
@@ -464,6 +527,39 @@ class WebSecurityScanner:
                      f"fp_threshold={tcfg.get('ai_fp_threshold', 0.75)})"),
         )
 
+    async def _run_exploit_engine(
+        self, technologies: dict[str, list[str]],
+        prioritized_targets: list[PrioritizedTarget],
+    ) -> None:
+        """Adaptive, non-destructive Proof-of-Impact pass (opt-in).
+
+        Enabled via ``--enable-exploit-engine``. Transparent degradation: any
+        failure here is logged and swallowed so the exploit engine can never
+        abort an otherwise-successful scan.
+        """
+        tcfg = self.config.get("testers", {}) or {}
+        if not tcfg.get("enable_exploit_engine", False):
+            return
+        try:
+            engine = ExploitEngine(
+                self.core, self.event_emitter, tcfg,
+                technologies=technologies,
+                max_targets=tcfg.get("exploit_max_targets", DEFAULT_MAX_TARGETS),
+            )
+            await self.event_emitter.emit(
+                ScanEventType.PROGRESS_UPDATE,
+                message="Exploit engine: adaptive Proof-of-Impact validation...",
+            )
+            attempts = await engine.run(prioritized_targets)
+            confirmed = sum(1 for a in attempts if a.classification == "CONFIRMED_EXPLOITABLE")
+            await self.event_emitter.emit(
+                ScanEventType.LOG_MESSAGE,
+                message=(f"Exploit engine: {len(attempts)} Proof-of-Impact attempt(s), "
+                         f"{confirmed} confirmed exploitable."),
+            )
+        except Exception as exc:  # noqa: BLE001 - PoC pass must never abort the scan
+            self._logger.warning("Exploit engine pass failed: %s", exc)
+
     async def _stop_ai_agent(self) -> None:
         """Drain any queued triage batch and release the agent's HTTP session.
 
@@ -519,6 +615,25 @@ class WebSecurityScanner:
 
         if sm.cfg.required and not ok:
             return False
+
+        # Multi-identity (cross-session) analysis: start every secondary role
+        # declared under ``session.identities`` concurrently. Independent of
+        # the primary login above (``ok``/``required``) — a secondary identity
+        # a target rejects is logged by IdentityPool.start_one and simply
+        # yields no context for that role, degrading IDORTester's cross-session
+        # check to a no-op rather than aborting the whole scan.
+        if sm.cfg.identities:
+            self.identity_pool = IdentityPool(self.core, on_event=self._emit_session_event)
+            await self.identity_pool.start_all(
+                sm.cfg.identities, self.core.config, target_url=target_url,
+            )
+            self.config['testers']['identity_pool'] = self.identity_pool
+            await self.event_emitter.emit(
+                ScanEventType.LOG_MESSAGE,
+                message=(f"[auth] {len(self.identity_pool.secondary_roles)} secondary "
+                         f"identity(ies) started: {self.identity_pool.secondary_roles}"),
+            )
+
         if sm.cfg.active and (ok or not sm.cfg.does_form_login):
             await self.event_emitter.emit(
                 ScanEventType.LOG_MESSAGE,
@@ -592,6 +707,69 @@ class WebSecurityScanner:
                     "elapsed_time": 0.0,
                     "decision": True,
                     "confidence_final": "HIGH",
+                })
+
+    async def _handle_sensitive_files(self, recon_result: Any) -> None:
+        """Turn sensitive-file exposures into vulns + telemetry rows.
+
+        Mirrors :meth:`_handle_dom_xss`: each finding is reported through the
+        same ``VULNERABILITY_FOUND`` bus as every other tester.
+        """
+        findings = list(getattr(recon_result, "sensitive_files", []) or [])
+        if not findings:
+            return
+        msg = f"Sensitive-file detector: {len(findings)} exposed asset(s) found."
+        self._logger.info(msg)
+        await self.event_emitter.emit(ScanEventType.LOG_MESSAGE, message=msg)
+        for finding in findings:
+            vuln = finding.to_vulnerability()
+            await self.event_emitter.emit(
+                ScanEventType.VULNERABILITY_FOUND,
+                vulnerability=vuln,
+                tester="SensitiveFileDetector",
+            )
+            if self.telemetry is not None:
+                self.telemetry.record({
+                    "tester_id": "SensitiveFileDetector",
+                    "payload_id": f"sensitive-file:{finding.path}",
+                    "context": "sensitive_file",
+                    "confidence_apriori": finding.confidence,
+                    "url": finding.url,
+                    "method": "GET",
+                    "param": finding.path,
+                    "vector": "recon",
+                    "elapsed_time": 0.0,
+                    "decision": True,
+                    "confidence_final": finding.confidence,
+                })
+
+    async def _handle_server_fingerprint(self, recon_result: Any) -> None:
+        """Turn verified server-fingerprint advisories into vulns + telemetry rows."""
+        fp_result = getattr(recon_result, "server_fingerprint", None)
+        if fp_result is None or not fp_result.findings:
+            return
+        msg = f"Server fingerprinting: {len(fp_result.findings)} verified advisory(ies) confirmed."
+        self._logger.info(msg)
+        await self.event_emitter.emit(ScanEventType.LOG_MESSAGE, message=msg)
+        for vuln in fp_result.to_vulnerabilities():
+            await self.event_emitter.emit(
+                ScanEventType.VULNERABILITY_FOUND,
+                vulnerability=vuln,
+                tester="ServerFingerprinter",
+            )
+            if self.telemetry is not None:
+                self.telemetry.record({
+                    "tester_id": "ServerFingerprinter",
+                    "payload_id": f"server-fingerprint:{vuln.get('cve_id')}",
+                    "context": "server_fingerprint",
+                    "confidence_apriori": vuln.get("confidence"),
+                    "url": vuln.get("url"),
+                    "method": "GET",
+                    "param": vuln.get("cve_id"),
+                    "vector": "recon",
+                    "elapsed_time": 0.0,
+                    "decision": True,
+                    "confidence_final": vuln.get("confidence"),
                 })
 
     async def _write_manifest(self) -> None:

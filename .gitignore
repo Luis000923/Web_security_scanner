@@ -37,6 +37,10 @@ testbed/.cache/
 # Local working context (not part of any branch deliverable)
 docs_context/
 
+# QLoRA training runs (checkpoints/optimizer state/merged weights, multi-GB;
+# exceeds GitHub's 100MB per-file limit and is regenerable via run_ai_pipeline.sh)
+runs/
+
 # OS / editor
 .DS_Store
 .idea/

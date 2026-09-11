@@ -18,6 +18,12 @@ class ScanEventType(Enum):
     # a ``decision`` dict so the orchestrator can build an audit trail of the
     # agent's false-positive suppressions / false-negative risk for the report.
     AI_TRIAGE_DECISION = auto()
+    # Emitted once per non-destructive Proof-of-Impact probe the adaptive
+    # exploitation engine (``--enable-exploit-engine``,
+    # ``modules.exploit_engine.ExploitEngine``) attempts, whatever its
+    # classification. Carries an ``attempt`` dict (``ExploitAttempt.to_dict()``)
+    # so the orchestrator can build the scan's exploitation audit trail.
+    EXPLOIT_ATTEMPT = auto()
 
 class ScanEventEmitter:
     """

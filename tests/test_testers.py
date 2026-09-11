@@ -7,13 +7,16 @@ that motivated the sync->async consolidation. These guard against a future
 """
 
 import html
+from http.cookies import Morsel
 
 import pytest
-from conftest import collect_log_messages, collect_vulns, param_value
+from conftest import MockScanner, collect_log_messages, collect_vulns, param_value
 
+from web_security_scanner.events.event_emitter import ScanEventEmitter, ScanEventType
 from web_security_scanner.modules.vulnerability_testers.command_injection_async import (
     CommandInjectionTester,
 )
+from web_security_scanner.modules.vulnerability_testers.csrf_tester_async import CSRFTester
 from web_security_scanner.modules.vulnerability_testers.header_security_async import (
     HeaderSecurityTester,
 )
@@ -205,6 +208,34 @@ async def test_idor_detected_on_distinct_data_object():
         return {"status_code": 200, "text": f"email user{idv}@corp.com username u{idv} " + "x" * 100}
     assert len(await collect_vulns(IDORTester, r)) > 0
 
+async def test_idor_confirmed_when_replay_reproduces_and_id_echoed():
+    # Deterministic responder -> the replay probe sees the same data-bearing,
+    # id-echoing body as the first probe -> CONFIRMED.
+    def r(m, u, kw):
+        idv = param_value(u, "id")
+        if idv == "benign_baseline_123":
+            return {"status_code": 200, "text": "profile baseline"}
+        return {"status_code": 200, "text": f"email user{idv}@corp.com username u{idv} " + "x" * 100}
+    found = await collect_vulns(IDORTester, r)
+    assert len(found) == 1
+    assert found[0]["confidence"] == "CONFIRMED"
+
+async def test_idor_medium_when_data_indicator_present_but_no_id_echo():
+    # Data indicator present, but the object id itself never appears in the
+    # body and the replay differs -> no HIGH/CONFIRMED corroboration -> MEDIUM.
+    calls = {"n": 0}
+    def r(m, u, kw):
+        idv = param_value(u, "id")
+        if idv == "benign_baseline_123":
+            return {"status_code": 200, "text": "profile baseline"}
+        calls["n"] += 1
+        # First probe and its replay both lack the id string but do carry a
+        # data indicator, so nothing ever echoes obj_id.
+        return {"status_code": 200, "text": "email someone@corp.com " + "x" * 100}
+    found = await collect_vulns(IDORTester, r)
+    assert len(found) == 1
+    assert found[0]["confidence"] == "MEDIUM"
+
 
 # ---- Destructive gate ------------------------------------------------------
 
@@ -349,3 +380,88 @@ def test_total_technologies_stat_not_clobbered_by_mapper():
     }
     assert stats["total_technologies"] == 3
     assert stats["total_urls"] == 5
+
+
+# ---- CSRF -------------------------------------------------------------------
+
+def _morsel(key, value, samesite=None, secure=False):
+    m = Morsel()
+    m.set(key, value, value)
+    if samesite is not None:
+        m["samesite"] = samesite
+    m["secure"] = secure
+    return m
+
+
+class _FakeJar:
+    def __init__(self, morsels):
+        self._morsels = morsels
+
+    def __iter__(self):
+        return iter(self._morsels)
+
+
+class _FakeSession:
+    def __init__(self, cookie_jar):
+        self.cookie_jar = cookie_jar
+
+
+async def _run_csrf(responder, cookies=()):
+    em = ScanEventEmitter()
+    found = []
+    logs = []
+    em.on(ScanEventType.VULNERABILITY_FOUND, lambda **k: found.append(k.get("vulnerability")))
+    em.on(ScanEventType.LOG_MESSAGE, lambda **k: logs.append(k.get("message")))
+    scanner = MockScanner(responder)
+    scanner.session = _FakeSession(_FakeJar(list(cookies)))
+    tester = CSRFTester(scanner, em, {"payload_delay": 0, "max_payloads": 8})
+    await tester.run_test("http://target/page")
+    return found, logs
+
+
+async def test_csrf_missing_token_detected():
+    def r(m, u, kw):
+        return {"text": '<form method="POST" action="/transfer"><input name="amount"></form>'}
+    found, _ = await _run_csrf(r)
+    assert len(found) == 1
+    assert found[0]["confidence"] == "HIGH"
+
+async def test_csrf_no_finding_for_get_only_forms():
+    def r(m, u, kw):
+        return {"text": '<form method="GET" action="/search"><input name="q"></form>'}
+    found, _ = await _run_csrf(r)
+    assert found == []
+
+async def test_csrf_rotating_token_not_flagged():
+    calls = {"n": 0}
+    def r(m, u, kw):
+        calls["n"] += 1
+        token = f"tok-{calls['n']}"
+        return {"text": f'<form method="POST" action="/transfer"><input name="csrf_token" value="{token}"></form>'}
+    found, _ = await _run_csrf(r)
+    assert found == []
+
+async def test_csrf_static_token_logs_prerequisite_not_a_vuln():
+    def r(m, u, kw):
+        return {"text": '<form method="POST" action="/transfer"><input name="csrf_token" value="fixed-token"></form>'}
+    found, logs = await _run_csrf(r)
+    assert found == []
+    assert any("second concurrently authenticated identity" in msg for msg in logs)
+
+async def test_csrf_double_submit_cookie_pattern_flagged():
+    def r(m, u, kw):
+        return {"text": '<form method="POST" action="/transfer"><input name="csrf_token" value="dup-token"></form>'}
+    cookie = _morsel("session_csrf", "dup-token", samesite="Strict", secure=True)
+    found, _ = await _run_csrf(r, cookies=[cookie])
+    matches = [f for f in found if "Double-submit" in f["evidence"]]
+    assert len(matches) == 1
+    assert matches[0]["confidence"] == "LOW"
+
+async def test_csrf_missing_samesite_flagged():
+    def r(m, u, kw):
+        return {"text": '<form method="POST" action="/transfer"><input name="csrf_token" value="tok"></form>'}
+    cookie = _morsel("sessionid", "abc123")  # no samesite attribute set
+    found, _ = await _run_csrf(r, cookies=[cookie])
+    matches = [f for f in found if "SameSite" in f["evidence"]]
+    assert len(matches) == 1
+    assert matches[0]["confidence"] == "MEDIUM"

@@ -598,8 +598,15 @@ def ai_triage_analysis(csv_path: Path) -> dict:
     ``run_experiments.metrics_to_row``) and, per budget, contrasts the
     ``ai-triage`` / ``ai-triage-synth`` arms with ``baseline``:
 
-      * ``fp_suppression_rate`` — real false positives removed, as a fraction
-        of ``baseline`` FP at that budget;
+      * ``fp_suppressed_vs_baseline_fp`` — real false positives removed,
+        expressed as a multiple of ``baseline`` FP at that budget. NOT a
+        bounded 0-100% rate: ``fp_suppressed`` is counted over the agent's
+        full pre-dedup candidate pool (every tester hypothesis per
+        parameter), while ``baseline`` FP is the final, deduplicated
+        per-parameter finding count graded by the oracle — a much smaller
+        population. Values > 1 are therefore expected and do not mean more
+        FPs were removed than existed; use ``suppression_precision`` for a
+        properly bounded per-candidate accuracy figure.
       * ``fn_introduced`` — real vulnerabilities the model hid;
       * ``recall_delta`` — recall(with agent) - recall(without agent), read off
         the audit block so it is exact rather than inferred from FP/FN.
@@ -645,8 +652,10 @@ def ai_triage_analysis(csv_path: Path) -> dict:
                 "fn_introduced": fn_introduced,
                 "suppression_precision": (fp_suppressed / suppressed
                                           if suppressed else float("nan")),
-                "fp_suppression_rate": (fp_suppressed / base_fp
-                                        if base_fp else float("nan")),
+                # Not a bounded rate — see docstring. Kept as a multiple of
+                # baseline FP (candidate-level count / final-report count).
+                "fp_suppressed_vs_baseline_fp": (fp_suppressed / base_fp
+                                                 if base_fp else float("nan")),
                 "recall_with_agent": recall_with,
                 "recall_without_agent": recall_without,
                 "recall_delta": recall_with - recall_without,
@@ -1002,7 +1011,9 @@ def main(argv=None) -> int:
                 print(f"   {arm:>16s}: suppressed {e['suppressed']:.1f} "
                       f"({e['fp_suppressed']:.1f} real FP, "
                       f"{e['fn_introduced']:.1f} FN introduced)  "
-                      f"FP-suppression {100 * e['fp_suppression_rate']:.0f}%  "
+                      f"suppression precision {100 * e['suppression_precision']:.0f}%  "
+                      f"(FP suppressed = {e['fp_suppressed_vs_baseline_fp']:.1f}x baseline FP "
+                      f"— candidate-level vs. final-report-level count, see docstring)  "
                       f"recall {e['recall_without_agent']:.3f}->{e['recall_with_agent']:.3f} "
                       f"(Δ{e['recall_delta']:+.3f})")
     (args.analysis_dir / "ai_triage.json").write_text(
