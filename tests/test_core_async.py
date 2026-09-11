@@ -237,6 +237,83 @@ async def test_pinned_resolver_honours_assert_public_target_even_when_trusted():
         await PinnedResolver(core).resolve("intranet.local", 80)
 
 
+# --- SSRF: trust is bound to the vetted (host, IP) pair, not the bare host --
+# N1 in THREATS_TO_VALIDITY_SSRF.md: ``_trusted_hosts`` grants an operator-
+# designated hostname an exemption from the public-address policy, but by
+# itself says nothing about *which* address is legitimate. These pin trust to
+# the address(es) actually vetted the first time, so a later resolution of the
+# same alias to something else is refused rather than silently inherited.
+
+async def test_trusted_host_rejects_a_later_address_that_was_never_vetted():
+    """Same alias, different address: e.g. the DNS cache entry was evicted and
+    the zone now answers with a different private address (rebinding), or an
+    unrelated redirect elsewhere in the scan reuses this hostname. Either way
+    the new address was never vetted for this host and must be refused, even
+    though the hostname itself is trusted."""
+    core = AsyncScannerCore(ScanConfig())
+    core._trusted_hosts.add("intranet.local")
+
+    core._resolve_cache["intranet.local"] = {"10.0.0.5"}
+    records = await PinnedResolver(core).resolve("intranet.local", 80)
+    assert [r["host"] for r in records] == ["10.0.0.5"]
+
+    # Simulate the cache entry being evicted and the host re-resolving to a
+    # different private address under the same trusted alias.
+    core._resolve_cache["intranet.local"] = {"10.0.0.66"}
+    with pytest.raises(SSRFRedirectError):
+        await PinnedResolver(core).resolve("intranet.local", 80)
+
+
+async def test_trusted_host_pins_a_dual_stack_resolution_as_one_batch():
+    """A host with more than one legitimate trusted address (dual-stack, or
+    multiple A records for the same target) must not reject its own second
+    address as 'unexpected' — the whole first resolution is pinned together."""
+    core = AsyncScannerCore(ScanConfig())
+    core._trusted_hosts.add("intranet.local")
+    core._resolve_cache["intranet.local"] = {"10.0.0.5", "fd00::5"}
+
+    records = await PinnedResolver(core).resolve("intranet.local", 80)
+    assert {r["host"] for r in records} == {"10.0.0.5", "fd00::5"}
+
+    # Re-resolving to the exact same set (e.g. a later redirect back to the
+    # same host) must still pass.
+    records2 = await PinnedResolver(core).resolve("intranet.local", 80)
+    assert {r["host"] for r in records2} == {"10.0.0.5", "fd00::5"}
+
+
+async def test_multi_target_scan_cannot_hijack_a_previously_trusted_alias():
+    """Multi-target scan scenario: the operator's target list points the
+    scanner at intranet host A directly (a legitimate first hop —
+    ``core.request()`` marks its hostname trusted the same way the real
+    crawler does for every top-level target). The scan runs long enough that
+    A's bounded DNS cache entry gets evicted (``_MAX_RESOLVE_CACHE``), and by
+    the time the crawler reaches A again — or an unrelated target B's page
+    happens to reference the same hostname — the zone answers with a
+    different private address. ``core.request()`` uses a fake session that
+    never touches real DNS, so the actual socket-open-time check this guards
+    is exercised the same way the sibling ``test_pinned_resolver_*`` tests
+    do: by calling :class:`PinnedResolver` directly, which is exactly what
+    aiohttp's connector invokes for every hop, first or redirected."""
+    core = make_core(lambda m, u, kw: FakeResponse(200, {}, "ok"))
+
+    # Target A: a normal first-hop request marks the hostname trusted, and
+    # its first resolution (address the operator's own DNS actually returned)
+    # gets pinned.
+    core._resolve_cache["intranet.local"] = {"10.0.0.5"}
+    await core.request("GET", "http://intranet.local/")
+    assert "intranet.local" in core._trusted_hosts
+    records = await PinnedResolver(core).resolve("intranet.local", 80)
+    assert [r["host"] for r in records] == ["10.0.0.5"]
+    assert core._trusted_host_ips["intranet.local"] == frozenset({"10.0.0.5"})
+
+    # The cache entry is evicted and the same alias now resolves elsewhere —
+    # a hijack/rebinding attempt riding on the trust A already earned.
+    del core._resolve_cache["intranet.local"]
+    core._resolve_cache["intranet.local"] = {"10.0.0.66"}
+    with pytest.raises(SSRFRedirectError):
+        await PinnedResolver(core).resolve("intranet.local", 80)
+
+
 async def test_pinned_resolver_passes_everything_when_private_is_allowed():
     core = AsyncScannerCore(ScanConfig(allow_private_redirects=True))
     core._resolve_cache["h.local"] = {"127.0.0.1"}
@@ -353,6 +430,30 @@ async def test_warmup_stops_on_hard_failure():
     core = make_core(handler)
     # request() swallows the exception into status_code=0 -> warmup breaks early.
     assert await core.warmup("http://target.example/a", 5) == 1
+
+
+async def test_warmup_blocks_cross_host_redirect_to_metadata_ip():
+    """warmup() must get the same SSRF protection as a normal request().
+
+    warmup() discards its responses and skips telemetry, but it still goes
+    through request() -> _request_following(), which is where the redirect
+    chase and the SSRF guard live. This pins that: a warm-up burst chasing a
+    302 to the cloud metadata endpoint must abort exactly like
+    test_redirect_to_metadata_ip_is_blocked does for a normal request(), and
+    the internal address must never actually be dialled.
+    """
+    def handler(method, url, kwargs):
+        if "169.254.169.254" in url:
+            return FakeResponse(200, {}, "iam/security-credentials/...")
+        return FakeResponse(
+            302, {"Location": "http://169.254.169.254/latest/meta-data/"}
+        )
+
+    core = make_core(handler)
+    with pytest.raises(SSRFRedirectError):
+        await core.warmup("http://target.example/fetch?url=x", 3)
+
+    assert all("169.254.169.254" not in u for _, u, _ in core.session.requests)
 
 
 # --- token bucket ------------------------------------------------------

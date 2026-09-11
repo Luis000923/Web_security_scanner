@@ -48,6 +48,7 @@ _READ_CHUNK = 64 * 1024                     # 64 KiB per iter_chunked step
 # costs a re-resolution (which is re-validated) or a repeated warm-up burst.
 _MAX_RESOLVE_CACHE = 4096
 _MAX_WARMED_ENDPOINTS = 8192
+_MAX_BACKOFF_HOSTS = 4096
 
 # ipaddress predicates that mark an address as "not a public destination".
 _BLOCKED_IP_PREDICATES = (
@@ -119,8 +120,10 @@ class PinnedResolver(AbstractResolver):
         ips = await self._core._resolve_host(host)
         if not ips:
             raise SSRFRedirectError(f"Host {host!r} resolved to no addresses")
-        for ip in sorted(ips):
-            self._core._assert_ip_allowed(ip, host)
+        # Vet the whole resolution as one batch (not one address at a time):
+        # see _assert_ips_allowed for why a multi-address trusted host would
+        # otherwise reject its own second address.
+        self._core._assert_ips_allowed(ips, host)
         return [_addrinfo(host, ip, port) for ip in sorted(ips)]
 
     async def close(self) -> None:
@@ -165,6 +168,25 @@ class ScanConfig:
     # unchanged; the advanced body/header/cookie vectors turn it on so a
     # mutated request can never be aimed at an internal endpoint either.
     assert_public_target: bool = False
+    # ---- resilience: bounded retries + per-host adaptive throttling ------
+    # All default to the pre-existing behaviour (no retries, no throttling)
+    # so unit tests and normal scans see zero change unless opted in.
+    #
+    # ``max_retries``: extra attempts after the first, applied only to a hard
+    # transport failure (status_code == 0 -- the exception path already
+    # collapses into that) or, when ``adaptive_throttle`` is on, to a 429/503
+    # response. 0 keeps the historical single-attempt behaviour.
+    max_retries: int = 0
+    retry_backoff_base: float = 0.5    # seconds, first retry's backoff floor
+    retry_backoff_max: float = 8.0     # seconds, backoff ceiling before jitter
+    # ``adaptive_throttle``: when a host answers 429/503, park *further*
+    # requests to that host behind a per-host cooldown (honouring
+    # ``Retry-After`` when present) instead of continuing to hammer it at the
+    # scan's normal pace. Cooldown decays back to zero on the host's next
+    # clean response. Scoped per-host so one throttled target never slows
+    # down a concurrent scan of other targets in a --target-list run.
+    adaptive_throttle: bool = False
+    throttle_backoff_max: float = 30.0  # seconds, per-host cooldown ceiling
 
 
 class TokenBucket:
@@ -201,6 +223,75 @@ class TokenBucket:
                     return
                 wait = (amount - self._tokens) / self._rate
             await asyncio.sleep(wait)
+
+
+class HostBackoff:
+    """Per-host adaptive cooldown driven by 429/503 responses.
+
+    Deliberately separate from :class:`TokenBucket`: the token bucket paces
+    every request at a fixed, operator-chosen rate regardless of target
+    behaviour, while this reacts to what the *target* says (a rate-limit
+    response or a ``Retry-After`` header) and only throttles the host that
+    asked for it. A scan against a ``--target-list`` of several hosts keeps
+    its normal pace against the hosts that are not complaining.
+
+    ``penalize()`` returns the delay (seconds) the caller should wait before
+    the *next* request to this host; it does not sleep itself, so the wait
+    never holds a concurrency slot or the semaphore (same discipline as
+    :meth:`TokenBucket.acquire`). Backoff is exponential in the number of
+    consecutive throttle responses, capped at ``ceiling``, with full jitter
+    (uniform in ``[0, computed_delay]``) so many probes in flight against the
+    same host don't all resume in lockstep. ``Retry-After`` (seconds or an
+    HTTP-date) overrides the computed delay when present and larger.
+    """
+
+    def __init__(self, ceiling: float = 30.0, max_hosts: int = 4096) -> None:
+        self._ceiling = max(1.0, ceiling)
+        self._max_hosts = max(1, max_hosts)
+        self._state: dict[str, dict[str, float]] = {}
+
+    @staticmethod
+    def _parse_retry_after(value: str | None) -> float:
+        if not value:
+            return 0.0
+        value = value.strip()
+        if value.isdigit():
+            return float(value)
+        try:
+            from email.utils import parsedate_to_datetime
+            dt = parsedate_to_datetime(value)
+            if dt is None:
+                return 0.0
+            delta = dt.timestamp() - time.time()
+            return max(0.0, delta)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def penalize(self, host: str, *, retry_after: str | None = None) -> float:
+        """Record a throttle response for ``host``; returns the wait (s)."""
+        if host not in self._state and len(self._state) >= self._max_hosts:
+            self._state.clear()
+        entry = self._state.setdefault(host, {"level": 0.0, "until": 0.0})
+        entry["level"] = min(entry["level"] + 1.0, 10.0)
+        computed = min(self._ceiling, (2.0 ** entry["level"]) * 0.25)
+        delay = max(computed, self._parse_retry_after(retry_after))
+        delay = min(delay, self._ceiling)
+        entry["until"] = time.monotonic() + delay
+        return random.uniform(0.0, delay) if delay > 0 else 0.0
+
+    def relax(self, host: str) -> None:
+        """A clean response from ``host``: decay its cooldown level."""
+        entry = self._state.get(host)
+        if entry is not None and entry["level"] > 0:
+            entry["level"] = max(0.0, entry["level"] - 1.0)
+
+    async def wait_if_needed(self, host: str) -> None:
+        entry = self._state.get(host)
+        if entry is None:
+            return
+        remaining = entry["until"] - time.monotonic()
+        if remaining > 0:
+            await asyncio.sleep(remaining)
 
 
 async def worker_pool(
@@ -355,6 +446,12 @@ class AsyncScannerCore:
             self._rate_bucket = TokenBucket(
                 rate=1.0 / config.rate_limit, capacity=config.rate_burst
             )
+        # Per-host 429/503 cooldown (see class docstring). Created unconditionally
+        # (cheap, empty dict) but only ever populated/consulted when
+        # ``config.adaptive_throttle`` is set, so it is a no-op otherwise.
+        self._host_backoff = HostBackoff(
+            ceiling=config.throttle_backoff_max, max_hosts=_MAX_BACKOFF_HOSTS
+        )
         self._logger = logging.getLogger(__name__)
         # host -> {ip, ...}; avoids re-resolving on every redirect check AND
         # pins the addresses handed to aiohttp (see PinnedResolver).
@@ -364,6 +461,16 @@ class AsyncScannerCore:
         # host you own is legitimate, so these keep the historical policy: a
         # private address is allowed unless ``assert_public_target`` is set.
         self._trusted_hosts: set[str] = set()
+        # host -> the exact private/loopback/... address set vetted the FIRST
+        # time that host resolved to one. Being in ``_trusted_hosts`` only
+        # grants an exemption from the public-address policy at all; it does
+        # not by itself say WHICH address is legitimate. Pinning closes that:
+        # once "intranet.local" is seen to resolve to 10.0.0.5, a later
+        # resolution of the same hostname to a *different* private address
+        # (DNS rebinding after cache eviction, or a redirect from an unrelated
+        # target reusing the same alias mid-scan — see THREATS_TO_VALIDITY_SSRF
+        # N1) is refused instead of silently inheriting the old trust.
+        self._trusted_host_ips: dict[str, frozenset[str]] = {}
         # Endpoints (scheme://netloc/path) already given a warm-up burst, so a
         # per-point warm-up call from a tester and the orchestrator's per-target
         # pre-warm never double-fire against the same endpoint.
@@ -512,20 +619,65 @@ class AsyncScannerCore:
     def _assert_ip_allowed(self, ip: str, host: str) -> None:
         """Connection-time policy check for one resolved address.
 
+        Thin wrapper around :meth:`_assert_ips_allowed` for the single-address
+        case (an IP literal in the URL, where ``host == ip`` and no alias
+        confusion is possible). Resolutions that can yield more than one
+        address (a real hostname lookup) must go through
+        :meth:`_assert_ips_allowed` instead, so the whole batch is vetted
+        atomically — see its docstring for why.
+        """
+        self._assert_ips_allowed({ip}, host)
+
+    def _assert_ips_allowed(self, ips: Iterable[str], host: str) -> None:
+        """Connection-time policy check for every address one resolution of
+        ``host`` produced.
+
         Enforced by :class:`PinnedResolver` on every socket the scanner opens,
         which is what makes the guard TOCTOU-proof rather than advisory. A
-        private address is refused unless the operator opted in
-        (``allow_private_redirects``) or the hostname is one *they* pointed the
-        scanner at (``_trusted_hosts``) — a target-chosen redirect never
-        qualifies.
+        private/loopback/link-local/... address is refused unless the operator
+        opted in globally (``allow_private_redirects``) or ``host`` is one
+        *they* pointed the scanner at (``_trusted_hosts``) — a target-chosen
+        redirect never qualifies.
+
+        Being in ``_trusted_hosts`` only grants the exemption in principle; it
+        does not say which address is the legitimate one. The first time a
+        trusted host resolves to a blocked address, that exact address set is
+        pinned (``_trusted_host_ips``); every later resolution of the same
+        hostname must match it. A later resolution that disagrees — the zone
+        rebinds after the DNS cache entry is evicted, or an unrelated redirect
+        elsewhere in a multi-target scan happens to reuse the same alias — is
+        refused instead of silently inheriting trust from the hostname alone.
+        This is what keeps a scan of one intranet target from becoming a
+        standing exemption for anything that later answers to the same name.
+
+        All addresses from one resolution are checked together (not one at a
+        time) so that a host with several trusted addresses — dual-stack, or
+        multiple A records for the same authorized target — pins its whole
+        first-seen set instead of rejecting its own second address as an
+        "unexpected" one.
         """
-        if self.config.allow_private_redirects or not self._ip_is_blocked(ip):
+        blocked = {ip for ip in ips if self._ip_is_blocked(ip)}
+        if not blocked or self.config.allow_private_redirects:
             return
-        if host in self._trusted_hosts and not self.config.assert_public_target:
+        if self.config.assert_public_target or host not in self._trusted_hosts:
+            raise SSRFRedirectError(
+                f"Refusing to connect to {host!r}: resolves to non-public "
+                f"address(es) {sorted(blocked)}"
+            )
+        pinned = self._trusted_host_ips.get(host)
+        if pinned is None:
+            # First blocked resolution ever seen for this operator-designated
+            # host: this *is* the intranet target — pin exactly these addresses.
+            self._trusted_host_ips[host] = frozenset(blocked)
             return
-        raise SSRFRedirectError(
-            f"Refusing to connect to {host!r}: resolves to non-public address {ip}"
-        )
+        rogue = blocked - pinned
+        if rogue:
+            raise SSRFRedirectError(
+                f"Refusing to connect to {host!r}: address(es) {sorted(rogue)} "
+                f"do not match the address(es) {sorted(pinned)} originally "
+                "vetted for this trusted host (possible DNS rebinding or "
+                "cross-target alias reuse)"
+            )
 
     async def _resolve_host(self, host: str) -> set[str]:
         """Resolve ``host`` once and memoise it, so the address the SSRF guard
@@ -728,22 +880,9 @@ class AsyncScannerCore:
         if self._rate_bucket is not None:
             await self._rate_bucket.acquire()
 
-        try:
-            async with self._semaphore:
-                result = await self._request_following(
-                    method, url, follow_redirects, caller_headers, kwargs
-                )
-        except asyncio.CancelledError:
-            raise
-        except SSRFRedirectError:
-            raise
-        except Exception as e:
-            self._logger.debug(f"Request failed: {url} - {e}")
-            self._warn_if_tls_verification_error(e)
-            return {
-                "status_code": 0, "text": "", "headers": {},
-                "url": url, "elapsed": 0.0, "truncated": False, "error": str(e),
-            }
+        result = await self._request_with_resilience(
+            method, url, follow_redirects, caller_headers, kwargs, first_hop_host,
+        )
 
         # Transparent re-authentication: if the response looks logged-out and a
         # session manager is attached, re-login once (rate-limited by the
@@ -789,6 +928,77 @@ class AsyncScannerCore:
                 return
             cause = cause.__cause__ or cause.__context__
             seen += 1
+
+    async def _request_with_resilience(
+        self, method: str, url: str, follow_redirects: bool,
+        caller_headers: dict[str, str] | None, kwargs: dict[str, Any],
+        host: str | None,
+    ) -> dict[str, Any]:
+        """Issue one logical request with bounded retries and host cooldown.
+
+        With the defaults (``max_retries=0``, ``adaptive_throttle=False``)
+        this is exactly the old single-attempt try/except -> ``status_code=0``
+        behaviour, just factored out. Opting in changes two things:
+
+        - a hard transport failure (exception, or a redirect chain that
+          collapses to ``status_code=0``) is retried up to ``max_retries``
+          times with exponential backoff + full jitter, each wait sleeping
+          *outside* the semaphore so a backing-off probe never occupies a
+          concurrency slot other probes (to other endpoints) could use;
+        - with ``adaptive_throttle`` on, a 429/503 also counts as retryable
+          and additionally parks *every future* request to this host behind
+          a per-host cooldown (:class:`HostBackoff`) honouring ``Retry-After``
+          when the target sends one. A clean response decays that cooldown.
+
+        Never retries :class:`SSRFRedirectError` or ``CancelledError`` --
+        those propagate immediately, same as before.
+        """
+        attempts = max(1, self.config.max_retries + 1)
+        throttle_on = self.config.adaptive_throttle and host
+        result: dict[str, Any] = {}
+        for attempt in range(attempts):
+            if throttle_on:
+                await self._host_backoff.wait_if_needed(host)
+            try:
+                async with self._semaphore:
+                    result = await self._request_following(
+                        method, url, follow_redirects, caller_headers, kwargs
+                    )
+            except asyncio.CancelledError:
+                raise
+            except SSRFRedirectError:
+                raise
+            except Exception as e:
+                self._logger.debug(f"Request failed: {url} - {e}")
+                self._warn_if_tls_verification_error(e)
+                result = {
+                    "status_code": 0, "text": "", "headers": {},
+                    "url": url, "elapsed": 0.0, "truncated": False, "error": str(e),
+                }
+
+            status = result.get("status_code", 0)
+            throttled = bool(throttle_on and status in (429, 503))
+            transient = status == 0
+            host_delay = 0.0
+            if throttle_on:
+                if throttled:
+                    host_delay = self._host_backoff.penalize(
+                        host, retry_after=result.get("headers", {}).get("Retry-After"),
+                    )
+                elif status != 0:
+                    self._host_backoff.relax(host)
+
+            if not (throttled or transient) or attempt == attempts - 1:
+                return result
+
+            if throttled:
+                delay = host_delay
+            else:
+                base = self.config.retry_backoff_base * (2 ** attempt)
+                delay = random.uniform(0.0, min(base, self.config.retry_backoff_max))
+            if delay > 0:
+                await asyncio.sleep(delay)
+        return result
 
     async def _request_following(
         self, method: str, url: str, follow_redirects: bool,
