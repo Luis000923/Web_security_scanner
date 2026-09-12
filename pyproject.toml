@@ -73,10 +73,15 @@ ai-serve = [
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "black",
     "mypy",
     "ruff",
+    "bandit",
     "jsonschema>=4.20",
+    # ai_module.structured_inference imports pydantic at module scope, so the
+    # AI triage / curation test suites cannot even be collected without it.
+    "pydantic>=2.0",
 ]
 
 [project.scripts]
@@ -112,7 +117,7 @@ ignore = ["E501", "B008"]
 
 [tool.mypy]
 python_version = "3.10"
-files = ["web_security_scanner"]
+files = ["web_security_scanner", "ai_module"]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = false

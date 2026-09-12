@@ -405,7 +405,6 @@ def test_orchestrator_attaches_agent_by_default(monkeypatch):
     scanner = WebSecurityScanner.__new__(WebSecurityScanner)
     scanner.config = {"testers": {}}          # no flags -> AI is the default
     scanner._logger = __import__("logging").getLogger("test")
-    t = FakeAgent(triage=None)
 
     class _T:
         ai_client = None

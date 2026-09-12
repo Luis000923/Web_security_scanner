@@ -39,6 +39,8 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import random
+import time
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -101,7 +103,116 @@ class AgentClient:
     timeout: float = 60.0
     max_tokens: int = 768
     temperature: float = 0.2
+    # >1.0 discourages repeating tokens already generated -- useful against a
+    # compact model's tendency to loop on a single evasion technique when
+    # sampled at the higher temperature payload synthesis wants. 1.0 = off.
+    # Sent as top-level 'repetition_penalty' (vLLM's OpenAI-compatible server
+    # and llama.cpp --api both accept it; a strict OpenAI server ignores an
+    # unknown field rather than rejecting the request) and, for the
+    # 'transformers' backend, passed straight to `generate()`.
+    repetition_penalty: float = 1.1
+    # Payload synthesis wants more creative/varied sampling than triage (a
+    # verification task where a hedged, low-temperature verdict is safer);
+    # None falls back to `temperature` so setting only `temperature` keeps
+    # today's single-knob behaviour unchanged.
+    payload_temperature: float | None = None
+    # Max sockets the shared session keeps open to the inference server.
+    pool_limit: int = 8
+    # 'transformers' backend only: load the base model quantized via
+    # bitsandbytes instead of full bf16, trading a little quality for a
+    # much smaller footprint (matches the QLoRA training precision, see
+    # AUDIT.md 1.7 -- train/serve quantization skew). Mutually exclusive;
+    # 4-bit wins if both are set. No effect on the 'openai' backend, where
+    # quantization is the serving stack's concern (vLLM/llama.cpp flags).
+    load_in_4bit: bool = False
+    load_in_8bit: bool = False
+    # Bounded retry/backoff for the 'openai' backend's HTTP call (Phase 2,
+    # Point 3 -- "manejo elegante de reintentos... en caso de fallos del LLM
+    # o API externa"). Only a transient failure is retried (connection
+    # error, timeout, or a 5xx from the inference server); a 4xx (bad
+    # request, auth) fails fast since retrying it changes nothing. Exhausting
+    # every attempt still raises -- callers (``triage_finding`` /
+    # ``synthesize_payloads``) already catch that and degrade to their safe
+    # contingency value, so a struggling backend never aborts a scan, it just
+    # gets a bounded number of extra chances first.
+    max_retries: int = 2
+    retry_backoff_base: float = 0.5
+    retry_backoff_max: float = 4.0
+    # Circuit breaker for the 'openai' backend (AUDIT.md 1.2/B2): once
+    # ``circuit_fail_threshold`` consecutive requests exhaust their retries,
+    # the breaker opens and every call fails fast (no network attempt, no
+    # 60s timeout) for ``circuit_reset_after`` seconds -- callers
+    # (``triage_finding`` / ``synthesize_payloads``) already degrade that
+    # failure to the safe heuristic/local contingency, so opening the
+    # breaker just makes a dead server cheap to sit behind instead of
+    # stalling every finding for a full timeout.
+    circuit_fail_threshold: int = 5
+    circuit_reset_after: float = 30.0
     _hf: Any = field(default=None, repr=False, init=False)
+    _session: Any = field(default=None, repr=False, init=False)
+    _hf_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False, init=False)
+    _circuit_fail_count: int = field(default=0, repr=False, init=False)
+    _circuit_opened_at: float | None = field(default=None, repr=False, init=False)
+
+    # ------------------------------------------------------------------ #
+    # circuit breaker (openai backend)
+    # ------------------------------------------------------------------ #
+
+    def _circuit_is_open(self) -> bool:
+        """``True`` while the breaker is tripped and calls should fail fast.
+
+        Half-open on timeout: once ``circuit_reset_after`` has elapsed since
+        the breaker opened, it resets itself and lets the next call through
+        as a trial -- a fresh failure re-opens it (via ``_circuit_record_failure``),
+        a success closes it for good (via ``_circuit_record_success``).
+        """
+        if self._circuit_opened_at is None:
+            return False
+        if time.monotonic() - self._circuit_opened_at >= self.circuit_reset_after:
+            self._circuit_opened_at = None
+            self._circuit_fail_count = 0
+            return False
+        return True
+
+    def _circuit_record_success(self) -> None:
+        self._circuit_fail_count = 0
+        self._circuit_opened_at = None
+
+    def _circuit_record_failure(self) -> None:
+        self._circuit_fail_count += 1
+        if self._circuit_fail_count >= self.circuit_fail_threshold:
+            self._circuit_opened_at = time.monotonic()
+
+    # ------------------------------------------------------------------ #
+    # HTTP session (shared)
+    # ------------------------------------------------------------------ #
+
+    async def _get_session(self) -> Any:
+        """Lazily create — and then reuse — one ``aiohttp.ClientSession``.
+
+        A session per call meant a fresh TCP (and, off localhost, TLS) handshake
+        for every single finding triaged. Holding one keyed-alive pool across
+        the scan removes that per-call setup cost and lets
+        :meth:`batch_triage` actually overlap requests on live connections.
+        """
+        import aiohttp
+
+        sess = self._session
+        if sess is None or getattr(sess, "closed", False):
+            sess = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=self.timeout),
+                connector=aiohttp.TCPConnector(limit=max(1, self.pool_limit)),
+            )
+            self._session = sess
+        return sess
+
+    async def aclose(self) -> None:
+        """Close the shared session. Idempotent; safe if none was ever built."""
+        sess, self._session = self._session, None
+        if sess is not None and not getattr(sess, "closed", False):
+            close = getattr(sess, "close", None)
+            if close is not None:
+                await close()
 
     # ------------------------------------------------------------------ #
     # public API
@@ -121,13 +232,13 @@ class AgentClient:
         try:
             import aiohttp
 
-            timeout = aiohttp.ClientTimeout(total=min(self.timeout, 5.0))
-            async with aiohttp.ClientSession(timeout=timeout) as sess:
-                async with sess.get(
-                    f"{self.base_url}/models",
-                    headers={"Authorization": f"Bearer {self.api_key}"},
-                ) as resp:
-                    return resp.status < 500
+            sess = await self._get_session()
+            async with sess.get(
+                f"{self.base_url}/models",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                timeout=aiohttp.ClientTimeout(total=min(self.timeout, 5.0)),
+            ) as resp:
+                return bool(resp.status < 500)
         except Exception:  # noqa: BLE001 - unreachable / DNS / TLS / timeout
             return False
 
@@ -137,19 +248,23 @@ class AgentClient:
             f"{json.dumps(finding, ensure_ascii=False, indent=2)}\n\n"
             "Return the verdict as the required structured JSON object."
         )
-        text = await self._chat(
-            load_prompt("triage_system"), user,
-            response_format=openai_response_format(TriageOut),
-        )
         try:
+            text = await self._chat(
+                load_prompt("triage_system"), user,
+                response_format=openai_response_format(TriageOut),
+            )
             parsed = parse_triage(text)
-        except Exception:  # pragma: no cover - parse_triage never raises today;
-            # this is defense in depth so a future bug there can never crash a scan.
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            # The backend call (network / TLS / timeout) or a future parse bug:
+            # this method's contract is that it never raises into a scan, so
+            # fall back to the safe contingency verdict.
             return TriageResult(
                 verdict="UNCERTAIN", confidence=0.0,
-                reasoning="Structured triage parse failed catastrophically; "
+                reasoning=f"Structured triage unavailable ({type(exc).__name__}); "
                           "held to the safe contingency verdict.",
-                next_step="Investigate the backend's response format.", raw=text,
+                next_step="Investigate the backend's response format.", raw="",
             )
         verdict = parsed.verdict.value
         if verdict not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "UNCERTAIN"):
@@ -173,13 +288,16 @@ class AgentClient:
             f"Propose the {n} most informative next payloads, best first. "
             "Return them as the required structured JSON object."
         )
-        text = await self._chat(
-            load_prompt("payload_system"), user,
-            response_format=openai_response_format(PayloadOut),
-        )
         try:
+            text = await self._chat(
+                load_prompt("payload_system"), user,
+                response_format=openai_response_format(PayloadOut),
+                temperature=self.payload_temperature,
+            )
             parsed = parse_payloads(text)
-        except Exception:  # pragma: no cover - defense in depth, see triage_finding
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # backend failure or a future parse bug -> static corpus
             return []
         out: list[PayloadSuggestion] = []
         for item in parsed.payloads[:n]:
@@ -215,6 +333,7 @@ class AgentClient:
 
     async def _chat(
         self, system: str, user: str, *, response_format: dict[str, Any] | None = None,
+        temperature: float | None = None,
     ) -> str:
         if self.backend == "echo":
             return self._echo(system, user)
@@ -224,13 +343,24 @@ class AgentClient:
             # StructuredLocalAgent's job (ai_module/structured_inference.py),
             # a separate opt-in path. Free text still lands in parse_triage /
             # parse_payloads at the call site, which is schema-tolerant.
-            return await asyncio.to_thread(self._chat_hf, system, user)
-        return await self._chat_openai(system, user, response_format=response_format)
+            await self._ensure_hf_loaded()
+            return await asyncio.to_thread(self._generate_hf, system, user, temperature)
+        return await self._chat_openai(system, user, response_format=response_format,
+                                       temperature=temperature)
 
     async def _chat_openai(
         self, system: str, user: str, *, response_format: dict[str, Any] | None = None,
+        temperature: float | None = None,
     ) -> str:
         import aiohttp
+
+        if self._circuit_is_open():
+            raise RuntimeError(
+                f"AI backend circuit breaker open (>= {self.circuit_fail_threshold} "
+                f"consecutive failures); skipping the network call for "
+                f"{self.circuit_reset_after}s to avoid paying a full timeout "
+                f"per finding while the server is down."
+            )
 
         payload = {
             "model": self.model,
@@ -238,34 +368,114 @@ class AgentClient:
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "temperature": self.temperature,
+            "temperature": temperature if temperature is not None else self.temperature,
             "max_tokens": self.max_tokens,
+            # Top-level, non-standard OpenAI field: vLLM's OpenAI-compatible
+            # server and llama.cpp --api both read it; a strict OpenAI-spec
+            # server just ignores an extra field rather than erroring.
+            "repetition_penalty": self.repetition_penalty,
             # Caller-supplied json_schema (see openai_response_format) enforces
             # our exact taxonomy server-side; fall back to the older open-ended
             # json_object mode if a call site doesn't provide one.
             "response_format": response_format or {"type": "json_object"},
         }
         headers = {"Authorization": f"Bearer {self.api_key}"}
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
-        async with aiohttp.ClientSession(timeout=timeout) as sess:
-            async with sess.post(
-                f"{self.base_url}/chat/completions", json=payload, headers=headers
-            ) as resp:
-                resp.raise_for_status()
-                body = await resp.json()
-        return body["choices"][0]["message"]["content"]
+        attempts = max(1, self.max_retries + 1)
+        last_exc: BaseException | None = None
+        for attempt in range(attempts):
+            try:
+                sess = await self._get_session()
+                async with sess.post(
+                    f"{self.base_url}/chat/completions", json=payload, headers=headers
+                ) as resp:
+                    resp.raise_for_status()
+                    body = await resp.json()
+                content = str(body["choices"][0]["message"]["content"])
+                self._circuit_record_success()
+                return content
+            except asyncio.CancelledError:
+                raise
+            except aiohttp.ClientResponseError as exc:
+                # A 4xx (bad request, auth, unknown model) will not fix
+                # itself on retry -- fail fast instead of burning the
+                # latency budget three times over.
+                if exc.status < 500 or attempt == attempts - 1:
+                    self._circuit_record_failure()
+                    raise
+                last_exc = exc
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                # Connection reset/refused, DNS failure, read timeout: the
+                # classic transient failures an overloaded/restarting local
+                # inference server produces.
+                if attempt == attempts - 1:
+                    self._circuit_record_failure()
+                    raise
+                last_exc = exc
+            delay = min(self.retry_backoff_max, self.retry_backoff_base * (2 ** attempt))
+            await asyncio.sleep(random.uniform(0.0, delay))
+        # Unreachable (the loop above always returns or raises on its last
+        # attempt), but keeps type-checkers happy about the return path.
+        assert last_exc is not None
+        raise last_exc
 
-    def _chat_hf(self, system: str, user: str) -> str:
-        if self._hf is None:
+    async def _ensure_hf_loaded(self) -> None:
+        """Idempotent lazy-load of the transformers pipeline under a lock.
+
+        Two concurrent findings both hitting the cold path used to each
+        build the model (double VRAM allocation / race, AUDIT.md 1.6/B5).
+        Double-checked locking: the cheap check outside the lock skips the
+        `await` entirely once warm; the check repeated inside the lock
+        stops a second caller that was already waiting from rebuilding it.
+        """
+        if self._hf is not None:
+            return
+        async with self._hf_lock:
+            if self._hf is not None:
+                return
+            self._hf = await asyncio.to_thread(self._build_hf_pipeline)
+
+    def _build_hf_pipeline(self) -> Any:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+        model_id = os.environ.get("AI_AGENT_HF_MODEL", self.model)
+        tok = AutoTokenizer.from_pretrained(model_id)
+        model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16, "device_map": "auto"}
+        quant_config = self._build_quantization_config()
+        if quant_config is not None:
+            # bitsandbytes handles its own dtype internally; passing both a
+            # 4/8-bit config and a plain torch_dtype is what the base model's
+            # weights get compute-cast to (NF4 storage, bf16 compute) -- same
+            # split train_qlora.py uses (AUDIT.md 1.7 -- train/serve skew).
+            model_kwargs["quantization_config"] = quant_config
+        model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
+        return pipeline("text-generation", model=model, tokenizer=tok)
+
+    def _build_quantization_config(self) -> Any:
+        """A ``BitsAndBytesConfig`` for the 'transformers' backend, or ``None``.
+
+        Best-effort: bitsandbytes is an optional, GPU-only dependency (the
+        ``ai-local`` extra doesn't require it) -- a missing install degrades
+        to the plain bf16 load instead of crashing the agent.
+        """
+        if not (self.load_in_4bit or self.load_in_8bit):
+            return None
+        try:
             import torch
-            from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-
-            model_id = os.environ.get("AI_AGENT_HF_MODEL", self.model)
-            tok = AutoTokenizer.from_pretrained(model_id)
-            model = AutoModelForCausalLM.from_pretrained(
-                model_id, torch_dtype=torch.bfloat16, device_map="auto"
+            from transformers import BitsAndBytesConfig
+        except ImportError:
+            return None
+        if self.load_in_4bit:
+            return BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
             )
-            self._hf = pipeline("text-generation", model=model, tokenizer=tok)
+        return BitsAndBytesConfig(load_in_8bit=True)
+
+    def _generate_hf(self, system: str, user: str, temperature: float | None = None) -> str:
+        temp = temperature if temperature is not None else self.temperature
         prompt = self._hf.tokenizer.apply_chat_template(
             [{"role": "system", "content": system}, {"role": "user", "content": user}],
             tokenize=False,
@@ -274,8 +484,9 @@ class AgentClient:
         out = self._hf(
             prompt,
             max_new_tokens=self.max_tokens,
-            do_sample=self.temperature > 0,
-            temperature=max(self.temperature, 1e-3),
+            do_sample=temp > 0,
+            temperature=max(temp, 1e-3),
+            repetition_penalty=self.repetition_penalty,
             return_full_text=False,
         )
         return out[0]["generated_text"]
@@ -292,6 +503,123 @@ class AgentClient:
             {"verdict": "UNCERTAIN", "confidence": 0.0,
              "reasoning": "echo backend", "next_step": "use a real backend"}
         )
+
+
+class BatchingTriageClient:
+    """Coalesces concurrent per-finding triage calls into batched requests.
+
+    ``VulnerabilityTester.report_vulnerability`` consults the agent inline, once
+    per candidate, from whichever tester found it. Left alone that turns the
+    scan's tail into one full inference round trip per finding, serialised —
+    with several testers running concurrently, the backend sits idle between
+    them.
+
+    This wrapper keeps exactly the ``triage_finding(finding) -> TriageResult``
+    contract the testers duck-type against, but parks each caller on a future,
+    gathers everything that arrives within ``linger`` seconds (or ``max_batch``
+    findings, whichever lands first) and settles them all from a single
+    :meth:`AgentClient.batch_triage` — which fans out over the client's one
+    reusable HTTP session instead of a connection per finding.
+
+    Failure semantics are unchanged: a backend error propagates to every caller
+    in the batch, and ``_ai_triage`` catches it and keeps the heuristic verdict.
+    """
+
+    def __init__(self, agent: Any, *, max_batch: int = 8, linger: float = 0.05,
+                 concurrency: int = 4) -> None:
+        self._agent = agent
+        self._max_batch = max(1, int(max_batch))
+        self._linger = max(0.0, float(linger))
+        self._concurrency = max(1, int(concurrency))
+        self._pending: list[tuple[dict[str, Any], asyncio.Future[TriageResult]]] = []
+        self._flush_task: asyncio.Task[None] | None = None
+        self.batches = 0          # observability: batched calls actually issued
+        self.findings = 0         # findings routed through this wrapper
+
+    @property
+    def backend(self) -> Any:
+        return getattr(self._agent, "backend", None)
+
+    @property
+    def base_url(self) -> Any:
+        return getattr(self._agent, "base_url", None)
+
+    async def synthesize_payloads(self, context: dict[str, Any],
+                                  n: int = 5) -> list[PayloadSuggestion]:
+        """Pass-through: synthesis is already off the per-finding hot path."""
+        result = await self._agent.synthesize_payloads(context, n=n)
+        return list(result)
+
+    async def triage_finding(self, finding: dict[str, Any]) -> TriageResult:
+        fut: asyncio.Future[TriageResult] = asyncio.get_running_loop().create_future()
+        self._pending.append((finding, fut))
+        self.findings += 1
+        if self._flush_task is None or self._flush_task.done():
+            self._flush_task = asyncio.create_task(self._run_flush())
+        return await fut
+
+    async def aclose(self) -> None:
+        """Settle anything still queued, then close the wrapped agent."""
+        task = self._flush_task
+        if task is not None and not task.done():
+            try:
+                await task
+            except Exception:  # noqa: BLE001 - already delivered to the callers
+                pass
+        self._fail_pending(RuntimeError("triage client closed"))
+        close = getattr(self._agent, "aclose", None)
+        if close is not None:
+            await close()
+
+    # ---- internals ---------------------------------------------------
+
+    async def _run_flush(self) -> None:
+        try:
+            # Give concurrent callers a beat to join this batch — unless enough
+            # have already arrived to fill it.
+            if self._linger and len(self._pending) < self._max_batch:
+                await asyncio.sleep(self._linger)
+            while self._pending:
+                batch = self._pending[: self._max_batch]
+                del self._pending[: self._max_batch]
+                await self._settle(batch)
+        except BaseException as exc:  # cancellation included
+            self._fail_pending(exc)
+            raise
+
+    async def _settle(
+        self, batch: list[tuple[dict[str, Any], asyncio.Future[TriageResult]]]
+    ) -> None:
+        self.batches += 1
+        try:
+            results = await self._agent.batch_triage(
+                [f for f, _ in batch], concurrency=self._concurrency
+            )
+        except Exception as exc:  # noqa: BLE001 - each caller degrades on its own
+            self._settle_error(batch, exc)
+            return
+        for i, (_, fut) in enumerate(batch):
+            if fut.done():
+                continue
+            if i < len(results):
+                fut.set_result(results[i])
+            else:
+                fut.set_exception(RuntimeError(
+                    "triage backend returned fewer results than findings"
+                ))
+
+    @staticmethod
+    def _settle_error(
+        batch: list[tuple[dict[str, Any], asyncio.Future[TriageResult]]],
+        exc: BaseException,
+    ) -> None:
+        for _, fut in batch:
+            if not fut.done():
+                fut.set_exception(exc)
+
+    def _fail_pending(self, exc: BaseException) -> None:
+        pending, self._pending = self._pending, []
+        self._settle_error(pending, exc)
 
 
 # --------------------------------------------------------------------------- #
