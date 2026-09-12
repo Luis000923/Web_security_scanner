@@ -39,6 +39,8 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import random
+import time
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -101,10 +103,85 @@ class AgentClient:
     timeout: float = 60.0
     max_tokens: int = 768
     temperature: float = 0.2
+    # >1.0 discourages repeating tokens already generated -- useful against a
+    # compact model's tendency to loop on a single evasion technique when
+    # sampled at the higher temperature payload synthesis wants. 1.0 = off.
+    # Sent as top-level 'repetition_penalty' (vLLM's OpenAI-compatible server
+    # and llama.cpp --api both accept it; a strict OpenAI server ignores an
+    # unknown field rather than rejecting the request) and, for the
+    # 'transformers' backend, passed straight to `generate()`.
+    repetition_penalty: float = 1.1
+    # Payload synthesis wants more creative/varied sampling than triage (a
+    # verification task where a hedged, low-temperature verdict is safer);
+    # None falls back to `temperature` so setting only `temperature` keeps
+    # today's single-knob behaviour unchanged.
+    payload_temperature: float | None = None
     # Max sockets the shared session keeps open to the inference server.
     pool_limit: int = 8
+    # 'transformers' backend only: load the base model quantized via
+    # bitsandbytes instead of full bf16, trading a little quality for a
+    # much smaller footprint (matches the QLoRA training precision, see
+    # AUDIT.md 1.7 -- train/serve quantization skew). Mutually exclusive;
+    # 4-bit wins if both are set. No effect on the 'openai' backend, where
+    # quantization is the serving stack's concern (vLLM/llama.cpp flags).
+    load_in_4bit: bool = False
+    load_in_8bit: bool = False
+    # Bounded retry/backoff for the 'openai' backend's HTTP call (Phase 2,
+    # Point 3 -- "manejo elegante de reintentos... en caso de fallos del LLM
+    # o API externa"). Only a transient failure is retried (connection
+    # error, timeout, or a 5xx from the inference server); a 4xx (bad
+    # request, auth) fails fast since retrying it changes nothing. Exhausting
+    # every attempt still raises -- callers (``triage_finding`` /
+    # ``synthesize_payloads``) already catch that and degrade to their safe
+    # contingency value, so a struggling backend never aborts a scan, it just
+    # gets a bounded number of extra chances first.
+    max_retries: int = 2
+    retry_backoff_base: float = 0.5
+    retry_backoff_max: float = 4.0
+    # Circuit breaker for the 'openai' backend (AUDIT.md 1.2/B2): once
+    # ``circuit_fail_threshold`` consecutive requests exhaust their retries,
+    # the breaker opens and every call fails fast (no network attempt, no
+    # 60s timeout) for ``circuit_reset_after`` seconds -- callers
+    # (``triage_finding`` / ``synthesize_payloads``) already degrade that
+    # failure to the safe heuristic/local contingency, so opening the
+    # breaker just makes a dead server cheap to sit behind instead of
+    # stalling every finding for a full timeout.
+    circuit_fail_threshold: int = 5
+    circuit_reset_after: float = 30.0
     _hf: Any = field(default=None, repr=False, init=False)
     _session: Any = field(default=None, repr=False, init=False)
+    _hf_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False, init=False)
+    _circuit_fail_count: int = field(default=0, repr=False, init=False)
+    _circuit_opened_at: float | None = field(default=None, repr=False, init=False)
+
+    # ------------------------------------------------------------------ #
+    # circuit breaker (openai backend)
+    # ------------------------------------------------------------------ #
+
+    def _circuit_is_open(self) -> bool:
+        """``True`` while the breaker is tripped and calls should fail fast.
+
+        Half-open on timeout: once ``circuit_reset_after`` has elapsed since
+        the breaker opened, it resets itself and lets the next call through
+        as a trial -- a fresh failure re-opens it (via ``_circuit_record_failure``),
+        a success closes it for good (via ``_circuit_record_success``).
+        """
+        if self._circuit_opened_at is None:
+            return False
+        if time.monotonic() - self._circuit_opened_at >= self.circuit_reset_after:
+            self._circuit_opened_at = None
+            self._circuit_fail_count = 0
+            return False
+        return True
+
+    def _circuit_record_success(self) -> None:
+        self._circuit_fail_count = 0
+        self._circuit_opened_at = None
+
+    def _circuit_record_failure(self) -> None:
+        self._circuit_fail_count += 1
+        if self._circuit_fail_count >= self.circuit_fail_threshold:
+            self._circuit_opened_at = time.monotonic()
 
     # ------------------------------------------------------------------ #
     # HTTP session (shared)
@@ -215,6 +292,7 @@ class AgentClient:
             text = await self._chat(
                 load_prompt("payload_system"), user,
                 response_format=openai_response_format(PayloadOut),
+                temperature=self.payload_temperature,
             )
             parsed = parse_payloads(text)
         except asyncio.CancelledError:
@@ -255,6 +333,7 @@ class AgentClient:
 
     async def _chat(
         self, system: str, user: str, *, response_format: dict[str, Any] | None = None,
+        temperature: float | None = None,
     ) -> str:
         if self.backend == "echo":
             return self._echo(system, user)
@@ -264,45 +343,139 @@ class AgentClient:
             # StructuredLocalAgent's job (ai_module/structured_inference.py),
             # a separate opt-in path. Free text still lands in parse_triage /
             # parse_payloads at the call site, which is schema-tolerant.
-            return await asyncio.to_thread(self._chat_hf, system, user)
-        return await self._chat_openai(system, user, response_format=response_format)
+            await self._ensure_hf_loaded()
+            return await asyncio.to_thread(self._generate_hf, system, user, temperature)
+        return await self._chat_openai(system, user, response_format=response_format,
+                                       temperature=temperature)
 
     async def _chat_openai(
         self, system: str, user: str, *, response_format: dict[str, Any] | None = None,
+        temperature: float | None = None,
     ) -> str:
+        import aiohttp
+
+        if self._circuit_is_open():
+            raise RuntimeError(
+                f"AI backend circuit breaker open (>= {self.circuit_fail_threshold} "
+                f"consecutive failures); skipping the network call for "
+                f"{self.circuit_reset_after}s to avoid paying a full timeout "
+                f"per finding while the server is down."
+            )
+
         payload = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "temperature": self.temperature,
+            "temperature": temperature if temperature is not None else self.temperature,
             "max_tokens": self.max_tokens,
+            # Top-level, non-standard OpenAI field: vLLM's OpenAI-compatible
+            # server and llama.cpp --api both read it; a strict OpenAI-spec
+            # server just ignores an extra field rather than erroring.
+            "repetition_penalty": self.repetition_penalty,
             # Caller-supplied json_schema (see openai_response_format) enforces
             # our exact taxonomy server-side; fall back to the older open-ended
             # json_object mode if a call site doesn't provide one.
             "response_format": response_format or {"type": "json_object"},
         }
         headers = {"Authorization": f"Bearer {self.api_key}"}
-        sess = await self._get_session()
-        async with sess.post(
-            f"{self.base_url}/chat/completions", json=payload, headers=headers
-        ) as resp:
-            resp.raise_for_status()
-            body = await resp.json()
-        return str(body["choices"][0]["message"]["content"])
+        attempts = max(1, self.max_retries + 1)
+        last_exc: BaseException | None = None
+        for attempt in range(attempts):
+            try:
+                sess = await self._get_session()
+                async with sess.post(
+                    f"{self.base_url}/chat/completions", json=payload, headers=headers
+                ) as resp:
+                    resp.raise_for_status()
+                    body = await resp.json()
+                content = str(body["choices"][0]["message"]["content"])
+                self._circuit_record_success()
+                return content
+            except asyncio.CancelledError:
+                raise
+            except aiohttp.ClientResponseError as exc:
+                # A 4xx (bad request, auth, unknown model) will not fix
+                # itself on retry -- fail fast instead of burning the
+                # latency budget three times over.
+                if exc.status < 500 or attempt == attempts - 1:
+                    self._circuit_record_failure()
+                    raise
+                last_exc = exc
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                # Connection reset/refused, DNS failure, read timeout: the
+                # classic transient failures an overloaded/restarting local
+                # inference server produces.
+                if attempt == attempts - 1:
+                    self._circuit_record_failure()
+                    raise
+                last_exc = exc
+            delay = min(self.retry_backoff_max, self.retry_backoff_base * (2 ** attempt))
+            await asyncio.sleep(random.uniform(0.0, delay))
+        # Unreachable (the loop above always returns or raises on its last
+        # attempt), but keeps type-checkers happy about the return path.
+        assert last_exc is not None
+        raise last_exc
 
-    def _chat_hf(self, system: str, user: str) -> str:
-        if self._hf is None:
+    async def _ensure_hf_loaded(self) -> None:
+        """Idempotent lazy-load of the transformers pipeline under a lock.
+
+        Two concurrent findings both hitting the cold path used to each
+        build the model (double VRAM allocation / race, AUDIT.md 1.6/B5).
+        Double-checked locking: the cheap check outside the lock skips the
+        `await` entirely once warm; the check repeated inside the lock
+        stops a second caller that was already waiting from rebuilding it.
+        """
+        if self._hf is not None:
+            return
+        async with self._hf_lock:
+            if self._hf is not None:
+                return
+            self._hf = await asyncio.to_thread(self._build_hf_pipeline)
+
+    def _build_hf_pipeline(self) -> Any:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+        model_id = os.environ.get("AI_AGENT_HF_MODEL", self.model)
+        tok = AutoTokenizer.from_pretrained(model_id)
+        model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16, "device_map": "auto"}
+        quant_config = self._build_quantization_config()
+        if quant_config is not None:
+            # bitsandbytes handles its own dtype internally; passing both a
+            # 4/8-bit config and a plain torch_dtype is what the base model's
+            # weights get compute-cast to (NF4 storage, bf16 compute) -- same
+            # split train_qlora.py uses (AUDIT.md 1.7 -- train/serve skew).
+            model_kwargs["quantization_config"] = quant_config
+        model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
+        return pipeline("text-generation", model=model, tokenizer=tok)
+
+    def _build_quantization_config(self) -> Any:
+        """A ``BitsAndBytesConfig`` for the 'transformers' backend, or ``None``.
+
+        Best-effort: bitsandbytes is an optional, GPU-only dependency (the
+        ``ai-local`` extra doesn't require it) -- a missing install degrades
+        to the plain bf16 load instead of crashing the agent.
+        """
+        if not (self.load_in_4bit or self.load_in_8bit):
+            return None
+        try:
             import torch
-            from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-
-            model_id = os.environ.get("AI_AGENT_HF_MODEL", self.model)
-            tok = AutoTokenizer.from_pretrained(model_id)
-            model = AutoModelForCausalLM.from_pretrained(
-                model_id, torch_dtype=torch.bfloat16, device_map="auto"
+            from transformers import BitsAndBytesConfig
+        except ImportError:
+            return None
+        if self.load_in_4bit:
+            return BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
             )
-            self._hf = pipeline("text-generation", model=model, tokenizer=tok)
+        return BitsAndBytesConfig(load_in_8bit=True)
+
+    def _generate_hf(self, system: str, user: str, temperature: float | None = None) -> str:
+        temp = temperature if temperature is not None else self.temperature
         prompt = self._hf.tokenizer.apply_chat_template(
             [{"role": "system", "content": system}, {"role": "user", "content": user}],
             tokenize=False,
@@ -311,8 +484,9 @@ class AgentClient:
         out = self._hf(
             prompt,
             max_new_tokens=self.max_tokens,
-            do_sample=self.temperature > 0,
-            temperature=max(self.temperature, 1e-3),
+            do_sample=temp > 0,
+            temperature=max(temp, 1e-3),
+            repetition_penalty=self.repetition_penalty,
             return_full_text=False,
         )
         return out[0]["generated_text"]

@@ -143,12 +143,14 @@ class _RecordingTester:
 @pytest.mark.asyncio
 async def test_discovered_targets_reach_the_testers(monkeypatch):
     from web_security_scanner.core.scanner_core_async import ScanConfig
+    from web_security_scanner.core.telemetry_engine import TelemetryEngine
     from web_security_scanner.web_security_scanner_async import WebSecurityScanner
 
     class FakeCore:
         def __init__(self, responder):
             self._responder = responder
             self.config = ScanConfig()
+            self.telemetry_engine = TelemetryEngine()
 
         async def start(self):
             return None
@@ -168,6 +170,9 @@ async def test_discovered_targets_reach_the_testers(monkeypatch):
         async def run_worker_pool(self, items, worker, *, concurrency, queue_factor=2):
             for item in items:
                 await worker(item)
+
+        def set_max_concurrency(self, value):
+            self.config.max_concurrency = value
 
     scanner = WebSecurityScanner({"recon": {"use_sitemap": True}})
     scanner.core = FakeCore(_responder)

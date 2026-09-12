@@ -11,6 +11,11 @@ from .core.scanner_core_async import AsyncScannerCore, ScanConfig, SSRFRedirectE
 from .core.session_async import IdentityPool, SessionConfig, SessionManager
 from .core.telemetry_async import TelemetryWorker
 from .events.event_emitter import ScanEventEmitter, ScanEventType
+from .modules.containment_core import (
+    DEFAULT_CONTAINMENT_PROFILE,
+    DEFAULT_MAX_EXPLOIT_DEPTH,
+    SafetyGate,
+)
 from .modules.exploit_engine import DEFAULT_MAX_TARGETS, ExploitEngine
 from .modules.recon import ReconConfig, ReconEngine
 from .modules.recon.surface_correlator import PrioritizedTarget
@@ -66,6 +71,9 @@ class WebSecurityScanner:
         # keep / drop verdict, surfaced in the results dict for the oracle.
         self.ai_client: Any = None
         self.ai_triage_decisions: list[dict[str, Any]] = []
+        # Stage 2 (--ai-synthesize): cross-validation / PoC-replay audit
+        # trail, parallel to ai_triage_decisions (stage 1).
+        self.ai_cross_validation_decisions: list[dict[str, Any]] = []
         # Adaptive exploitation engine (opt-in, ``--enable-exploit-engine``).
         # ``exploit_attempts`` is the per-scan Proof-of-Impact audit trail,
         # threaded into the results dict as ``proof_of_impact`` for the report.
@@ -101,6 +109,7 @@ class WebSecurityScanner:
         # Subscribe mapper to vulnerabilities
         self.event_emitter.on(ScanEventType.VULNERABILITY_FOUND, self._on_vulnerability_found)
         self.event_emitter.on(ScanEventType.AI_TRIAGE_DECISION, self._on_ai_triage_decision)
+        self.event_emitter.on(ScanEventType.AI_CROSS_VALIDATION, self._on_ai_cross_validation)
         self.event_emitter.on(ScanEventType.EXPLOIT_ATTEMPT, self._on_exploit_attempt)
 
     def _on_vulnerability_found(self, **kwargs):
@@ -115,6 +124,12 @@ class WebSecurityScanner:
         decision = kwargs.get('decision')
         if decision:
             self.ai_triage_decisions.append(decision)
+
+    def _on_ai_cross_validation(self, **kwargs):
+        """Collect the stage-2 cross-validation audit trail for the report."""
+        decision = kwargs.get('decision')
+        if decision:
+            self.ai_cross_validation_decisions.append(decision)
 
     def _on_exploit_attempt(self, **kwargs):
         """Collect the adaptive exploitation engine's Proof-of-Impact trail."""
@@ -163,7 +178,9 @@ class WebSecurityScanner:
         self.vulnerabilities = []
         self.mapper.vulnerabilities = []
         self.ai_triage_decisions = []
+        self.ai_cross_validation_decisions = []
         self.exploit_attempts = []
+        self.core.telemetry_engine.reset()
 
         await self.event_emitter.emit(ScanEventType.SCAN_START, url=target_url)
         await self.core.start()
@@ -222,6 +239,7 @@ class WebSecurityScanner:
                 await self.event_emitter.emit(
                     ScanEventType.PROGRESS_UPDATE, message="Phase 1: reconnaissance..."
                 )
+                self.core.telemetry_engine.set_phase("reconnaissance")
                 if max_depth is not None:
                     self.recon_config.max_depth = max_depth
                     self.mapper.max_depth = max_depth
@@ -250,6 +268,7 @@ class WebSecurityScanner:
             # --- Phase 2: Vulnerability testing over discovered targets ----
             runnable = [t for t in self.testers if self._should_run_tester(t, profile)]
             if runnable:
+                self.core.telemetry_engine.set_phase("mapping")
                 # Explicit warm-up phase (JVM-latency-bias mitigation): fire
                 # discard requests at every endpoint before any baseline /
                 # telemetry capture. Opt-in via --warmup; no-op at 0.
@@ -270,6 +289,7 @@ class WebSecurityScanner:
             # --enable-exploit-engine). No-op without prioritized targets
             # (e.g. --target-list bypasses recon entirely).
             if prioritized_targets:
+                self.core.telemetry_engine.set_phase("exploitation")
                 await self._run_exploit_engine(technologies, prioritized_targets)
 
         except asyncio.CancelledError:
@@ -297,6 +317,22 @@ class WebSecurityScanner:
                     )
                 except Exception as e:  # pragma: no cover - defensive
                     self._logger.warning(f"Error stopping telemetry worker: {e}")
+            try:
+                rt_snapshot = self.core.telemetry_engine.snapshot()
+                phase_line = ", ".join(
+                    f"{phase}: {stats['requests']} req, "
+                    f"{stats['latency_mean_s']:.3f}s avg, "
+                    f"throttle_rate={stats['throttle_rate']:.2%}"
+                    for phase, stats in rt_snapshot["phases"].items()
+                )
+                self._logger.info(
+                    "Real-time telemetry: %s%s",
+                    phase_line or "no requests recorded",
+                    (f" | concurrency adjusted {len(rt_snapshot['concurrency_adjustments'])}x"
+                     if rt_snapshot["concurrency_adjustments"] else ""),
+                )
+            except Exception as e:  # pragma: no cover - defensive
+                self._logger.debug(f"Error summarizing real-time telemetry: {e}")
             try:
                 await self.core.close()
             except Exception as e:
@@ -329,6 +365,7 @@ class WebSecurityScanner:
             },
             "recon": self._recon_summary(map_data),
             "telemetry": self.telemetry.summary() if self.telemetry is not None else None,
+            "realtime_telemetry": self.core.telemetry_engine.snapshot(),
             "ai_triage": self._ai_triage_summary(),
             "proof_of_impact": self.exploit_attempts,
             "aborted": aborted,
@@ -367,6 +404,8 @@ class WebSecurityScanner:
             return None
         decisions = list(self.ai_triage_decisions)
         dropped = [d for d in decisions if d.get("dropped")]
+        cross_decisions = list(self.ai_cross_validation_decisions)
+        cross_confirmed = [d for d in cross_decisions if d.get("confirmed")]
         return {
             "enabled": True,
             "active": self.ai_client is not None,
@@ -376,6 +415,15 @@ class WebSecurityScanner:
             "suppressed": len(dropped),
             "kept": len(decisions) - len(dropped),
             "decisions": decisions,
+            # Stage 2 (--ai-synthesize): cross-validation / PoC-replay pass
+            # over findings stage 1 kept, before they are formally reported.
+            "cross_validation": {
+                "enabled": bool(tcfg.get("ai_synthesize", False)),
+                "total_candidates": len(cross_decisions),
+                "confirmed": len(cross_confirmed),
+                "inconclusive": len(cross_decisions) - len(cross_confirmed),
+                "decisions": cross_decisions,
+            },
         }
 
     @staticmethod
@@ -480,6 +528,20 @@ class WebSecurityScanner:
                          ("ai_model", "model")):
             if tcfg.get(src):
                 kwargs[dst] = tcfg[src]
+        if tcfg.get("ai_max_retries") is not None:
+            kwargs["max_retries"] = int(tcfg["ai_max_retries"])
+        if tcfg.get("ai_temperature") is not None:
+            kwargs["temperature"] = float(tcfg["ai_temperature"])
+        if tcfg.get("ai_payload_temperature") is not None:
+            kwargs["payload_temperature"] = float(tcfg["ai_payload_temperature"])
+        if tcfg.get("ai_max_tokens") is not None:
+            kwargs["max_tokens"] = int(tcfg["ai_max_tokens"])
+        if tcfg.get("ai_repetition_penalty") is not None:
+            kwargs["repetition_penalty"] = float(tcfg["ai_repetition_penalty"])
+        if tcfg.get("ai_load_in_4bit"):
+            kwargs["load_in_4bit"] = True
+        if tcfg.get("ai_load_in_8bit"):
+            kwargs["load_in_8bit"] = True
         try:
             client = AgentClient(**kwargs)
         except Exception as exc:  # noqa: BLE001
@@ -511,9 +573,9 @@ class WebSecurityScanner:
         # instead of a serialised round trip (and connection) per finding.
         batched = BatchingTriageClient(
             client,
-            max_batch=int(tcfg.get("ai_batch_size", 8) or 8),
-            linger=float(tcfg.get("ai_batch_linger", 0.05) or 0.0),
-            concurrency=int(tcfg.get("ai_concurrency", 4) or 4),
+            max_batch=int(tcfg.get("ai_batch_size") or 8),
+            linger=float(tcfg["ai_batch_linger"]) if tcfg.get("ai_batch_linger") is not None else 0.05,
+            concurrency=int(tcfg.get("ai_concurrency") or 4),
         )
         self.ai_client = batched
         for tester in self.testers:
@@ -541,10 +603,19 @@ class WebSecurityScanner:
         if not tcfg.get("enable_exploit_engine", False):
             return
         try:
+            safety_gate = SafetyGate(
+                allowed_domains=tuple(tcfg.get("containment_allowed_domains") or ()),
+                acknowledge_offensive_payloads=bool(
+                    tcfg.get("acknowledge_offensive_payloads", False)
+                ),
+            )
             engine = ExploitEngine(
                 self.core, self.event_emitter, tcfg,
                 technologies=technologies,
                 max_targets=tcfg.get("exploit_max_targets", DEFAULT_MAX_TARGETS),
+                safety_gate=safety_gate,
+                containment_profile=tcfg.get("containment_profile", DEFAULT_CONTAINMENT_PROFILE),
+                max_exploit_depth=tcfg.get("max_exploit_depth", DEFAULT_MAX_EXPLOIT_DEPTH),
             )
             await self.event_emitter.emit(
                 ScanEventType.PROGRESS_UPDATE,
@@ -844,8 +915,9 @@ class WebSecurityScanner:
             self.core.config.max_concurrency = defaults['max_concurrency']
         if 'timeout' not in explicit:
             self.core.config.timeout = defaults['timeout']
-        # Rebuild the semaphore to match the effective concurrency
-        self.core._semaphore = asyncio.Semaphore(self.core.config.max_concurrency)
+        # Rebuild the concurrency gate to match the effective concurrency
+        # (preserves adaptive-concurrency mode -- see AsyncScannerCore.set_max_concurrency).
+        self.core.set_max_concurrency(self.core.config.max_concurrency)
 
     def _should_run_tester(self, tester: VulnerabilityTester, profile: str) -> bool:
         """Determine if a tester should run based on the profile."""

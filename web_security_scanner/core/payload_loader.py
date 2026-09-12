@@ -157,7 +157,9 @@ class PayloadLoader:
         )
         entry_id = str(data.get("id") or "").strip()
         if not entry_id:
-            digest = hashlib.sha1(f"{category}\0{vector}".encode()).hexdigest()[:10]
+            digest = hashlib.sha1(
+                f"{category}\0{vector}".encode(), usedforsecurity=False
+            ).hexdigest()[:10]
             entry_id = f"{category}.auto.{digest}"
         return Payload(
             vector=vector,

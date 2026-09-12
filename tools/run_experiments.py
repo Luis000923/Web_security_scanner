@@ -82,9 +82,9 @@ import subprocess
 import sys
 import time
 import urllib.request
-import warnings
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -182,10 +182,10 @@ class ProgressReporter:
         self._current = ""
         self._start = time.monotonic()
         self.backend = "plain"
-        self._progress = None
-        self._task = None
-        self._tqdm = None
-        self._console = None
+        self._progress: Any = None
+        self._task: Any = None
+        self._tqdm: Any = None
+        self._console: Any = None
 
         want_bar = enabled and total > 0 and sys.stderr.isatty()
         if want_bar and self._init_rich():
@@ -569,23 +569,33 @@ def _migrate_csv_schema(csv_path: Path) -> None:
     old header on disk — a raw DictReader keyed off that stale header would
     silently misalign every new-schema row). Each row is decoded positionally
     by its own length instead of trusting the file's header line.
+
+    A row matching neither known column count is a corrupt/truncated write
+    (e.g. a crash mid-flush) rather than a recoverable schema variant — this
+    is data feeding the paper's numbers, so it must not be dropped silently.
+    Raise with the 1-indexed file line number so the bad row can be found
+    and fixed (or deliberately removed) by hand.
     """
     with csv_path.open("r", newline="", encoding="utf-8") as fh:
         raw_rows = list(csv.reader(fh))
     if not raw_rows:
         return
     migrated: list[dict] = []
-    for raw in raw_rows[1:]:  # skip whatever header is on disk
+    for offset, raw in enumerate(raw_rows[1:]):  # skip whatever header is on disk
         if not raw:
             continue
+        line_no = offset + 2  # +1 for the header, +1 for 1-indexing
         if len(raw) == len(CSV_COLUMNS):
             migrated.append(dict(zip(CSV_COLUMNS, raw, strict=True)))
         elif len(raw) == len(_LEGACY_CSV_COLUMNS):
             migrated.append(dict(zip(_LEGACY_CSV_COLUMNS, raw, strict=True)))
         else:
-            warnings.warn(
-                f"append_csv: dropping unparseable row with {len(raw)} "
-                f"field(s) during schema migration: {raw!r}", stacklevel=2)
+            raise ValueError(
+                f"{csv_path}: line {line_no} has {len(raw)} field(s), expected "
+                f"{len(CSV_COLUMNS)} (current schema) or {len(_LEGACY_CSV_COLUMNS)} "
+                f"(legacy schema); row is corrupt and cannot be safely migrated: "
+                f"{raw!r}"
+            )
     with csv_path.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
         w.writeheader()

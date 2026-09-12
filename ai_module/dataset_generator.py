@@ -1916,6 +1916,22 @@ def _run_task(
         report["samples_with_synthetic"] = len(samples)
         print(f"[{task}] +{len(synth)} synthetic (from {len(seeds)} seeds)", file=sys.stderr)
 
+    if task == "payload" and getattr(args, "enable_redteam_corpus", False):
+        from ai_module.redteam_corpus import build_redteam_corpus_samples
+
+        redteam = list(build_redteam_corpus_samples(
+            seed=args.seed,
+            multiplier=getattr(args, "redteam_corpus_multiplier", 1),
+        ))
+        report["redteam_corpus"] = {
+            "built": len(redteam),
+            "class_counts": dict(Counter(s.meta.get("label", "?") for s in redteam)),
+            "technique_counts": dict(Counter(s.meta.get("technique", "?") for s in redteam)),
+        }
+        samples.extend(redteam)
+        report["samples_with_redteam_corpus"] = len(samples)
+        print(f"[{task}] +{len(redteam)} red-team WAF-evasion samples", file=sys.stderr)
+
     if not args.no_dedup:
         samples, removed = dedup(samples)
         report["deduped_removed"] = removed
@@ -1991,6 +2007,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--standalone-all-seeds", action="store_true",
                     help="inject the hardcoded standalone seeds for every "
                          "supported class even when the telemetry already covers it")
+    ap.add_argument("--enable-redteam-corpus", action="store_true",
+                    help="augment the 'payload' task with the WAF-evasion "
+                         "corpus (ai_module/redteam_corpus.py): nested "
+                         "percent-encoding, Unicode/overlong-UTF-8 escapes, "
+                         "hex/keyword-split obfuscation, IFS/base64 for "
+                         "sqli/xss/pathtraver/cmdi. Off by default.")
+    ap.add_argument("--redteam-corpus-multiplier", type=int, default=1, metavar="N",
+                    help="repeat the red-team corpus N times with varied "
+                         "endpoint/param surface text (default 1; only takes "
+                         "effect with --enable-redteam-corpus)")
     args = ap.parse_args(argv)
     if args.enable_synthetic and args.synthetic_multiplier == 0:
         args.synthetic_multiplier = 20
@@ -2028,6 +2054,8 @@ def main(argv: list[str] | None = None) -> int:
             "synthetic_multiplier": args.synthetic_multiplier,
             "standalone_seeds": not args.no_standalone_seeds,
             "standalone_all_seeds": args.standalone_all_seeds,
+            "redteam_corpus": args.enable_redteam_corpus,
+            "redteam_corpus_multiplier": args.redteam_corpus_multiplier,
         },
         "tasks": [],
     }

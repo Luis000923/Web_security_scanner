@@ -25,8 +25,22 @@ dependencies = [
 browser = [
     "playwright>=1.40",
 ]
+# tools/run_experiments.py (sweep orchestrator; rich is just its optional
+# progress bar) and tools/analyze_results.py (the paper's statistics +
+# figures over the graded sweep: Friedman/Wilcoxon/McNemar/Nemenyi, effect
+# sizes, and the publication plots). scikit-posthocs/matplotlib/seaborn are
+# only exercised by the Nemenyi post-hoc and the (skippable via
+# --no-figures) plotting step, but are declared here too so this one extra
+# fully reproduces `python tools/analyze_results.py`'s output.
 experiments = [
     "rich>=13.0",
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "statsmodels>=0.14",
+    "scikit-posthocs>=0.9",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
 ]
 # Agentic AI subsystem (ai_module/). The LLM triage agent is OFF by default in
 # the scanner and is enabled per-run with ``--enable-ai-triaging``. Only the
@@ -44,12 +58,27 @@ ai-local = [
     "transformers>=4.48.0",
     "outlines>=0.1.0",
 ]
+# QLoRA fine-tuning of the local triage/synthesis agent (ai_module/train_qlora.py),
+# heavy + GPU-only, not needed to run the scanner or serve the agent:
+#   uv pip install -e ".[ai,ai-local,training]"
+# TRL >=0.12 moved max_seq_length/packing/dataset_* to SFTConfig and renamed
+# tokenizer= to processing_class= (train_qlora.py already targets that API,
+# see _build_sft_config / _build_trainer); pin below <0.24 until that surface
+# is re-verified against a newer release.
+training = [
+    "trl>=0.13.0,<0.24",
+    "peft>=0.11.0",
+    "bitsandbytes>=0.45.0",
+    "datasets>=2.19.0",
+]
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "black",
     "mypy",
     "ruff",
+    "bandit",
     "jsonschema>=4.20",
     # ai_module.structured_inference imports pydantic at module scope, so the
     # AI triage / curation test suites cannot even be collected without it.
@@ -60,9 +89,11 @@ dev = [
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "black",
     "mypy",
     "ruff",
+    "bandit",
     "jsonschema>=4.20",
     # ai_module.structured_inference imports pydantic at module scope, so the
     # AI triage / curation test suites cannot even be collected without it.
@@ -106,8 +137,10 @@ ignore = ["E501", "B008"]
 python_version = "3.10"
 # The AI subsystem ships in the wheel and is wired into the scan pipeline
 # (--enable-ai-triaging), so it is type-checked alongside the scanner rather
-# than treated as an unverified script tree.
-files = ["web_security_scanner", "ai_module"]
+# than treated as an unverified script tree. ``tools`` and ``testbed`` are
+# first-class sources under ruff (see [tool.ruff] above), so mypy checks them
+# too rather than letting them drift as unverified script trees.
+files = ["web_security_scanner", "ai_module", "tools", "testbed"]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = false

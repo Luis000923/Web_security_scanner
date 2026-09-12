@@ -14,6 +14,8 @@ from typing import Any
 import aiohttp
 from aiohttp.abc import AbstractResolver, ResolveResult
 
+from .telemetry_engine import AdaptiveConcurrencyController, TelemetryEngine
+
 # Small pool of legitimate, current desktop User-Agents. One is picked at
 # random per request (basic fingerprint rotation) unless the caller pinned a
 # specific UA through ScanConfig.user_agent.
@@ -187,6 +189,17 @@ class ScanConfig:
     # down a concurrent scan of other targets in a --target-list run.
     adaptive_throttle: bool = False
     throttle_backoff_max: float = 30.0  # seconds, per-host cooldown ceiling
+    # ---- adaptive concurrency control (Phase 2 real-time telemetry) ------
+    # Off by default: the fixed ``max_concurrency`` semaphore behaves exactly
+    # as before. When on, an AIMD governor (see core.telemetry_engine)
+    # shrinks/grows the concurrency ceiling in reaction to observed
+    # rate-limiting instead of hammering the target at a fixed pace for the
+    # whole scan.
+    adaptive_concurrency: bool = False
+    adaptive_concurrency_min: int = 2
+    adaptive_concurrency_window: int = 20
+    adaptive_concurrency_high_watermark: float = 0.2
+    adaptive_concurrency_low_watermark: float = 0.02
 
 
 class TokenBucket:
@@ -438,8 +451,28 @@ class AsyncScannerCore:
         self.config = config
         self.session: aiohttp.ClientSession | None = None
         self.cache = AsyncResponseCache()
-        # Bounds requests actually in flight.
-        self._semaphore = asyncio.Semaphore(config.max_concurrency)
+        # Real-time request telemetry (latency/jitter/retries/throttle
+        # detection, per host and per operational phase) -- always on,
+        # in-memory only, and cheap (see core.telemetry_engine). Feeds the
+        # enriched JSON report and, when adaptive_concurrency is on, the
+        # AIMD governor below.
+        self.telemetry_engine = TelemetryEngine()
+        # Bounds requests actually in flight. A fixed asyncio.Semaphore unless
+        # --adaptive-concurrency opts into the AIMD-governed resizable one.
+        self._concurrency_controller: AdaptiveConcurrencyController | None = None
+        if config.adaptive_concurrency:
+            self._concurrency_controller = AdaptiveConcurrencyController(
+                initial=config.max_concurrency,
+                minimum=config.adaptive_concurrency_min,
+                maximum=config.max_concurrency,
+                window=config.adaptive_concurrency_window,
+                high_watermark=config.adaptive_concurrency_high_watermark,
+                low_watermark=config.adaptive_concurrency_low_watermark,
+                telemetry=self.telemetry_engine,
+            )
+            self._semaphore: Any = self._concurrency_controller.semaphore
+        else:
+            self._semaphore = asyncio.Semaphore(config.max_concurrency)
         # Global request pacing, decoupled from the concurrency slot.
         self._rate_bucket: TokenBucket | None = None
         if config.rate_limit and config.rate_limit > 0:
@@ -586,6 +619,23 @@ class AsyncScannerCore:
             await session.close()
             # Let underlying transports (esp. TLS) finish closing.
             await asyncio.sleep(0)
+
+    def set_max_concurrency(self, value: int) -> None:
+        """Rebuild the concurrency gate for a new ceiling (e.g. a profile
+        switch), preserving adaptive-concurrency mode if it was enabled.
+
+        Replaces the previous pattern of the orchestrator reassigning
+        ``core._semaphore`` directly, which would silently downgrade an
+        adaptive-concurrency scan back to a fixed ``asyncio.Semaphore``.
+        """
+        value = max(1, int(value))
+        self.config.max_concurrency = value
+        if self._concurrency_controller is not None:
+            self._concurrency_controller.maximum = value
+            self._concurrency_controller.semaphore.resize(value)
+            self._semaphore = self._concurrency_controller.semaphore
+        else:
+            self._semaphore = asyncio.Semaphore(value)
 
     # ---- worker pool passthrough ---------------------------------------
 
@@ -979,6 +1029,20 @@ class AsyncScannerCore:
             status = result.get("status_code", 0)
             throttled = bool(throttle_on and status in (429, 503))
             transient = status == 0
+
+            # Real-time telemetry: record every raw attempt (including
+            # retries the tester layer never sees), tagged with whichever
+            # operational phase the orchestrator last set. Independent of
+            # ``adaptive_throttle`` -- rate-limit detection here is always on.
+            diag = self.telemetry_engine.record_request(
+                host or "unknown", float(result.get("elapsed", 0.0) or 0.0),
+                status, retried=attempt > 0,
+            )
+            if self._concurrency_controller is not None:
+                self._concurrency_controller.on_outcome(
+                    throttled=diag["rate_limited"], transient=transient,
+                )
+
             host_delay = 0.0
             if throttle_on and host is not None:
                 if throttled:

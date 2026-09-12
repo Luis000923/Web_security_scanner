@@ -13,14 +13,22 @@ import logging
 import random
 import sys
 from pathlib import Path
+from typing import Any
 
 from colorama import Fore, Style
 from colorama import init as colorama_init
 
 from .banner import print_banner
 from .events.event_emitter import ScanEventType
+from .modules.containment_core import (
+    DEFAULT_CONTAINMENT_PROFILE,
+    DEFAULT_MAX_EXPLOIT_DEPTH,
+    SafetyGate,
+    ScopeDeviationError,
+)
 from .modules.exploit_engine import DEFAULT_MAX_TARGETS
 from .modules.recon.browser_engine import resolve_browser_page_cap
+from .report_engine import generate_report_async
 from .report_generator import generate_reports_async
 from .utils.i18n import i18n
 from .utils.validation import InvalidTargetError, validate_target_url
@@ -295,6 +303,51 @@ def _build_parser() -> argparse.ArgumentParser:
     ai.add_argument("--ai-fp-threshold", type=float, default=0.75, metavar="0-1",
                     help="Minimum agent confidence required to discard a finding "
                          "as a false positive (default: 0.75).")
+    ai.add_argument("--ai-max-retries", type=int, default=None, metavar="N",
+                    help="Bounded retries (exponential backoff) for the "
+                         "'openai' backend's HTTP call on a transient failure "
+                         "(connection error, timeout, 5xx) before degrading to "
+                         "the deterministic heuristics (default: 2).")
+    ai.add_argument("--ai-concurrency", type=int, default=None, metavar="N",
+                    help="Max in-flight requests against the AI inference "
+                         "backend at once -- the backpressure limiter dedicated "
+                         "to the agent, separate from the core's target-facing "
+                         "worker-pool/TokenBucket (default: 4).")
+    ai.add_argument("--ai-batch-size", type=int, default=None, metavar="N",
+                    help="Max findings coalesced into one batch_triage() call "
+                         "(default: 8).")
+    ai.add_argument("--ai-batch-linger", type=float, default=None, metavar="SECONDS",
+                    help="How long to wait for concurrent findings to join a "
+                         "batch before dispatching it (default: 0.05).")
+    ai.add_argument("--ai-temperature", type=float, default=None, metavar="0-2",
+                    help="Sampling temperature for the triage verdict call "
+                         "(default: 0.2 -- low, since a hedged verdict should "
+                         "be deterministic-ish). --ai-synthesize's payload "
+                         "call uses this too unless --ai-payload-temperature "
+                         "is also given.")
+    ai.add_argument("--ai-payload-temperature", type=float, default=None, metavar="0-2",
+                    help="Sampling temperature for --ai-synthesize's payload "
+                         "proposals only (default: falls back to "
+                         "--ai-temperature). Higher values trade determinism "
+                         "for more varied encodings/evasions per call.")
+    ai.add_argument("--ai-max-tokens", type=int, default=None, metavar="N",
+                    help="Max output tokens per triage/synthesis call "
+                         "(default: 768).")
+    ai.add_argument("--ai-repetition-penalty", type=float, default=None, metavar="N",
+                    help="Penalize repeated tokens (>1.0 discourages "
+                         "repetition, 1.0 = off; default: 1.1). Sent to the "
+                         "'openai' backend as a top-level field (vLLM / "
+                         "llama.cpp --api honor it) and to the 'transformers' "
+                         "backend's generate() directly.")
+    ai.add_argument("--ai-load-in-4bit", dest="ai_load_in_4bit", action="store_true",
+                    help="'transformers' backend only: load the base model "
+                         "NF4 4-bit via bitsandbytes instead of full bf16 -- "
+                         "matches the QLoRA training precision and cuts VRAM. "
+                         "No effect on the 'openai' backend.")
+    ai.add_argument("--ai-load-in-8bit", dest="ai_load_in_8bit", action="store_true",
+                    help="'transformers' backend only: load the base model "
+                         "8-bit via bitsandbytes. Ignored if --ai-load-in-4bit "
+                         "is also given.")
 
     exploit = scan.add_argument_group(
         "Exploit engine (Proof-of-Impact)",
@@ -320,7 +373,338 @@ def _build_parser() -> argparse.ArgumentParser:
                               "block clears or every mutation is exhausted.")
     exploit.add_argument("--waf-evasion-max-retries", type=int, default=4, metavar="N",
                          help="Max mutation attempts per blocked probe (default: 4).")
+
+    contain = scan.add_argument_group(
+        "Exploit-engine containment (Safety Gate)",
+        "Only meaningful with --enable-exploit-engine. A mandatory scope "
+        "gate refuses to run the exploit engine against a target that isn't "
+        "recognisably a lab you own (RFC 1918 / loopback / localhost / "
+        "--containment-allowed-domain) unless "
+        "--acknowledge-offensive-payloads is passed -- refusal aborts the "
+        "CLI immediately with a deterministic error, before any request is "
+        "sent. --containment-profile then controls how the engine's own "
+        "RCE-class probes are delivered.")
+    contain.add_argument("--lab-mode", dest="lab_mode", action="store_true",
+                         help="Declare that this run targets a controlled lab "
+                              "environment. Required, together with an in-scope "
+                              "target, to use --containment-profile strict.")
+    contain.add_argument("--acknowledge-offensive-payloads",
+                         dest="acknowledge_offensive_payloads", action="store_true",
+                         help="Explicit exemption: run the exploit engine against a "
+                              "target outside recognised lab ranges. The operator "
+                              "takes responsibility for authorization; the run is "
+                              "still forced into --containment-profile simulation "
+                              "regardless of the flag's own value.")
+    contain.add_argument("--containment-allowed-domain", dest="containment_allowed_domains",
+                         action="append", default=[], metavar="DOMAIN",
+                         help="Treat DOMAIN (and its subdomains) as lab scope for the "
+                              "Safety Gate, in addition to RFC 1918/loopback/localhost. "
+                              "Repeatable.")
+    contain.add_argument("--containment-profile", dest="containment_profile",
+                         choices=["strict", "simulation"], default=DEFAULT_CONTAINMENT_PROFILE,
+                         help="'simulation' (default): command-injection PoC probes "
+                              "are rewritten into an inert token echo before being "
+                              "sent -- nothing but that echo ever reaches the "
+                              "target's command interpreter. 'strict': the engine's "
+                              "existing real (still non-destructive, low-intrusion) "
+                              "probes run as-is; requires --lab-mode.")
+    contain.add_argument("--max-exploit-depth", dest="max_exploit_depth", type=int,
+                         default=DEFAULT_MAX_EXPLOIT_DEPTH, metavar="N",
+                         help="Bound on the sandboxed post-exploitation verification "
+                              f"chain after a confirmed, contained command-injection "
+                              f"finding (default: {DEFAULT_MAX_EXPLOIT_DEPTH} == the "
+                              "base Proof-of-Impact probe only, no chaining). Only "
+                              "ever chains more independent, single-use sandboxed "
+                              "echoes -- never a state-changing operation.")
+
+    rt = scan.add_argument_group(
+        "Real-time telemetry & adaptive concurrency",
+        "Per-request latency/jitter/retry/rate-limit telemetry is always "
+        "collected in memory (per host and per operational phase: "
+        "reconnaissance/mapping/exploitation) and surfaced in the enriched "
+        "JSON report (--output-format json). These flags are opt-in "
+        "behavioral changes on top of that.")
+    rt.add_argument("--adaptive-concurrency", dest="adaptive_concurrency",
+                    action="store_true",
+                    help="Dynamically resize the request concurrency pool (AIMD: "
+                         "additive-increase / multiplicative-decrease) in reaction "
+                         "to observed 429/503/transport-failure rates, instead of "
+                         "holding --threads fixed for the whole scan.")
+    rt.add_argument("--adaptive-concurrency-min", type=int, default=2, metavar="N",
+                    help="Floor the adaptive governor never shrinks concurrency "
+                         "below (default: 2). Requires --adaptive-concurrency.")
+    rt.add_argument("--show-telemetry", dest="show_telemetry", action="store_true",
+                    help="Print a real-time telemetry summary (latency/jitter/"
+                         "retries/WAF-evasion effectiveness, per phase) to the "
+                         "terminal after the scan.")
+
+    rep = scan.add_argument_group(
+        "Standardized reporting (SARIF / enriched JSON)",
+        "Opt-in, additional to the always-on --output-json/--output-pdf pair. "
+        "Emits one extra report in the given format alongside them.")
+    rep.add_argument("--output-format", choices=["sarif", "json", "text"], default=None,
+                     help="Emit an extra standardized report: 'sarif' (OASIS SARIF "
+                          "2.1.0, for code-scanning/SARIF-consuming pipelines), "
+                          "'json' (research-oriented enriched JSON: normalized attack "
+                          "vector, execution trace, WAF status, latency/jitter per "
+                          "finding) or 'text' (plain-text summary).")
+    rep.add_argument("--output-file", default=None, metavar="PATH",
+                     help="Path to write the --output-format report to (default: a "
+                          "timestamped file under --output). Requires --output-format.")
     return parser
+
+
+_RECON_ONLY_FLAGS: list[tuple[str, str, object]] = [
+    ("--max-depth", "max_depth", 3),
+    ("--max-urls", "max_urls", 1000),
+    ("--sitemap", "sitemap", False),
+    ("--jitter", "jitter", 0.0),
+    ("--no-parse-js", "parse_js", True),
+    ("--browser", "use_browser", False),
+    ("--browser-nav-timeout", "browser_nav_timeout", 15.0),
+    ("--browser-max-pages", "browser_max_pages", None),
+    ("--browser-max-concurrent-pages", "browser_max_concurrent_pages", 3),
+    ("--detect-sensitive-files", "detect_sensitive_files", False),
+    ("--sensitive-files-max-base-paths", "sensitive_files_max_base_paths", 6),
+    ("--sensitive-files-max-concurrent", "sensitive_files_max_concurrent", 8),
+    ("--fingerprint-server", "fingerprint_server", False),
+    ("--no-fingerprint-active-probes", "fingerprint_active_probes", True),
+]
+
+
+def _non_default_flags(args: argparse.Namespace,
+                       specs: list[tuple[str, str, object]]) -> list[str]:
+    """Return the CLI flag names among ``specs`` whose value differs from the
+    parser default, i.e. the user actually passed them."""
+    return [flag for flag, attr, default in specs if getattr(args, attr, default) != default]
+
+
+def _validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Reject flag combinations that would otherwise be silently ignored by
+    the orchestration/session layers, instead of failing quietly at runtime.
+    """
+    # --- --target-list / --no-map disable the entire recon phase ----------
+    recon_hits = _non_default_flags(args, _RECON_ONLY_FLAGS)
+    if recon_hits and getattr(args, "target_list", None):
+        parser.error(
+            "--target-list skips the recon/crawl phase entirely (targets come "
+            "from the file), so these flag(s) would have no effect: "
+            f"{', '.join(recon_hits)}. Remove them or drop --target-list."
+        )
+    if recon_hits and not args.generate_map:
+        parser.error(
+            "--no-map disables the recon/crawl phase, so these flag(s) would "
+            f"have no effect: {', '.join(recon_hits)}. Remove them or drop "
+            "--no-map."
+        )
+
+    # --- LLM triage agent: config flags without the feature enabled --------
+    ai_active = bool(args.enable_ai_triaging or args.ai_synthesize)
+    if not ai_active:
+        ai_hits = []
+        if args.ai_no_verify:
+            ai_hits.append("--ai-no-verify")
+        if args.ai_backend is not None:
+            ai_hits.append("--ai-backend")
+        if args.ai_base_url is not None:
+            ai_hits.append("--ai-base-url")
+        if args.ai_model is not None:
+            ai_hits.append("--ai-model")
+        if args.ai_fp_threshold != 0.75:
+            ai_hits.append("--ai-fp-threshold")
+        if args.ai_max_retries is not None:
+            ai_hits.append("--ai-max-retries")
+        if args.ai_concurrency is not None:
+            ai_hits.append("--ai-concurrency")
+        if args.ai_batch_size is not None:
+            ai_hits.append("--ai-batch-size")
+        if args.ai_batch_linger is not None:
+            ai_hits.append("--ai-batch-linger")
+        if args.ai_temperature is not None:
+            ai_hits.append("--ai-temperature")
+        if args.ai_payload_temperature is not None:
+            ai_hits.append("--ai-payload-temperature")
+        if args.ai_max_tokens is not None:
+            ai_hits.append("--ai-max-tokens")
+        if args.ai_repetition_penalty is not None:
+            ai_hits.append("--ai-repetition-penalty")
+        if args.ai_load_in_4bit:
+            ai_hits.append("--ai-load-in-4bit")
+        if args.ai_load_in_8bit:
+            ai_hits.append("--ai-load-in-8bit")
+        if ai_hits:
+            parser.error(
+                f"{', '.join(ai_hits)} only take effect with --enable-ai-triaging "
+                "or --ai-synthesize (the LLM triage agent is off by default); "
+                "otherwise the scan silently runs the deterministic engine only."
+            )
+    elif args.ai_no_verify and not args.ai_synthesize:
+        parser.error(
+            "--ai-no-verify without --ai-synthesize turns off both halves of "
+            "the LLM triage agent (verification and synthesis), making "
+            "--enable-ai-triaging a no-op. Add --ai-synthesize or drop "
+            "--ai-no-verify."
+        )
+
+    # --- LLM triage agent: robust threshold/retry bounds --------------------
+    if ai_active and not (0.0 <= args.ai_fp_threshold <= 1.0):
+        parser.error(
+            f"--ai-fp-threshold must be between 0.0 and 1.0 (got "
+            f"{args.ai_fp_threshold}); it is compared against the agent's own "
+            f"0-1 confidence score."
+        )
+    if ai_active and args.ai_max_retries is not None and args.ai_max_retries < 0:
+        parser.error(
+            f"--ai-max-retries must be >= 0 (got {args.ai_max_retries})."
+        )
+    if ai_active and args.ai_concurrency is not None and args.ai_concurrency < 1:
+        parser.error(
+            f"--ai-concurrency must be >= 1 (got {args.ai_concurrency})."
+        )
+    if ai_active and args.ai_batch_size is not None and args.ai_batch_size < 1:
+        parser.error(
+            f"--ai-batch-size must be >= 1 (got {args.ai_batch_size})."
+        )
+    if ai_active and args.ai_batch_linger is not None and args.ai_batch_linger < 0:
+        parser.error(
+            f"--ai-batch-linger must be >= 0 (got {args.ai_batch_linger})."
+        )
+    if ai_active and args.ai_temperature is not None and not (0.0 <= args.ai_temperature <= 2.0):
+        parser.error(
+            f"--ai-temperature must be between 0.0 and 2.0 (got {args.ai_temperature})."
+        )
+    if (ai_active and args.ai_payload_temperature is not None
+            and not (0.0 <= args.ai_payload_temperature <= 2.0)):
+        parser.error(
+            f"--ai-payload-temperature must be between 0.0 and 2.0 "
+            f"(got {args.ai_payload_temperature})."
+        )
+    if ai_active and args.ai_max_tokens is not None and args.ai_max_tokens < 1:
+        parser.error(f"--ai-max-tokens must be >= 1 (got {args.ai_max_tokens}).")
+    if ai_active and args.ai_repetition_penalty is not None and args.ai_repetition_penalty <= 0:
+        parser.error(
+            f"--ai-repetition-penalty must be > 0 (got {args.ai_repetition_penalty})."
+        )
+
+    # --- Exploit engine: sub-flags without the engine enabled --------------
+    if not args.enable_exploit_engine:
+        exploit_hits = []
+        if args.exploit_max_targets != DEFAULT_MAX_TARGETS:
+            exploit_hits.append("--exploit-max-targets")
+        if args.enable_waf_evasion:
+            exploit_hits.append("--enable-waf-evasion")
+        if args.waf_evasion_max_retries != 4:
+            exploit_hits.append("--waf-evasion-max-retries")
+        if exploit_hits:
+            parser.error(
+                f"{', '.join(exploit_hits)} only take effect with "
+                "--enable-exploit-engine (the Proof-of-Impact exploit engine "
+                "is off by default)."
+            )
+    elif args.waf_evasion_max_retries != 4 and not args.enable_waf_evasion:
+        parser.error("--waf-evasion-max-retries requires --enable-waf-evasion.")
+
+    # --- Exploit-engine containment: Safety Gate + sandbox profile ----------
+    if not args.enable_exploit_engine:
+        containment_hits = []
+        if args.lab_mode:
+            containment_hits.append("--lab-mode")
+        if args.acknowledge_offensive_payloads:
+            containment_hits.append("--acknowledge-offensive-payloads")
+        if args.containment_allowed_domains:
+            containment_hits.append("--containment-allowed-domain")
+        if args.containment_profile != DEFAULT_CONTAINMENT_PROFILE:
+            containment_hits.append("--containment-profile")
+        if args.max_exploit_depth != DEFAULT_MAX_EXPLOIT_DEPTH:
+            containment_hits.append("--max-exploit-depth")
+        if containment_hits:
+            parser.error(
+                f"{', '.join(containment_hits)} only take effect with "
+                "--enable-exploit-engine (the Proof-of-Impact exploit engine "
+                "is off by default)."
+            )
+    else:
+        if args.containment_profile == "strict" and not args.lab_mode:
+            parser.error(
+                "--containment-profile strict requires --lab-mode: it lets the "
+                "exploit engine's real (non-destructive, low-intrusion) probes "
+                "run as-is instead of the default sandboxed token echo, and "
+                "this scanner requires an explicit lab declaration before "
+                "unlocking that."
+            )
+        if args.max_exploit_depth < 1:
+            parser.error(
+                f"--max-exploit-depth must be >= 1 (got {args.max_exploit_depth})."
+            )
+        # Safety Gate: refuse the whole run immediately, deterministically,
+        # before a single request is sent, unless the target is recognisably
+        # a lab the operator owns or they explicitly accepted the exemption.
+        gate = SafetyGate(
+            allowed_domains=tuple(args.containment_allowed_domains),
+            acknowledge_offensive_payloads=args.acknowledge_offensive_payloads,
+        )
+        try:
+            gate.enforce(args.url)
+        except ScopeDeviationError as exc:
+            parser.error(str(exc))
+
+    # --- Authentication / session -------------------------------------------
+    if args.auth_password is not None and args.auth_password_env is not None:
+        parser.error(
+            "--auth-password and --auth-password-env are mutually exclusive; "
+            "pick one (--auth-password wins silently otherwise)."
+        )
+
+    has_login_target = bool(args.auth_url or args.session_config)
+    login_only_flags = [
+        ("--auth-username", args.auth_username is not None),
+        ("--auth-password", args.auth_password is not None),
+        ("--auth-password-env", args.auth_password_env is not None),
+        ("--auth-username-field", args.auth_username_field != "username"),
+        ("--auth-password-field", args.auth_password_field != "password"),
+        ("--auth-field", bool(args.auth_field)),
+        ("--auth-type", args.auth_type != "form"),
+        ("--auth-token-path", args.auth_token_path is not None),
+        ("--auth-token-header", args.auth_token_header != "Authorization"),
+        ("--auth-token-prefix", args.auth_token_prefix != "Bearer "),
+    ]
+    if not has_login_target:
+        login_hits = [name for name, hit in login_only_flags if hit]
+        if login_hits:
+            parser.error(
+                f"{', '.join(login_hits)} configure a form/JSON login but no "
+                "login target was given; add --auth-url or --session-config."
+            )
+
+    # --required / --no-reauth only matter once a form login is actually
+    # configured (SessionConfig.does_form_login needs login_url + username).
+    has_form_login_intent = bool(args.session_config) or bool(
+        args.auth_url and args.auth_username
+    )
+    if args.auth_required and not has_form_login_intent:
+        parser.error(
+            "--auth-required has no effect without a form login "
+            "(--auth-url plus --auth-username, or --session-config)."
+        )
+    if not args.reauth and not has_form_login_intent:
+        parser.error(
+            "--no-reauth has no effect without a form login (--auth-url "
+            "plus --auth-username, or --session-config)."
+        )
+
+    # --- Standardized reporting (SARIF / enriched JSON) ---------------------
+    if args.output_file is not None and args.output_format is None:
+        parser.error(
+            "--output-file requires --output-format (sarif|json|text); "
+            "otherwise there is nothing to write there."
+        )
+
+    # --- Real-time telemetry / adaptive concurrency -------------------------
+    if args.adaptive_concurrency_min != 2 and not args.adaptive_concurrency:
+        parser.error(
+            "--adaptive-concurrency-min requires --adaptive-concurrency "
+            "(the fixed-concurrency semaphore never reads it)."
+        )
 
 
 class ProgressReporter:
@@ -519,6 +903,9 @@ def _build_config(args) -> dict:
         uas = _load_ua_file(args.ua_file)
         if uas:
             core["extra_user_agents"] = uas
+    if getattr(args, "adaptive_concurrency", False):
+        core["adaptive_concurrency"] = True
+        core["adaptive_concurrency_min"] = getattr(args, "adaptive_concurrency_min", 2)
     testers = {
         "payload_delay": args.payload_delay,
         "max_payloads": args.max_payloads,
@@ -549,6 +936,16 @@ def _build_config(args) -> dict:
         "ai_base_url": getattr(args, "ai_base_url", None),
         "ai_model": getattr(args, "ai_model", None),
         "ai_fp_threshold": getattr(args, "ai_fp_threshold", 0.75),
+        "ai_max_retries": getattr(args, "ai_max_retries", None),
+        "ai_concurrency": getattr(args, "ai_concurrency", None),
+        "ai_batch_size": getattr(args, "ai_batch_size", None),
+        "ai_batch_linger": getattr(args, "ai_batch_linger", None),
+        "ai_temperature": getattr(args, "ai_temperature", None),
+        "ai_payload_temperature": getattr(args, "ai_payload_temperature", None),
+        "ai_max_tokens": getattr(args, "ai_max_tokens", None),
+        "ai_repetition_penalty": getattr(args, "ai_repetition_penalty", None),
+        "ai_load_in_4bit": getattr(args, "ai_load_in_4bit", False),
+        "ai_load_in_8bit": getattr(args, "ai_load_in_8bit", False),
         # Adaptive exploitation engine (opt-in via --enable-exploit-engine).
         "enable_exploit_engine": getattr(args, "enable_exploit_engine", False),
         "exploit_max_targets": getattr(args, "exploit_max_targets", DEFAULT_MAX_TARGETS),
@@ -556,6 +953,13 @@ def _build_config(args) -> dict:
         # (opt-in via --enable-waf-evasion).
         "enable_waf_evasion": getattr(args, "enable_waf_evasion", False),
         "waf_evasion_max_retries": getattr(args, "waf_evasion_max_retries", 4),
+        # Phase 3 containment: Safety Gate + payload sandbox for the exploit
+        # engine (see modules.containment_core).
+        "lab_mode": getattr(args, "lab_mode", False),
+        "acknowledge_offensive_payloads": getattr(args, "acknowledge_offensive_payloads", False),
+        "containment_allowed_domains": tuple(getattr(args, "containment_allowed_domains", None) or ()),
+        "containment_profile": getattr(args, "containment_profile", DEFAULT_CONTAINMENT_PROFILE),
+        "max_exploit_depth": getattr(args, "max_exploit_depth", DEFAULT_MAX_EXPLOIT_DEPTH),
     }
     recon = {
         "max_urls": args.max_urls,
@@ -678,6 +1082,15 @@ async def _run_scan(args) -> int:
     formats = [fmt for fmt, on in (("json", args.output_json), ("pdf", args.output_pdf)) if on]
     paths = await generate_reports_async(results, formats, output_dir=args.output)
 
+    if getattr(args, "output_format", None):
+        extra_path = await generate_report_async(
+            results, args.output_format, output_dir=args.output,
+            output_file=getattr(args, "output_file", None),
+        )
+        # Namespaced so e.g. "--output-format json" (the enriched research
+        # report) never collides with the always-on standard "json" key above.
+        paths[f"{args.output_format}-standardized"] = extra_path
+
     count = results["statistics"]["total_vulnerabilities"]
     tech_count = results["statistics"].get("total_technologies", 0)
     print(f"\n{Fore.GREEN}[*] Scan complete: {count} vulnerability(ies) found, "
@@ -685,14 +1098,54 @@ async def _run_scan(args) -> int:
     for fmt, path in paths.items():
         print(f"    {fmt.upper()} report: {path}")
 
+    if getattr(args, "show_telemetry", False):
+        _print_telemetry_summary(results.get("realtime_telemetry"))
+
     # Non-zero exit if any vulnerabilities found (useful for CI).
     return 1 if count > 0 else 0
+
+
+def _print_telemetry_summary(snapshot: dict[str, Any] | None) -> None:
+    """Print the real-time telemetry snapshot (--show-telemetry): per-phase
+    latency/throttle stats, per-host jitter/tarpit signals, WAF-evasion
+    effectiveness and any adaptive-concurrency adjustments."""
+    print(f"\n{Fore.CYAN}[*] Real-time telemetry{Style.RESET_ALL}")
+    if not snapshot:
+        print("    (no telemetry collected)")
+        return
+
+    for phase, stats in snapshot.get("phases", {}).items():
+        print(f"    phase={phase:<14} requests={stats['requests']:<6} "
+              f"avg_latency={stats['latency_mean_s']:.3f}s "
+              f"throttle_rate={stats['throttle_rate']:.1%} "
+              f"retries={stats['retries']} errors={stats['errors']}")
+
+    for host, stats in snapshot.get("hosts", {}).items():
+        print(f"    host={host:<24} requests={stats['requests']:<6} "
+              f"jitter={stats['jitter_s']:.3f}s "
+              f"tarpit_suspected={stats['tarpit_suspected']}")
+
+    waf = snapshot.get("waf_evasion") or {}
+    if waf.get("probes"):
+        print(f"    WAF evasion: {waf['probes']} probe(s), "
+              f"{waf['bypassed']}/{waf['perimeter_blocks_encountered']} block(s) "
+              f"bypassed ({waf['bypass_rate']:.1%}), "
+              f"{waf['total_mutation_attempts']} mutation attempt(s)")
+
+    adjustments = snapshot.get("concurrency_adjustments") or []
+    if adjustments:
+        print(f"    Adaptive concurrency: {len(adjustments)} adjustment(s)")
+        for adj in adjustments:
+            print(f"      [{adj['phase']}] {adj['old_limit']} -> {adj['new_limit']} "
+                  f"({adj['reason']})")
 
 
 def main() -> int:
     colorama_init(autoreset=False)
     parser = _build_parser()
     args = parser.parse_args()
+    if args.command == "scan":
+        _validate_args(args, parser)
 
     logging.basicConfig(
         level=logging.DEBUG if getattr(args, "verbose", False) else logging.WARNING,

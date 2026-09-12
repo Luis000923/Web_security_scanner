@@ -202,6 +202,17 @@ def normalized_auc(xs: np.ndarray, ys: np.ndarray, total_pos: int) -> float:
     return float(trapz(y, x))
 
 
+# Keys of the per-run ``rec`` dict below. Passed explicitly to
+# ``pd.DataFrame.from_records`` so an empty ``runs`` list (e.g. a fresh
+# checkout where the gitignored testbed/results/ telemetry hasn't been
+# generated yet, only the graded testbed/experiment_results.csv is present)
+# still produces a DataFrame with "budget"/"condition" columns to merge the
+# graded CSV on, instead of a column-less frame that raises ``KeyError``.
+_SUMMARY_BASE_COLUMNS = ["budget", "condition", "n_requests", "tp_unique",
+                         "trap_hits", "recall", "fpr", "auc", "first_tp",
+                         "mean_first_tp"]
+
+
 def build_summary(runs: list[RunInfo], gt: oracle.GroundTruth,
                   csv_path: Path) -> tuple[pd.DataFrame, dict]:
     total_pos = len(gt.positives)
@@ -237,7 +248,7 @@ def build_summary(runs: list[RunInfo], gt: oracle.GroundTruth,
                 )
         records.append(rec)
 
-    summary = pd.DataFrame.from_records(records)
+    summary = pd.DataFrame.from_records(records, columns=_SUMMARY_BASE_COLUMNS)
 
     # Fold in the oracle's graded CSV (authoritative TP/FP/FN) where present.
     if csv_path.exists():
@@ -444,10 +455,10 @@ def _block_tests(mat: pd.DataFrame, friedmanchisquare, wilcoxon,
     # Baseline vs each ablation: Wilcoxon signed-rank + McNemar, BH-corrected.
     base = mat["baseline"].to_numpy(dtype=float)
     pairs, raw_p = [], []
-    detail = {}
+    detail: dict[str, dict[str, Any]] = {}
     for cond in CONDITIONS[1:]:
         arm = mat[cond].to_numpy(dtype=float)
-        entry = {}
+        entry: dict[str, Any] = {}
         try:
             w_stat, w_p = wilcoxon(base, arm, zero_method="zsplit")
             entry["wilcoxon"] = {"statistic": float(w_stat), "p_value": float(w_p)}
@@ -559,7 +570,7 @@ def first_tp_analysis(meta: dict, gt: oracle.GroundTruth) -> dict:
     out: dict = {"per_budget": {}, "pooled": None, "notes": []}
     keys = sorted(gt.positives)
 
-    pooled = {"b": [], "a": [], "bh": [], "ah": []}
+    pooled: dict[str, list[Any]] = {"b": [], "a": [], "bh": [], "ah": []}
     for budget in budgets:
         base = per.get((budget, "baseline"))
         arm = per.get((budget, ADAPTIVE_CONDITION))
@@ -585,6 +596,117 @@ def first_tp_analysis(meta: dict, gt: oracle.GroundTruth) -> dict:
     elif not out["notes"]:
         out["notes"].append("no run pairs found for the adaptive-vs-static contrast")
     return out
+
+
+# ---------------------------------------------------------------------------
+# TASK 2c — Friedman test: F1-score across static / adaptive / ai-triage
+# ---------------------------------------------------------------------------
+
+# Maps a human-facing strategy name to the ``condition`` value graded into
+# experiment_results.csv for it. ``static`` = a-priori payload order
+# (no-adaptive-sorting), ``adaptive`` = the live Phase 3 feedback loop
+# (baseline), ``ai_triage`` = the LLM triage stage on top of the heuristic
+# engine (ai-triage; the --ai-synthesize variant is intentionally excluded
+# so the comparison stays a clean 3-arm design rather than mixing two
+# ai-triage flavours into one column).
+STRATEGY_CONDITIONS: dict[str, str] = {
+    "static": ADAPTIVE_CONDITION,
+    "adaptive": "baseline",
+    "ai_triage": "ai-triage",
+}
+
+FRIEDMAN_ALPHA = 0.05
+
+
+def strategy_f1_friedman(csv_path: Path) -> dict[str, Any]:
+    """Friedman test on F1-score across the static/adaptive/ai-triage arms.
+
+    Non-parametric repeated-measures test: the block/subject axis is
+    ``budget`` (each budget that graded all three strategies contributes one
+    matched F1 triple), and the treatment axis is the strategy. This is the
+    same family of test ``_block_tests`` already runs on per-GT-instance
+    detection cost for the 4-arm ablation family; here it runs on the
+    oracle-graded F1-score itself, one level up, to answer "does the choice
+    of scheduling/triage strategy move F1 at all across budgets?".
+
+    Requires at least 3 budgets with a graded (status == "ok") row for all of
+    ``STRATEGY_CONDITIONS`` — Friedman needs >= 3 non-degenerate blocks to
+    produce a meaningful chi-square statistic. Returns
+    ``{"available": False, "reason": ...}`` when that is not met (missing
+    CSV, missing columns, or too few complete budgets) so callers can print
+    a one-line note and move on, mirroring ``ai_triage_analysis``.
+    """
+    from scipy.stats import friedmanchisquare
+
+    if not csv_path.exists():
+        return {"available": False, "reason": "no graded CSV"}
+    df = pd.read_csv(csv_path).rename(columns=str.lower)
+    if not {"budget", "condition", "f1"}.issubset(df.columns):
+        return {"available": False, "reason": "CSV missing budget/condition/f1 columns"}
+    if "status" in df.columns:
+        df = df[df["status"].astype(str).eq("ok")]
+    df = df.assign(f1=pd.to_numeric(df["f1"], errors="coerce"))
+
+    pivot: dict[int, dict[str, float]] = {}
+    for budget, grp in df.groupby("budget"):
+        row: dict[str, float] = {}
+        for strategy, condition in STRATEGY_CONDITIONS.items():
+            rows = grp[grp["condition"].astype(str).eq(condition)]
+            f1_values = rows["f1"].dropna()
+            if f1_values.empty:
+                continue
+            row[strategy] = float(f1_values.mean())
+        if len(row) == len(STRATEGY_CONDITIONS):
+            pivot[int(budget)] = row
+
+    if len(pivot) < 3:
+        return {
+            "available": False,
+            "reason": (
+                f"need >= 3 budgets with a graded F1 for every strategy in "
+                f"{sorted(STRATEGY_CONDITIONS)} — found {len(pivot)} complete "
+                f"budget(s)"
+            ),
+            "strategies": dict(STRATEGY_CONDITIONS),
+        }
+
+    budgets_used = sorted(pivot)
+    samples: dict[str, list[float]] = {
+        strategy: [pivot[b][strategy] for b in budgets_used]
+        for strategy in STRATEGY_CONDITIONS
+    }
+
+    try:
+        statistic, p_value = friedmanchisquare(*samples.values())
+    except ValueError as e:
+        return {
+            "available": False,
+            "reason": f"friedmanchisquare failed: {e}",
+            "strategies": dict(STRATEGY_CONDITIONS),
+            "budgets_used": budgets_used,
+        }
+
+    reject_null = bool(p_value < FRIEDMAN_ALPHA)
+    return {
+        "available": True,
+        "test": "friedman",
+        "metric": "f1_score",
+        "strategies": dict(STRATEGY_CONDITIONS),
+        "budgets_used": budgets_used,
+        "n_blocks": len(budgets_used),
+        "statistic": float(statistic),
+        "p_value": float(p_value),
+        "alpha": FRIEDMAN_ALPHA,
+        "reject_null": reject_null,
+        "conclusion": (
+            "reject H0: at least one strategy's F1 differs significantly "
+            "across budgets" if reject_null else
+            "fail to reject H0: no significant F1 difference detected among "
+            "the strategies at this alpha"
+        ),
+        "mean_f1": {s: float(np.mean(v)) for s, v in samples.items()},
+        "median_f1": {s: float(np.median(v)) for s, v in samples.items()},
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -831,7 +953,8 @@ def fig4_first_tp_ecdf(meta: dict, gt: oracle.GroundTruth, fig_dir: Path):
     """
     per = meta["per_run_costs"]
     keys = sorted(gt.positives)
-    ad, st = [], []
+    ad: list[float] = []
+    st: list[float] = []
     for (budget, cond), costs in per.items():
         target = ad if cond == "baseline" else st if cond == ADAPTIVE_CONDITION else None
         if target is None:
@@ -949,6 +1072,20 @@ def main(argv=None) -> int:
             print(f"   {cond:>20s}: recall {e['recall_baseline']:.2f}->{e['recall_arm']:.2f}  "
                   f"Wilcoxon p_bh={w.get('p_value_bh', float('nan')):.4g}  "
                   f"Cliff δ={cd.get('delta', float('nan')):+.3f} ({cd.get('magnitude')})")
+
+    print("\n=== TASK 2c — Friedman: F1-score, static vs adaptive vs ai-triage ===")
+    stats["strategy_f1_friedman"] = strategy_f1_friedman(args.csv)
+    f1_friedman = stats["strategy_f1_friedman"]
+    if not f1_friedman.get("available"):
+        print(f"  n/a: {f1_friedman.get('reason')}")
+    else:
+        print(f"  budgets used: {f1_friedman['budgets_used']}  "
+              f"(n_blocks={f1_friedman['n_blocks']})")
+        print(f"  chi2={f1_friedman['statistic']:.3f}  p={f1_friedman['p_value']:.4g}  "
+              f"alpha={f1_friedman['alpha']}  reject_h0={f1_friedman['reject_null']}")
+        for strategy, mean_f1 in f1_friedman["mean_f1"].items():
+            print(f"   {strategy:>10s}: mean F1={mean_f1:.4f}  "
+                  f"median F1={f1_friedman['median_f1'][strategy]:.4f}")
     (args.analysis_dir / "stats.json").write_text(
         json.dumps(stats, indent=2, default=_json_default), encoding="utf-8")
     # Persist the cost matrix (pooled over budgets) for downstream use.

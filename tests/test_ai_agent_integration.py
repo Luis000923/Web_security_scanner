@@ -181,12 +181,18 @@ def test_synthesized_payload_finds_xss_after_static_exhaustion():
 
 
 def test_synthesis_skipped_when_static_list_hits():
+    """The static corpus already found a hit, so the corpus-*exhaustion*
+    synthesis path (``ai_supplemental_payloads``) is never invoked. Stage 2
+    cross-validation (``_ai_cross_validate``) is a separate, always-on-when-
+    ``--ai-synthesize`` call for the *confirmed* finding, so ``synth_calls``
+    is not empty overall -- only the exhaustion reason must be absent."""
     agent = FakeAgent(payloads=[{"payload": "x"}])
     found, _, _ = asyncio.run(
         _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
              {"ai_synthesize": True}, agent))
     assert len(found) == 1
-    assert agent.synth_calls == []             # never needed
+    reasons = [ctx.get("reason") for ctx, _n in agent.synth_calls]
+    assert "static-list-exhausted" not in reasons
 
 
 def test_destructive_synth_payload_filtered_without_flag():
@@ -308,6 +314,19 @@ def test_cli_ai_backend_options_forwarded():
              "--ai-fp-threshold", "0.9")
     assert t["ai_backend"] == "echo"
     assert t["ai_fp_threshold"] == 0.9
+
+
+def test_cli_ai_generation_knobs_forwarded():
+    t = _cfg("--enable-ai-triaging", "--ai-temperature", "0.1",
+             "--ai-payload-temperature", "0.9", "--ai-max-tokens", "512",
+             "--ai-repetition-penalty", "1.2", "--ai-load-in-4bit")
+    assert t["ai_temperature"] == 0.1
+    assert t["ai_payload_temperature"] == 0.9
+    assert t["ai_max_tokens"] == 512
+    assert t["ai_repetition_penalty"] == 1.2
+    assert t["ai_load_in_4bit"] is True
+    assert t["ai_load_in_8bit"] is False
+
 
 
 # --------------------------------------------------------------------------- #
@@ -439,6 +458,147 @@ def test_agent_client_reuses_one_http_session(monkeypatch):
     asyncio.run(go())
     assert len(built) == 1          # one session for three triage calls
     assert _Sess.closed is True
+
+
+def test_payload_synthesis_uses_payload_temperature_not_triage_temperature(monkeypatch):
+    """--ai-payload-temperature must steer only synthesize_payloads(), never
+    triage_finding() -- a verification call should stay deterministic-ish
+    even when payload synthesis is dialed up for creative evasions."""
+    seen_temps = []
+
+    async def _fake_chat(self, system, user, *, response_format=None, temperature=None):
+        seen_temps.append(temperature)
+        if "next payloads" in user:
+            return '{"payloads": [{"payload": "x", "rationale": "r", "confirm_signal": "s", "score": 0.5}]}'
+        return '{"verdict": "UNCERTAIN", "confidence": 0.0, "reasoning": "r", "next_step": ""}'
+
+    monkeypatch.setattr(AgentClient, "_chat", _fake_chat)
+    client = AgentClient(backend="openai", temperature=0.2, payload_temperature=0.9)
+
+    async def go():
+        await client.triage_finding({"url": "http://t"})
+        await client.synthesize_payloads({"url": "http://t"}, n=1)
+
+    asyncio.run(go())
+    assert seen_temps == [None, 0.9]  # triage: no override; synthesis: payload_temperature
+
+
+def test_quantization_config_none_without_load_in_bit_flags():
+    client = AgentClient(backend="transformers")
+    assert client._build_quantization_config() is None
+
+
+def test_quantization_config_4bit_wins_over_8bit():
+    client = AgentClient(backend="transformers", load_in_4bit=True, load_in_8bit=True)
+    cfg = client._build_quantization_config()
+    assert cfg is not None
+    assert cfg.load_in_4bit is True
+    assert cfg.bnb_4bit_quant_type == "nf4"
+
+
+def test_quantization_config_8bit():
+    client = AgentClient(backend="transformers", load_in_8bit=True)
+    cfg = client._build_quantization_config()
+    assert cfg is not None
+    assert cfg.load_in_8bit is True
+
+
+def test_quantization_config_degrades_without_bitsandbytes(monkeypatch):
+    """A missing/incompatible bitsandbytes must degrade to plain bf16, not
+    crash the agent -- it's an optional dependency of the 'ai-local' extra."""
+    import builtins
+
+    real_import = builtins.__import__
+
+    def _blocked_import(name, *a, **kw):
+        if name == "transformers":
+            raise ImportError("simulated: bitsandbytes/transformers unavailable")
+        return real_import(name, *a, **kw)
+
+    monkeypatch.setattr(builtins, "__import__", _blocked_import)
+    client = AgentClient(backend="transformers", load_in_4bit=True)
+    assert client._build_quantization_config() is None
+
+
+# --------------------------------------------------------------------------- #
+# 5b. circuit breaker + idempotent transformers lazy-load
+# --------------------------------------------------------------------------- #
+
+class _AlwaysDownSession:
+    """Every POST raises a connection error -- simulates a dead inference server."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def post(self, url, json, headers):
+        self.calls += 1
+        raise __import__("aiohttp").ClientConnectionError("refused")
+
+
+def test_circuit_breaker_opens_after_consecutive_failures(monkeypatch):
+    import aiohttp
+
+    sess = _AlwaysDownSession()
+    monkeypatch.setattr(aiohttp, "ClientSession", lambda **kw: sess)
+    client = AgentClient(backend="openai", max_retries=0,
+                         circuit_fail_threshold=3, circuit_reset_after=999.0)
+
+    async def go():
+        results = []
+        for _ in range(5):
+            results.append(await client.triage_finding({"url": "http://t"}))
+        return results
+
+    results = asyncio.run(go())
+    # every call degrades to the safe UNCERTAIN contingency -- the breaker
+    # never raises into the scan, it only decides whether to hit the network.
+    assert all(r.verdict == "UNCERTAIN" for r in results)
+    # 3 failures trip the breaker; the remaining 2 calls fail fast without a
+    # network attempt, so the session only ever sees the first 3 POSTs.
+    assert sess.calls == 3
+
+
+def test_circuit_breaker_resets_after_timeout(monkeypatch):
+    import aiohttp
+
+    sess = _AlwaysDownSession()
+    monkeypatch.setattr(aiohttp, "ClientSession", lambda **kw: sess)
+    client = AgentClient(backend="openai", max_retries=0,
+                         circuit_fail_threshold=1, circuit_reset_after=0.0)
+
+    async def go():
+        await client.triage_finding({"url": "http://t"})   # trips the breaker
+        await client.triage_finding({"url": "http://t"})   # reset_after=0 -> half-open trial
+        return sess.calls
+
+    calls = asyncio.run(go())
+    assert calls == 2   # the second call was let through as a trial, not short-circuited
+
+
+def test_transformers_backend_builds_model_only_once_under_concurrency(monkeypatch):
+    """Two concurrent calls into a cold transformers backend must not race the
+    lazy pipeline construction (AUDIT.md 1.6/B5 -- doubled VRAM / a build race)."""
+    builds = []
+
+    def _fake_build(self):
+        builds.append(1)
+        return object()
+
+    def _fake_generate(self, system, user, temperature=None):
+        return ('{"verdict": "UNCERTAIN", "confidence": 0.0, '
+                '"reasoning": "stub", "next_step": ""}')
+
+    monkeypatch.setattr(AgentClient, "_build_hf_pipeline", _fake_build)
+    monkeypatch.setattr(AgentClient, "_generate_hf", _fake_generate)
+    client = AgentClient(backend="transformers")
+
+    async def go():
+        await asyncio.gather(*(
+            client.triage_finding({"url": "http://t"}) for _ in range(5)
+        ))
+
+    asyncio.run(go())
+    assert builds == [1]   # built exactly once despite 5 concurrent callers
 
 
 # --------------------------------------------------------------------------- #

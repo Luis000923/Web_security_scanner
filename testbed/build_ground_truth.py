@@ -338,6 +338,7 @@ def main(argv: list[str] | None = None) -> int:
         seen: set[tuple] = set()
         targets: list[dict] = []
         for r in records:
+            key: tuple
             if args.emit_targets_schema == "v2":
                 key = (r["url"], r["param"], r["vector"])
                 entry = {"url": r["url"], "param": r["param"],

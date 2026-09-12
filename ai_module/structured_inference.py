@@ -183,20 +183,11 @@ class StructuredLocalAgent:
             return
         import outlines  # raises ImportError if absent -> caller falls back
 
-        # Outlines >= 0.1 API. Older 0.0.x exposes outlines.models.transformers;
-        # both are attempted so this survives a pinned-version workstation.
-        try:
-            self._model = outlines.from_transformers(  # type: ignore[attr-defined]
-                *_load_hf(self.model_id, self.dtype)
-            )
-            self._triage_gen = outlines.Generator(self._model, TriageOut)  # type: ignore[attr-defined]
-            self._payload_gen = outlines.Generator(self._model, PayloadOut)  # type: ignore[attr-defined]
-        except AttributeError:
-            from outlines import generate, models  # type: ignore
-
-            self._model = models.transformers(self.model_id)  # type: ignore[operator]
-            self._triage_gen = generate.json(self._model, TriageOut)
-            self._payload_gen = generate.json(self._model, PayloadOut)
+        # outlines>=0.1.0 (the pinned floor) always exposes from_transformers +
+        # Generator; no older-API fallback is needed.
+        self._model = outlines.from_transformers(*_load_hf(self.model_id, self.dtype))
+        self._triage_gen = outlines.Generator(self._model, TriageOut)
+        self._payload_gen = outlines.Generator(self._model, PayloadOut)
 
     def triage(self, prompt: str, *, max_tokens: int = 384) -> TriageOut:
         self._ensure()
