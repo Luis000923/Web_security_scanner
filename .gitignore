@@ -16,6 +16,10 @@ logs/
 reports/
 config.yaml
 
+# Static-analysis SARIF output (CI artifacts, not committed)
+*.sarif
+coverage.xml
+
 # LaTeX / paper build artifacts (research branch)
 paper/build/
 paper/main.bbl

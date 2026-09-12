@@ -49,6 +49,10 @@ dev = [
     "mypy",
     "ruff",
     "bandit",
+    # bandit has no native SARIF writer (-f only accepts csv/custom/html/json/
+    # screen/txt/xml/yaml); this registers the "sarif" format bandit's CLI
+    # picks up via its formatter entry points.
+    "bandit-sarif-formatter",
     "jsonschema>=4.20",
     # ai_module.structured_inference imports pydantic at module scope, so the
     # AI triage test suites cannot even be collected without it.
@@ -64,6 +68,7 @@ dev = [
     "mypy",
     "ruff",
     "bandit",
+    "bandit-sarif-formatter",
     "jsonschema>=4.20",
     "pydantic>=2.0",
 ]
