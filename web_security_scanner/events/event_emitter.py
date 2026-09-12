@@ -13,6 +13,32 @@ class ScanEventType(Enum):
     SCAN_COMPLETE = auto()
     ERROR = auto()
     LOG_MESSAGE = auto()
+    # Emitted once per candidate finding that reached the LLM triage agent
+    # (``--enable-ai-triaging``), whether the agent kept or dropped it. Carries
+    # a ``decision`` dict so the orchestrator can build an audit trail of the
+    # agent's false-positive suppressions / false-negative risk for the report.
+    AI_TRIAGE_DECISION = auto()
+    # Emitted once per non-destructive Proof-of-Impact probe the adaptive
+    # exploitation engine (``--enable-exploit-engine``,
+    # ``modules.exploit_engine.ExploitEngine``) attempts, whatever its
+    # classification. Carries an ``attempt`` dict (``ExploitAttempt.to_dict()``)
+    # so the orchestrator can build the scan's exploitation audit trail.
+    EXPLOIT_ATTEMPT = auto()
+    # Emitted once per finding that reaches the stage-2 cross-validation pass
+    # (``--ai-synthesize``, after stage 1's ``AI_TRIAGE_DECISION`` kept the
+    # finding): the agent synthesizes confirmatory PoC payload(s), they are
+    # replayed against the live target, and the finding is upgraded to
+    # ``CONFIRMED`` only if the replay reproduces the signal. Carries a
+    # ``decision`` dict so the orchestrator can build an audit trail of the
+    # cross-validation pipeline for the report.
+    AI_CROSS_VALIDATION = auto()
+    # Emitted once per exploit-engine target the Safety Gate refused mid-scan
+    # (``modules.containment_core.SafetyGate``) -- a target outside recognised
+    # lab scope, discovered after the run's primary target already passed the
+    # CLI-boundary check (e.g. via ``--target-list`` or a redirect). Carries
+    # ``host`` and ``reason`` so the orchestrator can surface the containment
+    # audit trail without re-deriving it from the raw attempt list.
+    SCOPE_DEVIATION = auto()
 
 class ScanEventEmitter:
     """

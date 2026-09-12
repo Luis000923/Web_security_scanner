@@ -143,12 +143,14 @@ class _RecordingTester:
 @pytest.mark.asyncio
 async def test_discovered_targets_reach_the_testers(monkeypatch):
     from web_security_scanner.core.scanner_core_async import ScanConfig
+    from web_security_scanner.core.telemetry_engine import TelemetryEngine
     from web_security_scanner.web_security_scanner_async import WebSecurityScanner
 
     class FakeCore:
         def __init__(self, responder):
             self._responder = responder
             self.config = ScanConfig()
+            self.telemetry_engine = TelemetryEngine()
 
         async def start(self):
             return None
@@ -169,6 +171,9 @@ async def test_discovered_targets_reach_the_testers(monkeypatch):
             for item in items:
                 await worker(item)
 
+        def set_max_concurrency(self, value):
+            self.config.max_concurrency = value
+
     scanner = WebSecurityScanner({"recon": {"use_sitemap": True}})
     scanner.core = FakeCore(_responder)
     scanner.mapper.scanner = scanner.core
@@ -178,10 +183,6 @@ async def test_discovered_targets_reach_the_testers(monkeypatch):
     scanner.testers = [recorder]
 
     monkeypatch.setattr(scanner.mapper, "_discover_subdomains", lambda: _async_none())
-    monkeypatch.setattr(
-        scanner.mapper, "generate_map_async",
-        lambda *a, **k: _async_value("reports/fake_map.html"),
-    )
 
     results = await scanner.run_scan(BASE, generate_map=True)
 
@@ -194,7 +195,3 @@ async def test_discovered_targets_reach_the_testers(monkeypatch):
 
 async def _async_none():
     return None
-
-
-async def _async_value(value):
-    return value

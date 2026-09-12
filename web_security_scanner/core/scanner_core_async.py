@@ -12,6 +12,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import aiohttp
+from aiohttp.abc import AbstractResolver, ResolveResult
+
+from .telemetry_engine import AdaptiveConcurrencyController, TelemetryEngine
 
 # Small pool of legitimate, current desktop User-Agents. One is picked at
 # random per request (basic fingerprint rotation) unless the caller pinned a
@@ -41,6 +44,14 @@ _SOCKS_SCHEMES = ("socks5://", "socks5h://", "socks4://")
 MAX_RESPONSE_SIZE = 5 * 1024 * 1024        # 5 MiB
 _READ_CHUNK = 64 * 1024                     # 64 KiB per iter_chunked step
 
+# Caps on the two auxiliary caches that would otherwise grow for the whole scan.
+# A crawl that touches tens of thousands of distinct hosts/endpoints would keep
+# every one of them alive; these bound that at a few MB. Dropping an entry only
+# costs a re-resolution (which is re-validated) or a repeated warm-up burst.
+_MAX_RESOLVE_CACHE = 4096
+_MAX_WARMED_ENDPOINTS = 8192
+_MAX_BACKOFF_HOSTS = 4096
+
 # ipaddress predicates that mark an address as "not a public destination".
 _BLOCKED_IP_PREDICATES = (
     "is_private", "is_loopback", "is_link_local",
@@ -56,6 +67,69 @@ class SSRFRedirectError(Exception):
     The request is aborted instead of letting the HTTP client chase an
     internal endpoint (e.g. the cloud metadata service at 169.254.169.254).
     """
+
+
+def _addrinfo(hostname: str, ip: str, port: int) -> ResolveResult:
+    """One aiohttp resolver record for an already-resolved literal address."""
+    family = socket.AF_INET6 if ipaddress.ip_address(ip).version == 6 else socket.AF_INET
+    return ResolveResult(
+        hostname=hostname,
+        host=ip,
+        port=port,
+        family=family,
+        proto=socket.IPPROTO_TCP,
+        flags=socket.AI_NUMERICHOST,
+    )
+
+
+class PinnedResolver(AbstractResolver):
+    """DNS resolver that hands aiohttp only addresses the SSRF guard vetted.
+
+    Without this, the guard is a TOCTOU check: :meth:`AsyncScannerCore.
+    _assert_public_url` resolves a hostname, validates the addresses, and then
+    passes the *name* to aiohttp — which resolves it a second time when it opens
+    the socket. An attacker controlling the zone can answer the first lookup
+    with a public address and the second with ``127.0.0.1`` or
+    ``169.254.169.254`` (classic DNS rebinding), and the connection lands on the
+    internal endpoint the guard just rejected.
+
+    Pinning closes that window: every name already in the core's
+    ``_resolve_cache`` — i.e. every host the guard has vetted — resolves to
+    exactly the addresses that were checked, so the socket cannot be pointed
+    anywhere else. A name the guard never saw (the first hop of a scan, which is
+    supplied by the operator rather than the target) is resolved here, vetted
+    under the same policy, and cached so any later redirect to it reuses this
+    answer.
+
+    Only the address is pinned: the request keeps its original URL, so TLS SNI
+    and certificate hostname verification still run against the real name.
+    """
+
+    def __init__(self, core: "AsyncScannerCore") -> None:
+        self._core = core
+
+    async def resolve(self, host: str, port: int = 0,
+                      family: int = socket.AF_INET) -> list[ResolveResult]:
+        # An IP literal never went through DNS; validate it directly.
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            pass
+        else:
+            self._core._assert_ip_allowed(host, host)
+            return [_addrinfo(host, host, port)]
+
+        ips = await self._core._resolve_host(host)
+        if not ips:
+            raise SSRFRedirectError(f"Host {host!r} resolved to no addresses")
+        # Vet the whole resolution as one batch (not one address at a time):
+        # see _assert_ips_allowed for why a multi-address trusted host would
+        # otherwise reject its own second address.
+        self._core._assert_ips_allowed(ips, host)
+        return [_addrinfo(host, ip, port) for ip in sorted(ips)]
+
+    async def close(self) -> None:
+        return None
 
 
 @dataclass
@@ -85,6 +159,47 @@ class ScanConfig:
     # SSRF guard: when False, redirects whose target resolves to a non-public
     # IP are aborted with SSRFRedirectError.
     allow_private_redirects: bool = False
+    # aiohttp's default CookieJar silently drops cookies whose domain is a bare
+    # IP address (RFC 6265 §5.3). The testbed (and many internal targets) is
+    # reached by IP, so ``unsafe=True`` is the default here — authenticated
+    # scans of ``127.0.0.1:8443`` would otherwise never keep their JSESSIONID.
+    cookie_jar_unsafe: bool = True
+    # When True, the *initial* request URL is also run through the SSRF
+    # public-address check (the redirect chain is always checked). Off by
+    # default so ordinary GET scans of an explicitly-supplied target are
+    # unchanged; the advanced body/header/cookie vectors turn it on so a
+    # mutated request can never be aimed at an internal endpoint either.
+    assert_public_target: bool = False
+    # ---- resilience: bounded retries + per-host adaptive throttling ------
+    # All default to the pre-existing behaviour (no retries, no throttling)
+    # so unit tests and normal scans see zero change unless opted in.
+    #
+    # ``max_retries``: extra attempts after the first, applied only to a hard
+    # transport failure (status_code == 0 -- the exception path already
+    # collapses into that) or, when ``adaptive_throttle`` is on, to a 429/503
+    # response. 0 keeps the historical single-attempt behaviour.
+    max_retries: int = 0
+    retry_backoff_base: float = 0.5    # seconds, first retry's backoff floor
+    retry_backoff_max: float = 8.0     # seconds, backoff ceiling before jitter
+    # ``adaptive_throttle``: when a host answers 429/503, park *further*
+    # requests to that host behind a per-host cooldown (honouring
+    # ``Retry-After`` when present) instead of continuing to hammer it at the
+    # scan's normal pace. Cooldown decays back to zero on the host's next
+    # clean response. Scoped per-host so one throttled target never slows
+    # down a concurrent scan of other targets in a --target-list run.
+    adaptive_throttle: bool = False
+    throttle_backoff_max: float = 30.0  # seconds, per-host cooldown ceiling
+    # ---- adaptive concurrency control (Phase 2 real-time telemetry) ------
+    # Off by default: the fixed ``max_concurrency`` semaphore behaves exactly
+    # as before. When on, an AIMD governor (see core.telemetry_engine)
+    # shrinks/grows the concurrency ceiling in reaction to observed
+    # rate-limiting instead of hammering the target at a fixed pace for the
+    # whole scan.
+    adaptive_concurrency: bool = False
+    adaptive_concurrency_min: int = 2
+    adaptive_concurrency_window: int = 20
+    adaptive_concurrency_high_watermark: float = 0.2
+    adaptive_concurrency_low_watermark: float = 0.02
 
 
 class TokenBucket:
@@ -121,6 +236,75 @@ class TokenBucket:
                     return
                 wait = (amount - self._tokens) / self._rate
             await asyncio.sleep(wait)
+
+
+class HostBackoff:
+    """Per-host adaptive cooldown driven by 429/503 responses.
+
+    Deliberately separate from :class:`TokenBucket`: the token bucket paces
+    every request at a fixed, operator-chosen rate regardless of target
+    behaviour, while this reacts to what the *target* says (a rate-limit
+    response or a ``Retry-After`` header) and only throttles the host that
+    asked for it. A scan against a ``--target-list`` of several hosts keeps
+    its normal pace against the hosts that are not complaining.
+
+    ``penalize()`` returns the delay (seconds) the caller should wait before
+    the *next* request to this host; it does not sleep itself, so the wait
+    never holds a concurrency slot or the semaphore (same discipline as
+    :meth:`TokenBucket.acquire`). Backoff is exponential in the number of
+    consecutive throttle responses, capped at ``ceiling``, with full jitter
+    (uniform in ``[0, computed_delay]``) so many probes in flight against the
+    same host don't all resume in lockstep. ``Retry-After`` (seconds or an
+    HTTP-date) overrides the computed delay when present and larger.
+    """
+
+    def __init__(self, ceiling: float = 30.0, max_hosts: int = 4096) -> None:
+        self._ceiling = max(1.0, ceiling)
+        self._max_hosts = max(1, max_hosts)
+        self._state: dict[str, dict[str, float]] = {}
+
+    @staticmethod
+    def _parse_retry_after(value: str | None) -> float:
+        if not value:
+            return 0.0
+        value = value.strip()
+        if value.isdigit():
+            return float(value)
+        try:
+            from email.utils import parsedate_to_datetime
+            dt = parsedate_to_datetime(value)
+            if dt is None:
+                return 0.0
+            delta = dt.timestamp() - time.time()
+            return max(0.0, delta)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def penalize(self, host: str, *, retry_after: str | None = None) -> float:
+        """Record a throttle response for ``host``; returns the wait (s)."""
+        if host not in self._state and len(self._state) >= self._max_hosts:
+            self._state.clear()
+        entry = self._state.setdefault(host, {"level": 0.0, "until": 0.0})
+        entry["level"] = min(entry["level"] + 1.0, 10.0)
+        computed = min(self._ceiling, (2.0 ** entry["level"]) * 0.25)
+        delay = max(computed, self._parse_retry_after(retry_after))
+        delay = min(delay, self._ceiling)
+        entry["until"] = time.monotonic() + delay
+        return random.uniform(0.0, delay) if delay > 0 else 0.0
+
+    def relax(self, host: str) -> None:
+        """A clean response from ``host``: decay its cooldown level."""
+        entry = self._state.get(host)
+        if entry is not None and entry["level"] > 0:
+            entry["level"] = max(0.0, entry["level"] - 1.0)
+
+    async def wait_if_needed(self, host: str) -> None:
+        entry = self._state.get(host)
+        if entry is None:
+            return
+        remaining = entry["until"] - time.monotonic()
+        if remaining > 0:
+            await asyncio.sleep(remaining)
 
 
 async def worker_pool(
@@ -216,7 +400,10 @@ class AsyncResponseCache:
             self._normalize_mapping(headers),
             self._normalize_mapping(cookies),
         ))
-        return hashlib.md5(key_data.encode()).hexdigest()
+        # SHA-256 (not MD5): the key derives from attacker-influenced URLs and
+        # header/cookie values, so a collision-resistant digest keeps a crafted
+        # request from shadowing an unrelated cached response.
+        return hashlib.sha256(key_data.encode()).hexdigest()
 
     def get(self, url: str, method: str, data: Any = None,
             headers: Any = None, cookies: Any = None) -> dict | None:
@@ -229,7 +416,7 @@ class AsyncResponseCache:
         return None
 
     def put(self, url: str, method: str, data: Any, response_data: dict,
-            headers: Any = None, cookies: Any = None):
+            headers: Any = None, cookies: Any = None) -> None:
         if len(self.cache) >= self.max_size:
             self._evict_old_entries()
 
@@ -237,17 +424,17 @@ class AsyncResponseCache:
         self.cache[key] = response_data
         self.access_times[key] = time.time()
 
-    def _remove(self, key):
-        if key in self.cache:
-            del self.cache[key]
-        if key in self.access_times:
-            del self.access_times[key]
+    def _remove(self, key: str) -> None:
+        self.cache.pop(key, None)
+        self.access_times.pop(key, None)
 
-    def _evict_old_entries(self):
+    def _evict_old_entries(self) -> None:
         if not self.access_times:
             return
         sorted_keys = sorted(self.access_times.items(), key=lambda x: x[1])
-        to_remove = int(len(sorted_keys) * 0.25)
+        # Always evict at least one entry: with a very small ``max_size`` the
+        # 25% batch would round down to 0 and the cache would grow unbounded.
+        to_remove = max(1, int(len(sorted_keys) * 0.25))
         for key, _ in sorted_keys[:to_remove]:
             self._remove(key)
 
@@ -264,17 +451,68 @@ class AsyncScannerCore:
         self.config = config
         self.session: aiohttp.ClientSession | None = None
         self.cache = AsyncResponseCache()
-        # Bounds requests actually in flight.
-        self._semaphore = asyncio.Semaphore(config.max_concurrency)
+        # Real-time request telemetry (latency/jitter/retries/throttle
+        # detection, per host and per operational phase) -- always on,
+        # in-memory only, and cheap (see core.telemetry_engine). Feeds the
+        # enriched JSON report and, when adaptive_concurrency is on, the
+        # AIMD governor below.
+        self.telemetry_engine = TelemetryEngine()
+        # Bounds requests actually in flight. A fixed asyncio.Semaphore unless
+        # --adaptive-concurrency opts into the AIMD-governed resizable one.
+        self._concurrency_controller: AdaptiveConcurrencyController | None = None
+        if config.adaptive_concurrency:
+            self._concurrency_controller = AdaptiveConcurrencyController(
+                initial=config.max_concurrency,
+                minimum=config.adaptive_concurrency_min,
+                maximum=config.max_concurrency,
+                window=config.adaptive_concurrency_window,
+                high_watermark=config.adaptive_concurrency_high_watermark,
+                low_watermark=config.adaptive_concurrency_low_watermark,
+                telemetry=self.telemetry_engine,
+            )
+            self._semaphore: Any = self._concurrency_controller.semaphore
+        else:
+            self._semaphore = asyncio.Semaphore(config.max_concurrency)
         # Global request pacing, decoupled from the concurrency slot.
         self._rate_bucket: TokenBucket | None = None
         if config.rate_limit and config.rate_limit > 0:
             self._rate_bucket = TokenBucket(
                 rate=1.0 / config.rate_limit, capacity=config.rate_burst
             )
+        # Per-host 429/503 cooldown (see class docstring). Created unconditionally
+        # (cheap, empty dict) but only ever populated/consulted when
+        # ``config.adaptive_throttle`` is set, so it is a no-op otherwise.
+        self._host_backoff = HostBackoff(
+            ceiling=config.throttle_backoff_max, max_hosts=_MAX_BACKOFF_HOSTS
+        )
         self._logger = logging.getLogger(__name__)
-        # host -> {ip, ...}; avoids re-resolving on every redirect check.
-        self._resolve_cache: dict[str, set] = {}
+        # host -> {ip, ...}; avoids re-resolving on every redirect check AND
+        # pins the addresses handed to aiohttp (see PinnedResolver).
+        self._resolve_cache: dict[str, set[str]] = {}
+        # Hostnames supplied by the operator / crawler as a request target
+        # (rather than by a redirect the *target* chose). Scanning an internal
+        # host you own is legitimate, so these keep the historical policy: a
+        # private address is allowed unless ``assert_public_target`` is set.
+        self._trusted_hosts: set[str] = set()
+        # host -> the exact private/loopback/... address set vetted the FIRST
+        # time that host resolved to one. Being in ``_trusted_hosts`` only
+        # grants an exemption from the public-address policy at all; it does
+        # not by itself say WHICH address is legitimate. Pinning closes that:
+        # once "intranet.local" is seen to resolve to 10.0.0.5, a later
+        # resolution of the same hostname to a *different* private address
+        # (DNS rebinding after cache eviction, or a redirect from an unrelated
+        # target reusing the same alias mid-scan — see THREATS_TO_VALIDITY_SSRF
+        # N1) is refused instead of silently inheriting the old trust.
+        self._trusted_host_ips: dict[str, frozenset[str]] = {}
+        # Endpoints (scheme://netloc/path) already given a warm-up burst, so a
+        # per-point warm-up call from a tester and the orchestrator's per-target
+        # pre-warm never double-fire against the same endpoint.
+        self._warmed_endpoints: set[str] = set()
+        # Authenticated-scan state (see core.session_async). ``_auth_headers``
+        # (e.g. a bearer token) is merged into every outgoing request; session
+        # cookies live in the aiohttp jar and are attached automatically.
+        self._session_manager: Any = None
+        self._auth_headers: dict[str, str] = {}
         # One-shot guard so the "TLS verification disabled" warning is logged
         # once per scanner, not once per connector rebuild.
         self._ssl_notice_emitted = False
@@ -319,6 +557,13 @@ class AsyncScannerCore:
         SOCKS support is optional: it needs the ``aiohttp_socks`` package. HTTP
         proxying does not go through the connector (it rides on the per-request
         ``proxy=`` kwarg), so this only special-cases socks URLs.
+
+        The TCP connector resolves through :class:`PinnedResolver` so the socket
+        can only be opened to an address the SSRF guard already vetted. Under a
+        proxy the scanner never resolves the target itself (the proxy does), so
+        pinning would only mis-apply the target policy to the proxy's own
+        address — the URL-level guard still runs, but the resolver is left
+        alone.
         """
         if self._is_socks_proxy():
             try:
@@ -332,9 +577,11 @@ class AsyncScannerCore:
                 self.config.proxy, ssl=self._ssl_param(),
                 limit=self.config.max_concurrency,
             )
+        resolver = None if self.config.proxy else PinnedResolver(self)
         return aiohttp.TCPConnector(
             limit=self.config.max_concurrency,
             ssl=self._ssl_param(),
+            resolver=resolver,
         )
 
     async def start(self):
@@ -344,7 +591,26 @@ class AsyncScannerCore:
             headers = dict(self.config.headers)
             if self.config.user_agent:
                 headers.setdefault("User-Agent", self.config.user_agent)
-            self.session = aiohttp.ClientSession(connector=connector, headers=headers)
+            # Explicit cookie jar so form-login / static session cookies persist
+            # across the whole scan and auto-attach to every probe.
+            self.session = aiohttp.ClientSession(
+                connector=connector, headers=headers,
+                cookie_jar=aiohttp.CookieJar(unsafe=self.config.cookie_jar_unsafe),
+            )
+
+    # ---- authenticated-session hooks --------------------------------
+
+    def attach_session_manager(self, manager: Any) -> None:
+        """Register a :class:`~...core.session_async.SessionManager` for
+        transparent mid-scan re-authentication."""
+        self._session_manager = manager
+
+    def set_auth_header(self, name: str, value: str) -> None:
+        """Persist a header (e.g. ``Authorization: Bearer …``) on every request."""
+        self._auth_headers[str(name)] = str(value)
+
+    def clear_auth_header(self, name: str) -> None:
+        self._auth_headers.pop(str(name), None)
 
     async def close(self):
         """Close the aiohttp session (idempotent)."""
@@ -353,6 +619,23 @@ class AsyncScannerCore:
             await session.close()
             # Let underlying transports (esp. TLS) finish closing.
             await asyncio.sleep(0)
+
+    def set_max_concurrency(self, value: int) -> None:
+        """Rebuild the concurrency gate for a new ceiling (e.g. a profile
+        switch), preserving adaptive-concurrency mode if it was enabled.
+
+        Replaces the previous pattern of the orchestrator reassigning
+        ``core._semaphore`` directly, which would silently downgrade an
+        adaptive-concurrency scan back to a fixed ``asyncio.Semaphore``.
+        """
+        value = max(1, int(value))
+        self.config.max_concurrency = value
+        if self._concurrency_controller is not None:
+            self._concurrency_controller.maximum = value
+            self._concurrency_controller.semaphore.resize(value)
+            self._semaphore = self._concurrency_controller.semaphore
+        else:
+            self._semaphore = asyncio.Semaphore(value)
 
     # ---- worker pool passthrough ---------------------------------------
 
@@ -383,15 +666,85 @@ class AsyncScannerCore:
             return True  # unparseable -> treat as unsafe
         return any(getattr(ip, pred, False) for pred in _BLOCKED_IP_PREDICATES)
 
-    async def _resolve_host(self, host: str) -> set:
-        if host in self._resolve_cache:
-            return self._resolve_cache[host]
+    def _assert_ip_allowed(self, ip: str, host: str) -> None:
+        """Connection-time policy check for one resolved address.
+
+        Thin wrapper around :meth:`_assert_ips_allowed` for the single-address
+        case (an IP literal in the URL, where ``host == ip`` and no alias
+        confusion is possible). Resolutions that can yield more than one
+        address (a real hostname lookup) must go through
+        :meth:`_assert_ips_allowed` instead, so the whole batch is vetted
+        atomically — see its docstring for why.
+        """
+        self._assert_ips_allowed({ip}, host)
+
+    def _assert_ips_allowed(self, ips: Iterable[str], host: str) -> None:
+        """Connection-time policy check for every address one resolution of
+        ``host`` produced.
+
+        Enforced by :class:`PinnedResolver` on every socket the scanner opens,
+        which is what makes the guard TOCTOU-proof rather than advisory. A
+        private/loopback/link-local/... address is refused unless the operator
+        opted in globally (``allow_private_redirects``) or ``host`` is one
+        *they* pointed the scanner at (``_trusted_hosts``) — a target-chosen
+        redirect never qualifies.
+
+        Being in ``_trusted_hosts`` only grants the exemption in principle; it
+        does not say which address is the legitimate one. The first time a
+        trusted host resolves to a blocked address, that exact address set is
+        pinned (``_trusted_host_ips``); every later resolution of the same
+        hostname must match it. A later resolution that disagrees — the zone
+        rebinds after the DNS cache entry is evicted, or an unrelated redirect
+        elsewhere in a multi-target scan happens to reuse the same alias — is
+        refused instead of silently inheriting trust from the hostname alone.
+        This is what keeps a scan of one intranet target from becoming a
+        standing exemption for anything that later answers to the same name.
+
+        All addresses from one resolution are checked together (not one at a
+        time) so that a host with several trusted addresses — dual-stack, or
+        multiple A records for the same authorized target — pins its whole
+        first-seen set instead of rejecting its own second address as an
+        "unexpected" one.
+        """
+        blocked = {ip for ip in ips if self._ip_is_blocked(ip)}
+        if not blocked or self.config.allow_private_redirects:
+            return
+        if self.config.assert_public_target or host not in self._trusted_hosts:
+            raise SSRFRedirectError(
+                f"Refusing to connect to {host!r}: resolves to non-public "
+                f"address(es) {sorted(blocked)}"
+            )
+        pinned = self._trusted_host_ips.get(host)
+        if pinned is None:
+            # First blocked resolution ever seen for this operator-designated
+            # host: this *is* the intranet target — pin exactly these addresses.
+            self._trusted_host_ips[host] = frozenset(blocked)
+            return
+        rogue = blocked - pinned
+        if rogue:
+            raise SSRFRedirectError(
+                f"Refusing to connect to {host!r}: address(es) {sorted(rogue)} "
+                f"do not match the address(es) {sorted(pinned)} originally "
+                "vetted for this trusted host (possible DNS rebinding or "
+                "cross-target alias reuse)"
+            )
+
+    async def _resolve_host(self, host: str) -> set[str]:
+        """Resolve ``host`` once and memoise it, so the address the SSRF guard
+        vetted is the same one :class:`PinnedResolver` later hands the socket."""
+        cached = self._resolve_cache.get(host)
+        if cached is not None:
+            return cached
         loop = asyncio.get_running_loop()
         try:
             infos = await loop.getaddrinfo(host, None, type=socket.SOCK_STREAM)
         except socket.gaierror as e:
-            raise SSRFRedirectError(f"Cannot resolve redirect host {host!r}: {e}") from e
-        ips = {info[4][0] for info in infos}
+            raise SSRFRedirectError(f"Cannot resolve host {host!r}: {e}") from e
+        ips = {str(info[4][0]) for info in infos}
+        # Bounded FIFO: dicts preserve insertion order, so the oldest entries go
+        # first. An evicted host is simply resolved (and re-vetted) again.
+        while len(self._resolve_cache) >= _MAX_RESOLVE_CACHE:
+            self._resolve_cache.pop(next(iter(self._resolve_cache)))
         self._resolve_cache[host] = ips
         return ips
 
@@ -418,7 +771,9 @@ class AsyncScannerCore:
 
     # ---- safe body reading -----------------------------------------
 
-    async def _safe_read(self, response: "aiohttp.ClientResponse") -> tuple:
+    async def _safe_read(
+        self, response: "aiohttp.ClientResponse"
+    ) -> tuple[str, bool, int]:
         """
         Read a response body defensively.
 
@@ -456,6 +811,54 @@ class AsyncScannerCore:
         text = body.decode(encoding or "utf-8", errors="ignore")
         return text, truncated, total
 
+    # ---- warm-up ---------------------------------------------------
+
+    @staticmethod
+    def _endpoint_key(url: str) -> str:
+        """Endpoint identity for warm-up dedup: scheme://netloc/path (no query)."""
+        parts = urllib.parse.urlsplit(url)
+        return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+    async def warmup(self, url: str, n: int, *, method: str = "GET",
+                     **kwargs: Any) -> int:
+        """Fire up to ``n`` discard requests at ``url`` to prime the server.
+
+        Mitigates JVM JIT warm-up bias on the OWASP Benchmark testbed: the first
+        hits to a cold endpoint run interpreted bytecode and are far slower than
+        steady state, which inflates and destabilises any latency baseline
+        captured straight after. These requests go through :meth:`request`
+        (``use_cache=False``), so the **token bucket, concurrency semaphore and
+        SSRF guard all still apply**; their responses are discarded and no
+        telemetry row is emitted.
+
+        Idempotent per endpoint (``scheme://netloc/path``) — a second call for
+        the same endpoint (e.g. from a different tester) is a no-op and returns
+        ``0``. Stops early on the first hard transport failure
+        (``status_code == 0``); propagates :class:`SSRFRedirectError` and
+        :class:`asyncio.CancelledError` untouched. Returns the number issued.
+        """
+        if n <= 0:
+            return 0
+        key = self._endpoint_key(url)
+        if key in self._warmed_endpoints:
+            return 0
+        if len(self._warmed_endpoints) >= _MAX_WARMED_ENDPOINTS:
+            # Bounded: at worst an old endpoint gets warmed a second time.
+            self._warmed_endpoints.clear()
+        self._warmed_endpoints.add(key)
+        issued = 0
+        for _ in range(n):
+            try:
+                resp = await self.request(method, url, use_cache=False, **kwargs)
+            except asyncio.CancelledError:
+                raise
+            except SSRFRedirectError:
+                raise
+            issued += 1
+            if not resp or resp.get("status_code", 0) == 0:
+                break
+        return issued
+
     # ---- request -----------------------------------------------------
 
     async def request(self, method: str, url: str, *,
@@ -483,7 +886,21 @@ class AsyncScannerCore:
             await self.start()
 
         follow_redirects = kwargs.pop("allow_redirects", True)
-        caller_headers = kwargs.pop("headers", None)
+        caller_headers_original = kwargs.pop("headers", None)
+        # Internal guard: a request replayed once after a transparent re-auth.
+        reauth_retry = kwargs.pop("_reauth_retry", False)
+
+        # Attach persistent auth headers (bearer token). Merged into
+        # ``caller_headers`` so the existing cross-host redirect scrubbing drops
+        # them at an origin boundary just like an injected header. Session
+        # cookies are handled per-domain by the aiohttp jar and need nothing
+        # here. An explicit caller header of the same name still wins.
+        if self._auth_headers:
+            caller_headers = dict(self._auth_headers)
+            if caller_headers_original:
+                caller_headers.update(caller_headers_original)
+        else:
+            caller_headers = caller_headers_original
 
         data = kwargs.get("data") or kwargs.get("json")
         cookies = kwargs.get("cookies")
@@ -492,27 +909,41 @@ class AsyncScannerCore:
             if cached:
                 return cached
 
+        # This URL was chosen by the operator / crawler, not by a redirect the
+        # target served, so PinnedResolver may let it resolve to a private
+        # address (scanning your own intranet is legitimate). Recorded before
+        # the pre-flight check so ``assert_public_target`` still overrides it.
+        first_hop_host = urllib.parse.urlparse(url).hostname
+        if first_hop_host:
+            self._trusted_hosts.add(first_hop_host)
+
+        # Optional pre-flight SSRF check on the first hop (redirects are always
+        # checked below). Applies identically to GET/POST/JSON/header/cookie
+        # probes — the mutated request never leaves before this passes.
+        if self.config.assert_public_target and not self.config.allow_private_redirects:
+            await self._assert_public_url(url)
+
         # Rate gate BEFORE taking a concurrency slot: waiting for a token must
-        # not hold a semaphore permit (that serialised everything before).
+        # not hold a semaphore permit (that serialised everything before). This
+        # gate and the semaphore below wrap EVERY request regardless of method
+        # or injection vector.
         if self._rate_bucket is not None:
             await self._rate_bucket.acquire()
 
-        try:
-            async with self._semaphore:
-                result = await self._request_following(
-                    method, url, follow_redirects, caller_headers, kwargs
+        result = await self._request_with_resilience(
+            method, url, follow_redirects, caller_headers, kwargs, first_hop_host,
+        )
+
+        # Transparent re-authentication: if the response looks logged-out and a
+        # session manager is attached, re-login once (rate-limited by the
+        # manager's cooldown) and replay this exact request a single time.
+        if (not reauth_retry and self._session_manager is not None
+                and self._session_manager.looks_logged_out(result)):
+            if await self._session_manager.maybe_reauth(self, result):
+                return await self.request(
+                    method, url, use_cache=False, allow_redirects=follow_redirects,
+                    headers=caller_headers_original, _reauth_retry=True, **kwargs,
                 )
-        except asyncio.CancelledError:
-            raise
-        except SSRFRedirectError:
-            raise
-        except Exception as e:
-            self._logger.debug(f"Request failed: {url} - {e}")
-            self._warn_if_tls_verification_error(e)
-            return {
-                "status_code": 0, "text": "", "headers": {},
-                "url": url, "elapsed": 0.0, "truncated": False, "error": str(e),
-            }
 
         if use_cache and method.upper() == "GET" and result.get("status_code") == 200:
             self.cache.put(url, method, data, result, caller_headers, cookies)
@@ -548,6 +979,91 @@ class AsyncScannerCore:
             cause = cause.__cause__ or cause.__context__
             seen += 1
 
+    async def _request_with_resilience(
+        self, method: str, url: str, follow_redirects: bool,
+        caller_headers: dict[str, str] | None, kwargs: dict[str, Any],
+        host: str | None,
+    ) -> dict[str, Any]:
+        """Issue one logical request with bounded retries and host cooldown.
+
+        With the defaults (``max_retries=0``, ``adaptive_throttle=False``)
+        this is exactly the old single-attempt try/except -> ``status_code=0``
+        behaviour, just factored out. Opting in changes two things:
+
+        - a hard transport failure (exception, or a redirect chain that
+          collapses to ``status_code=0``) is retried up to ``max_retries``
+          times with exponential backoff + full jitter, each wait sleeping
+          *outside* the semaphore so a backing-off probe never occupies a
+          concurrency slot other probes (to other endpoints) could use;
+        - with ``adaptive_throttle`` on, a 429/503 also counts as retryable
+          and additionally parks *every future* request to this host behind
+          a per-host cooldown (:class:`HostBackoff`) honouring ``Retry-After``
+          when the target sends one. A clean response decays that cooldown.
+
+        Never retries :class:`SSRFRedirectError` or ``CancelledError`` --
+        those propagate immediately, same as before.
+        """
+        attempts = max(1, self.config.max_retries + 1)
+        throttle_on = self.config.adaptive_throttle and host is not None
+        result: dict[str, Any] = {}
+        for attempt in range(attempts):
+            if throttle_on and host is not None:
+                await self._host_backoff.wait_if_needed(host)
+            try:
+                async with self._semaphore:
+                    result = await self._request_following(
+                        method, url, follow_redirects, caller_headers, kwargs
+                    )
+            except asyncio.CancelledError:
+                raise
+            except SSRFRedirectError:
+                raise
+            except Exception as e:
+                self._logger.debug(f"Request failed: {url} - {e}")
+                self._warn_if_tls_verification_error(e)
+                result = {
+                    "status_code": 0, "text": "", "headers": {},
+                    "url": url, "elapsed": 0.0, "truncated": False, "error": str(e),
+                }
+
+            status = result.get("status_code", 0)
+            throttled = bool(throttle_on and status in (429, 503))
+            transient = status == 0
+
+            # Real-time telemetry: record every raw attempt (including
+            # retries the tester layer never sees), tagged with whichever
+            # operational phase the orchestrator last set. Independent of
+            # ``adaptive_throttle`` -- rate-limit detection here is always on.
+            diag = self.telemetry_engine.record_request(
+                host or "unknown", float(result.get("elapsed", 0.0) or 0.0),
+                status, retried=attempt > 0,
+            )
+            if self._concurrency_controller is not None:
+                self._concurrency_controller.on_outcome(
+                    throttled=diag["rate_limited"], transient=transient,
+                )
+
+            host_delay = 0.0
+            if throttle_on and host is not None:
+                if throttled:
+                    host_delay = self._host_backoff.penalize(
+                        host, retry_after=result.get("headers", {}).get("Retry-After"),
+                    )
+                elif status != 0:
+                    self._host_backoff.relax(host)
+
+            if not (throttled or transient) or attempt == attempts - 1:
+                return result
+
+            if throttled:
+                delay = host_delay
+            else:
+                base = self.config.retry_backoff_base * (2 ** attempt)
+                delay = random.uniform(0.0, min(base, self.config.retry_backoff_max))
+            if delay > 0:
+                await asyncio.sleep(delay)
+        return result
+
     async def _request_following(
         self, method: str, url: str, follow_redirects: bool,
         caller_headers: dict[str, str] | None, kwargs: dict[str, Any],
@@ -560,9 +1076,17 @@ class AsyncScannerCore:
         )
         current_method = method
         current_url = url
+        origin_host = urllib.parse.urlparse(url).hostname
         redirects = 0
         started = time.monotonic()
-        assert self.session is not None  # started by AsyncScannerCore.start()
+        # Not `assert`: this invariant must hold even under `python -O`, where
+        # assertions are stripped and a None session would surface as an opaque
+        # AttributeError deep inside the redirect loop.
+        if self.session is None:
+            raise RuntimeError(
+                "HTTP session not initialised; call AsyncScannerCore.start() "
+                "(or use the async context manager) before issuing requests"
+            )
 
         # An http(s):// proxy rides on the per-request kwarg; a socks proxy is
         # already baked into the connector, so it must not be passed here.
@@ -592,6 +1116,18 @@ class AsyncScannerCore:
                 next_url = urllib.parse.urljoin(current_url, location)
                 if not self.config.allow_private_redirects:
                     await self._assert_public_url(next_url)
+                # Do not carry injected/session material across an origin
+                # boundary: a payload placed in a request header or a session
+                # cookie must not be replayed to a third-party host the target
+                # redirected us to.
+                if urllib.parse.urlparse(next_url).hostname != origin_host:
+                    if caller_headers or kwargs.get("cookies"):
+                        self._logger.debug(
+                            "Cross-host redirect %s -> %s: dropping injected "
+                            "headers/cookies", current_url, next_url,
+                        )
+                    caller_headers = None
+                    kwargs.pop("cookies", None)
                 redirects += 1
                 # 303 always -> GET; 301/302 -> GET for non-idempotent methods
                 # (matches how browsers and requests behave).

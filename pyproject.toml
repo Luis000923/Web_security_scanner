@@ -18,53 +18,77 @@ dependencies = [
     "colorama>=0.4.0",
     "pyyaml>=6.0",
     "dnspython>=2.3.0",
+    "reportlab>=4.0",
 ]
 
 [project.optional-dependencies]
 browser = [
     "playwright>=1.40",
 ]
-experiments = [
-    "rich>=13.0",
+# Agentic AI subsystem (ai_module/). The LLM triage agent is OFF by default in
+# the scanner and is enabled per-run with ``--enable-ai-triaging``. Only the
+# lightweight client + structured-decoding layer is needed to *use* a remote
+# OpenAI-compatible inference endpoint:
+#   uv pip install -e ".[ai]"
+ai = [
+    "aiohttp>=3.8.0",
+    "pydantic>=2.0",
+]
+# Local constrained decoding / in-process transformers backend (heavy, GPU):
+#   uv pip install -e ".[ai,ai-local]"
+ai-local = [
+    "torch>=2.6.0",
+    "transformers>=4.48.0",
+    "outlines>=0.1.0",
 ]
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "black",
     "mypy",
     "ruff",
+    "bandit",
     "jsonschema>=4.20",
+    # ai_module.structured_inference imports pydantic at module scope, so the
+    # AI triage test suites cannot even be collected without it.
+    "pydantic>=2.0",
 ]
 
 [dependency-groups]
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "black",
     "mypy",
     "ruff",
+    "bandit",
     "jsonschema>=4.20",
+    "pydantic>=2.0",
 ]
 
 [project.scripts]
 webscanner = "web_security_scanner.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["web_security_scanner*"]
+include = ["web_security_scanner*", "ai_module*"]
 
 [tool.setuptools.package-data]
 "web_security_scanner.PAYLOAD" = ["*.json", "data/*.json"]
 "web_security_scanner.wordlists" = ["*.json"]
+"ai_module.prompts" = ["*.md", "*.txt"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = [".", "tests"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-extend-exclude = ["Documentacion", "web_security_scanner/reports", "tools", "testbed", "metrics", "runs", "paper"]
+extend-exclude = ["Documentacion", "web_security_scanner/reports"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
@@ -72,9 +96,10 @@ ignore = ["E501", "B008"]
 
 [tool.mypy]
 python_version = "3.10"
-files = ["web_security_scanner"]
+files = ["web_security_scanner", "ai_module"]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = false
 warn_redundant_casts = true
 no_implicit_optional = true
+check_untyped_defs = true

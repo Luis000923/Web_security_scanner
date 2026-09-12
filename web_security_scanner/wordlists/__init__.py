@@ -18,6 +18,7 @@ WORDLIST_DIR = Path(__file__).resolve().parent
 _KNOWN = {
     "subdomains": WORDLIST_DIR / "subdomains.json",
     "directories": WORDLIST_DIR / "directories.json",
+    "sensitive_files": WORDLIST_DIR / "sensitive_files.json",
 }
 
 

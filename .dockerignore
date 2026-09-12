@@ -1,0 +1,44 @@
+# Keep the Artifact Evaluation image build context small and the build
+# reproducible: exclude the host's own virtualenv/git history plus every
+# local, gitignored, multi-GB working artifact that must NOT leak into the
+# image (raw per-run telemetry, model checkpoints, LaTeX build output).
+# testbed/experiment_results.csv and testbed/ground_truth.json are tracked
+# by git and are NOT excluded — they are exactly what tools/analyze_results.py
+# needs to reproduce the paper's reported numbers.
+
+.git/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Gitignored local experiment output — not part of the artifact.
+testbed/results/
+testbed/analysis/
+testbed/.cache/
+
+# Paper / LaTeX build output and QLoRA training runs — unrelated to running
+# the test suite and the statistical analysis.
+paper/build/
+paper/*.aux
+paper/*.log
+paper/*.blg
+paper/*.out
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.synctex.gz
+paper/*.run.xml
+runs/
+metrics/
+Documentacion/
+docs_context/
+
+Dockerfile
+.dockerignore

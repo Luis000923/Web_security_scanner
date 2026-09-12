@@ -8,6 +8,7 @@ target-URL validation lives now.
 
 import ipaddress
 import re
+from typing import Any
 from urllib.parse import urlparse
 
 # Scheme + host must be present; only HTTP(S) targets are supported.
@@ -43,7 +44,7 @@ _SECRET_PATTERNS = (
 )
 
 
-def mask_secrets(text):
+def mask_secrets(text: Any) -> Any:
     """Redact common secrets (Bearer tokens, cookies, JWTs) from ``text``.
 
     Accepts any value; non-strings are returned untouched (callers that want a

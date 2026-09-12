@@ -24,6 +24,11 @@ confirmation heuristics have run):
 
 ``vector`` is one of getparam / formparam / jsonparam / header / cookie — the
 transport the payload was injected through (Phase 1 multi-vector support).
+``method`` is the HTTP verb actually used (POST for the body vectors, GET
+otherwise). ``param`` is the mutated field name: a query/form key, a header or
+cookie name, or — for ``jsonparam`` — the dotted path to the JSON leaf that was
+overwritten (e.g. ``account.roles.0``). The row schema itself is unchanged, so
+existing JSONL consumers keep working across the multi-vector extension.
 
 ``request_index`` is a 1-based counter over every probe recorded in the run
 (the "request number within the budget"). ``timestamp`` is ISO-8601 UTC.

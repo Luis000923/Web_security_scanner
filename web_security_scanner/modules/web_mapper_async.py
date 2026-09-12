@@ -1,10 +1,8 @@
 import asyncio
-import html
 import logging
 import random
 import re
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
@@ -14,6 +12,7 @@ from ..events.event_emitter import ScanEventType
 from .recon import (
     AsyncRobotsPolicy,
     ScopeEngine,
+    evaluate_url_for_trap,
     extract_js_endpoints,
     parse_sitemap,
 )
@@ -71,6 +70,10 @@ class WebMapperAsync:
         # Set when a hard limit (max_urls / signature cap) aborts the crawl early
         # so callers can report "partial map".
         self.limit_reached = False
+        # Branches discarded by the structural spider-trap heuristic (cyclic
+        # paths / repeated segments / high-entropy tokens / repetitive query
+        # params) - proactive, unlike the reactive numeric caps above.
+        self.trap_branches_pruned = 0
         self._signature_counts: dict[Any, int] = {}
         self.base_domain: str = ""
         self._scope: ScopeEngine | None = None
@@ -347,6 +350,15 @@ class WebMapperAsync:
         if not self._is_internal(urlparse(url_clean).netloc):
             return
 
+        trap = evaluate_url_for_trap(url_clean)
+        if trap.is_trap:
+            self.trap_branches_pruned += 1
+            self.logger.warning(
+                f"Spider-trap heuristic ({trap.reason}): discarding branch at "
+                f"{url_clean}"
+            )
+            return
+
         signature = self._signature(url_clean)
         seen = self._signature_counts.get(signature, 0)
         if seen >= self.MAX_URLS_PER_SIGNATURE:
@@ -515,6 +527,41 @@ class WebMapperAsync:
 
         return targets[:max_targets]
 
+    def get_all_candidate_urls(self, base_url: str) -> list[str]:
+        """Every discovered URL, for attack-surface correlation (Phase 5).
+
+        Same structural-signature dedup as :meth:`get_scan_targets` (so a
+        ``?id=`` / ``/page/N`` trap still only contributes one representative
+        URL), but *without* the "must carry a query parameter" filter that
+        method applies before adding a plain crawled page - a parameterless
+        admin panel, upload form or sensitive file is a legitimate discovery
+        that :class:`~web_security_scanner.modules.recon.SurfaceCorrelator`
+        needs to see and score, even though it carries no injectable query
+        string of its own. Uncapped; the caller (``ReconEngine``) ranks the
+        result by Risk/Value score and caps the *tester* queue itself.
+        """
+        candidates: list[str] = [base_url]
+        seen_sig = {self._signature(self._normalize_url(base_url))}
+
+        def _add(candidate: str) -> None:
+            norm = self._normalize_url(candidate)
+            sig = self._signature(norm)
+            if sig in seen_sig or norm in candidates:
+                return
+            seen_sig.add(sig)
+            candidates.append(norm)
+
+        for url in sorted(self.discovered_params):
+            _add(url)
+        for url in sorted(self.js_endpoints):
+            _add(url)
+        for url in sorted(self.sitemap_urls):
+            _add(url)
+        for url in sorted(self.visited_urls):
+            _add(url)
+
+        return candidates
+
     def _add_to_structure(self, parsed_url):
         domain = parsed_url.netloc
         path = parsed_url.path
@@ -553,88 +600,6 @@ class WebMapperAsync:
             'total_sitemap_urls': len(self.sitemap_urls),
             'total_technologies': sum(len(t) for t in self.technologies.values()),
             'total_vulnerabilities': len(self.vulnerabilities),
+            'trap_branches_pruned': self.trap_branches_pruned,
         }
 
-    def generate_map(self, map_data: dict[str, Any], output_path: str | None = None) -> str:
-        """Generate an interactive-ish HTML map and return its path."""
-        if not output_path:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            output_dir = Path('reports')
-            output_dir.mkdir(exist_ok=True)
-            output_path = str(output_dir / f'web_map_{timestamp}.html')
-
-        self.logger.info(f"Generating HTML map: {output_path}")
-        html_content = self._generate_html(map_data)
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        self.logger.info(f"HTML map generated: {output_path}")
-        return str(output_path)
-
-    async def generate_map_async(self, map_data: dict[str, Any], output_path: str | None = None) -> str:
-        """
-        Non-blocking wrapper around :meth:`generate_map`.
-
-        HTML rendering + disk write are pushed to a worker thread so the event
-        loop optimised in Phase 2 is never blocked on synchronous file I/O.
-        """
-        return await asyncio.to_thread(self.generate_map, map_data, output_path)
-
-    def _generate_html(self, data: dict[str, Any]) -> str:
-        def e(value: Any) -> str:
-            # Escape (with quoting) every crawled value so a hostile page can't
-            # smuggle working markup/JS into the map report a human opens.
-            return html.escape(str(value), quote=True)
-
-        urls_html = '<ul>' + ''.join(
-            f'<li><a href="{e(u)}" target="_blank" rel="noopener noreferrer">{e(u)}</a></li>'
-            for u in sorted(self.visited_urls)
-        ) + '</ul>'
-        subs = data.get('subdomains', [])
-        subs_html = ('<ul>' + ''.join(f'<li>{e(s)}</li>' for s in subs) + '</ul>') if subs else '<p>None found.</p>'
-        js_eps = data.get('js_endpoints', [])
-        js_html = ('<ul>' + ''.join(f'<li>{e(j)}</li>' for j in js_eps) + '</ul>') if js_eps else '<p>None found.</p>'
-        techs = data.get('technologies', {})
-        techs_html = ('<ul>' + ''.join(
-            f'<li><b>{e(d)}:</b> {e(", ".join(t["name"] for t in ts))}</li>' for d, ts in techs.items()
-        ) + '</ul>') if techs else '<p>None detected.</p>'
-        vulns = data.get('vulnerabilities', [])
-        vulns_html = ('<ul>' + ''.join(
-            f'<li><b>{e(v.get("type", v.get("name", "Unknown")))}:</b> {e(v.get("url", ""))}'
-            f'<br><i>Payload: {e(v.get("payload", "N/A"))}</i></li>' for v in vulns
-        ) + '</ul>') if vulns else '<p>None found.</p>'
-
-        return f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Web Map - {e(data['base_domain'])}</title>
-</head>
-<body>
-    <h1>Website Map</h1>
-    <p><b>Domain:</b> {e(data['base_domain'])}</p>
-    <p><b>Date:</b> {e(data['scan_timestamp'])}</p>
-    <hr>
-    <h2>Statistics</h2>
-    <p>URLs found: {len(self.visited_urls)}</p>
-    <p>Subdomains: {len(subs)}</p>
-    <p>JS endpoints: {len(js_eps)}</p>
-    <p>Vulnerabilities: {len(vulns)}</p>
-    <hr>
-    <h2>Discovered URLs</h2>
-    {urls_html}
-    <hr>
-    <h2>Subdomains</h2>
-    {subs_html}
-    <hr>
-    <h2>JavaScript endpoints</h2>
-    {js_html}
-    <hr>
-    <h2>Technologies</h2>
-    {techs_html}
-    <hr>
-    <h2>Vulnerabilities</h2>
-    {vulns_html}
-    <hr>
-    <p><i>Generated by Web Security Scanner</i></p>
-</body>
-</html>"""

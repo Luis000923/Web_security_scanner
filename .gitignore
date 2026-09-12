@@ -34,6 +34,9 @@ testbed/results/
 testbed/analysis/
 testbed/.cache/
 
+# QLoRA training checkpoints / adapters / tensorboard logs (ai-agent branch)
+runs/
+
 # Local working context (not part of any branch deliverable)
 docs_context/
 

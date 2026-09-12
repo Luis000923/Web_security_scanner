@@ -9,6 +9,44 @@ al versionado semantico.
 
 ### Anadido
 
+- **Agente de triaje LLM integrado de forma nativa en el pipeline
+  (`--enable-ai-triaging`).** El subsistema `ai_module/` (cliente
+  `AgentClient` + decodificacion estructurada `TriageOut`/`PayloadOut`) se
+  conecta al scanner: cada candidato producido por los testers pasa por
+  `triage_finding()` **antes** de emitir el hallazgo. Un veredicto de falso
+  positivo con confianza >= `--ai-fp-threshold` (0.75 por defecto) suprime el
+  hallazgo; el resto se anotan con `ai_verdict` / `ai_confidence` /
+  `ai_reasoning`. Degradacion transparente: si `ai_module` no esta instalado o
+  el backend de inferencia no responde a `healthcheck()`, el escaneo continua
+  con el motor heuristico deterministico y nunca falla por el agente; los
+  errores por llamada a mitad de escaneo degradan igual. Contrapresion propia
+  del backend de IA (no la del `worker_pool`/`TokenBucket` del core, que solo
+  limita el trafico HTTP hacia el objetivo): `report_vulnerability()` nunca
+  llama a `AgentClient.triage_finding()` directamente, sino a traves de
+  `BatchingTriageClient`, que agrupa los hallazgos concurrentes de los testers
+  en lotes (`--ai-batch-size`, por defecto 8, con `--ai-batch-linger` de
+  espera) y los despacha con `AgentClient.batch_triage()`, acotado por un
+  `asyncio.Semaphore` (`--ai-concurrency`, por defecto 4) contra el servidor
+  de inferencia. Nuevo evento `AI_TRIAGE_DECISION` y bloque `ai_triage` en el
+  informe con la traza de auditoria de cada decision keep/drop.
+  `--ai-synthesize` habilita ademas la sintesis agentica de payloads cuando la
+  lista estatica se agota sin acierto (filtrada por la puerta de payloads
+  destructivos). Flags: `--ai-backend`, `--ai-base-url`, `--ai-model`,
+  `--ai-fp-threshold`, `--ai-no-verify`, `--ai-max-retries`,
+  `--ai-concurrency`, `--ai-batch-size`, `--ai-batch-linger`. Extra de
+  instalacion `.[ai]` / `.[ai-local]`. Tests en
+  `tests/test_ai_agent_integration.py`.
+- **`tools/eval_oracle.py`, `run_experiments.py` y `analyze_results.py`
+  reportan el efecto real del agente.** El oraculo lee el bloque `ai_triage`
+  del informe (`--report`) y calcula la **tasa real de supresion de falsos
+  positivos** (supresiones que no son positivos del ground truth) y los
+  **falsos negativos introducidos por el LLM** (vulnerabilidades reales
+  ocultadas), mas `recall` con y sin agente. `run_experiments.py` anade las
+  condiciones `ai-triage` / `ai-triage-synth` y las columnas CSV `AI_Triaged`,
+  `AI_Suppressed`, `AI_FP_Suppressed`, `AI_FN_Introduced`, `AI_Recall_NoAgent`.
+  `analyze_results.py` anade la TASK 2c (supresion de FP vs coste en FN por
+  budget, `testbed/analysis/ai_triage.json`).
+
 - **Modulo de transformaciones y mutaciones de payloads.**
   `web_security_scanner/core/transforms/` define la interfaz abstracta
   `BaseTransform` (`transform(value: str) -> str`) y un registro nombre ->

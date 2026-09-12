@@ -1,0 +1,66 @@
+# Bandit configuration for Web Security Scanner.
+#
+# This is an offensive/defensive security *tool*: it deliberately builds
+# subprocess calls (recon helpers), fires random jitter for payload fuzzing,
+# matches on HTTP header/credential-looking strings (Authorization, Bearer,
+# password) while scanning targets, and swallows best-effort recon errors so
+# a single failing probe doesn't abort a whole scan. Bandit's generic
+# findings for those patterns are expected noise here; anything more
+# specific to a real vulnerability class (shell=True injection, weak crypto,
+# unguarded pickle/eval, etc.) is NOT skipped and still fails the build.
+exclude_dirs:
+  - tests
+  - .venv
+  - .git
+  - paper
+  - runs
+  - metrics
+  - reports
+  - data
+  - Documentacion
+  - .mypy_cache
+  - .ruff_cache
+  - .pytest_cache
+
+skips:
+  # B101: assert_used - pervasive in the test suite and in defensive
+  # invariant checks; not a security-relevant finding on its own.
+  - B101
+  # B603/B607: subprocess_without_shell_equals_true / start_process_with_partial_path
+  # The scanner and testbed intentionally launch known, argument-list
+  # subprocesses (no shell=True) for recon/exploit helpers; flagging every
+  # such call is noise. shell=True usage itself (B602/B605/B609) is NOT
+  # skipped and remains an error.
+  - B603
+  - B607
+  # B404: import_subprocess fires on the mere `import subprocess`, with no
+  # regard for how it's used; the actual dangerous call patterns are covered
+  # by B602/B605/B609 which stay enabled.
+  - B404
+  # B311: random module usage for payload mutation/jitter/red-team sampling
+  # (ai_module, core/transforms, scanner_core_async) - not used for any
+  # cryptographic or security-token purpose.
+  - B311
+  # B105: hardcoded_password_string false-positives on HTTP header/credential
+  # *names* the scanner matches against (e.g. "Authorization", "Bearer ",
+  # "password" as a form-field key), not actual embedded secrets.
+  - B105
+  # B110/B112: try/except/pass|continue - deliberate best-effort recon and
+  # AI-pipeline fallbacks (a single failed probe/step must not abort the
+  # whole scan or training run); not a suppressed security check.
+  - B110
+  - B112
+  # B310/B314/B405/B406: urlopen / stdlib XML parsing blacklist warnings.
+  # Each call site already restricts input to trusted, operator-supplied
+  # URLs/files (testbed fixtures, sitemap XML with DTD/external-entity
+  # parsing pre-rejected) rather than arbitrary attacker-controlled input;
+  # see the inline review comments at each call site.
+  - B310
+  - B314
+  - B405
+  - B406
+  # B615: huggingface_unsafe_download (from_pretrained without revision
+  # pinning) only fires in the optional, GPU-only ai-local/training
+  # subsystem where the model id is an operator-supplied config value
+  # (cfg.base_model), not attacker input reachable from a scan.
+  - B615
