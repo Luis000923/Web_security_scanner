@@ -216,7 +216,7 @@ class AsyncResponseCache:
             self._normalize_mapping(headers),
             self._normalize_mapping(cookies),
         ))
-        return hashlib.md5(key_data.encode()).hexdigest()
+        return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
 
     def get(self, url: str, method: str, data: Any = None,
             headers: Any = None, cookies: Any = None) -> dict | None:

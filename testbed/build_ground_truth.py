@@ -29,10 +29,11 @@ test-case name, give us everything the oracle needs:
 We join them on ``tcName`` and emit one oracle record per test case:
 
     {"url": "...", "param": "...", "type": "SQLInjection", "vulnerable": true,
-     "vector": "getparam", "cwe": 89, "tc": "BenchmarkTest00008"}
+     "vector": "getparam", "method": "GET", "cwe": 89, "tc": "BenchmarkTest00008"}
 
-``vector``, ``cwe`` and ``tc`` are ignored by the oracle (it only keys on
-url + param + canonical type) but kept for slicing the results later.
+``vector``, ``method``, ``cwe`` and ``tc`` are ignored by the oracle (it only
+keys on url + param + canonical type) but kept for slicing the results later.
+``method`` is derived from ``vector`` (POST for formparam/jsonparam, else GET).
 
 --------------------------------------------------------------------------
 USAGE
@@ -65,7 +66,7 @@ Options:
     --categories LIST      Comma list of Benchmark categories to include.
                            Default: sqli,cmdi,xss,pathtraver,ldapi
     --vectors LIST         Comma list of vectors to include.
-                           Choices: getparam,formparam,cookie,header
+                           Choices: getparam,formparam,jsonparam,cookie,header
                            Default: getparam,formparam
     --no-traps             Drop the ``vulnerable: false`` records (kept by
                            default — they are the oracle's FPR denominator).
@@ -111,8 +112,17 @@ _CATEGORY_TO_TYPE: dict[str, str] = {
 }
 
 _DEFAULT_CATEGORIES = ["sqli", "cmdi", "xss", "pathtraver", "ldapi"]
+# Default vectors kept conservative for backward compatibility with the
+# existing evaluation pipeline; add jsonparam/cookie/header via --vectors.
 _DEFAULT_VECTORS = ["getparam", "formparam"]
-_VALID_VECTORS = {"getparam", "formparam", "cookie", "header"}
+_VALID_VECTORS = {"getparam", "formparam", "jsonparam", "cookie", "header"}
+
+# HTTP method the scanner uses to reach each vector (recorded per record so
+# results can be sliced by transport; the oracle keys only on url+param+type).
+_VECTOR_METHOD = {
+    "getparam": "GET", "header": "GET", "cookie": "GET",
+    "formparam": "POST", "jsonparam": "POST",
+}
 
 
 # --------------------------------------------------------------------------
@@ -252,6 +262,7 @@ def build_records(
             "type": vuln_type,
             "vulnerable": vulnerable,
             "vector": vector,
+            "method": _VECTOR_METHOD.get(vector, "GET"),
             "cwe": cwe,
             "tc": name,
         })
@@ -275,9 +286,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-traps", dest="keep_traps", action="store_false")
     ap.add_argument("--out", default="testbed/ground_truth.json")
     ap.add_argument("--emit-targets", default=None, metavar="PATH",
-                    help="Also write a scanner --target-list file: an array of "
-                         "{url, param, method:'GET'} for every in-scope endpoint "
-                         "(positives AND traps), deduped.")
+                    help="Also write a scanner --target-list file for every "
+                         "in-scope endpoint (positives AND traps), deduped.")
+    ap.add_argument("--emit-targets-schema", choices=["v1", "v2"], default="v1",
+                    help="v1 (default): {url, param, method:'GET'} — legacy, GET-only. "
+                         "v2: {url, param, vector, method} so non-GET vectors "
+                         "(jsonparam/formparam/header/cookie) round-trip into "
+                         "--target-list.")
     ap.add_argument("--preview", type=int, default=2, metavar="N")
     args = ap.parse_args(argv)
 
@@ -320,14 +335,21 @@ def main(argv: list[str] | None = None) -> int:
     print("=" * 62, file=sys.stderr)
 
     if args.emit_targets:
-        seen: set[tuple[str, str | None]] = set()
+        seen: set[tuple] = set()
         targets: list[dict] = []
         for r in records:
-            key = (r["url"], r["param"])
+            key: tuple
+            if args.emit_targets_schema == "v2":
+                key = (r["url"], r["param"], r["vector"])
+                entry = {"url": r["url"], "param": r["param"],
+                         "vector": r["vector"], "method": r["method"]}
+            else:
+                key = (r["url"], r["param"])
+                entry = {"url": r["url"], "param": r["param"], "method": "GET"}
             if key in seen:
                 continue
             seen.add(key)
-            targets.append({"url": r["url"], "param": r["param"], "method": "GET"})
+            targets.append(entry)
         tp = Path(args.emit_targets)
         tp.parent.mkdir(parents=True, exist_ok=True)
         tp.write_text(json.dumps(targets, indent=2) + "\n", encoding="utf-8")

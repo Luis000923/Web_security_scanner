@@ -24,15 +24,31 @@ dependencies = [
 browser = [
     "playwright>=1.40",
 ]
+# tools/run_experiments.py (sweep orchestrator; rich is just its optional
+# progress bar) and tools/analyze_results.py (statistics + figures over the
+# graded sweep: Friedman/Wilcoxon/McNemar/Nemenyi, effect sizes, publication
+# plots). scikit-posthocs/matplotlib/seaborn are only exercised by the
+# Nemenyi post-hoc and the (skippable via --no-figures) plotting step, but
+# are declared here too so this one extra fully reproduces
+# `python tools/analyze_results.py`'s output.
 experiments = [
     "rich>=13.0",
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "statsmodels>=0.14",
+    "scikit-posthocs>=0.9",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
 ]
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "black",
     "mypy",
     "ruff",
+    "bandit",
     "jsonschema>=4.20",
 ]
 
@@ -40,9 +56,11 @@ dev = [
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "black",
     "mypy",
     "ruff",
+    "bandit",
     "jsonschema>=4.20",
 ]
 

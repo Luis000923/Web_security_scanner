@@ -13,6 +13,9 @@ and produces:
     testbed/analysis/summary_by_run.csv             per-run metrics + AUC + First-TP
     testbed/analysis/detection_cost_matrix.csv      per-GT-instance x condition
     testbed/analysis/stats.json                     Friedman / post-hoc / effect sizes
+                                                    + bias_mitigations block (JVM
+                                                    warm-up / robust latency
+                                                    variance; testbed/THREATS_TO_VALIDITY.md)
     testbed/analysis/early_recall.json              Phase 3.3: First-TP cost,
                                                     adaptive (baseline) vs static
                                                     (no-adaptive-sorting), paired
@@ -53,8 +56,9 @@ import json
 import math
 import sys
 import warnings
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -110,11 +114,11 @@ def discover_runs(results_dir: Path) -> list[RunInfo]:
         try:
             budget = int(budget_str)
         except ValueError:
-            warnings.warn(f"skip unparseable run dir: {d.name}")
+            warnings.warn(f"skip unparseable run dir: {d.name}", stacklevel=2)
             continue
         condition = SLUG_TO_CONDITION.get(slug)
         if condition is None:
-            warnings.warn(f"skip unknown condition slug {slug!r} in {d.name}")
+            warnings.warn(f"skip unknown condition slug {slug!r} in {d.name}", stacklevel=2)
             continue
         jsonls = sorted(d.glob("*.jsonl"), key=lambda p: p.stat().st_mtime)
         runs.append(RunInfo(budget, condition, d, jsonls[-1] if jsonls else None))
@@ -130,7 +134,7 @@ def load_telemetry(jsonl: Path) -> pd.DataFrame:
         try:
             rows.append(json.loads(line))
         except json.JSONDecodeError:
-            warnings.warn(f"bad JSONL line in {jsonl}")
+            warnings.warn(f"bad JSONL line in {jsonl}", stacklevel=2)
     df = pd.DataFrame(rows)
     if df.empty:
         return df
@@ -141,7 +145,7 @@ def load_telemetry(jsonl: Path) -> pd.DataFrame:
     return df
 
 
-def label_detections(df: pd.DataFrame, gt: "oracle.GroundTruth") -> pd.DataFrame:
+def label_detections(df: pd.DataFrame, gt: oracle.GroundTruth) -> pd.DataFrame:
     """Add gt_key / is_tp / is_trap_hit columns using the oracle's folding."""
     if df.empty:
         return df
@@ -198,7 +202,18 @@ def normalized_auc(xs: np.ndarray, ys: np.ndarray, total_pos: int) -> float:
     return float(trapz(y, x))
 
 
-def build_summary(runs: list[RunInfo], gt: "oracle.GroundTruth",
+# Keys of the per-run ``rec`` dict below. Passed explicitly to
+# ``pd.DataFrame.from_records`` so an empty ``runs`` list (e.g. a fresh
+# checkout where the gitignored testbed/results/ telemetry hasn't been
+# generated yet, only the graded testbed/experiment_results.csv is present)
+# still produces a DataFrame with "budget"/"condition" columns to merge the
+# graded CSV on, instead of a column-less frame that raises ``KeyError``.
+_SUMMARY_BASE_COLUMNS = ["budget", "condition", "n_requests", "tp_unique",
+                         "trap_hits", "recall", "fpr", "auc", "first_tp",
+                         "mean_first_tp"]
+
+
+def build_summary(runs: list[RunInfo], gt: oracle.GroundTruth,
                   csv_path: Path) -> tuple[pd.DataFrame, dict]:
     total_pos = len(gt.positives)
     total_traps = len(gt.traps)
@@ -233,7 +248,7 @@ def build_summary(runs: list[RunInfo], gt: "oracle.GroundTruth",
                 )
         records.append(rec)
 
-    summary = pd.DataFrame.from_records(records)
+    summary = pd.DataFrame.from_records(records, columns=_SUMMARY_BASE_COLUMNS)
 
     # Fold in the oracle's graded CSV (authoritative TP/FP/FN) where present.
     if csv_path.exists():
@@ -271,7 +286,7 @@ def cliffs_delta(a, b) -> tuple[float, str]:
 
 
 def cost_matrix_for_budget(budget: int, per_run_costs: dict,
-                           gt: "oracle.GroundTruth") -> pd.DataFrame | None:
+                           gt: oracle.GroundTruth) -> pd.DataFrame | None:
     """Rows = every vulnerable GT instance; cols = conditions; value = detection
     cost (request_index of first hit), censored at budget+1 when never found.
     Returns None unless all four conditions ran at this budget."""
@@ -286,7 +301,83 @@ def cost_matrix_for_budget(budget: int, per_run_costs: dict,
     return pd.DataFrame(data, index=[str(k) for k in sorted(gt.positives)])
 
 
-def run_stats(meta: dict, gt: "oracle.GroundTruth") -> dict:
+# Static description of the machine-bias mitigations baked into the engine.
+# Emitted into stats.json so the paper's threats-to-validity section can cite
+# concrete, versioned knobs. See testbed/THREATS_TO_VALIDITY.md.
+_BIAS_MITIGATIONS_DOC = {
+    "jvm_warmup": {
+        "problem": "OWASP Benchmark runs on the JVM; the first requests to a "
+                   "cold endpoint execute interpreted bytecode and are far "
+                   "slower than steady state, inflating and destabilising the "
+                   "latency baseline captured right after enqueue.",
+        "mitigation": "Explicit warm-up phase: N discard requests per endpoint "
+                      "(scheme://netloc/path) before any baseline or telemetry "
+                      "capture. Routed through the rate limiter + concurrency "
+                      "semaphore + SSRF guard; emit no telemetry rows.",
+        "control": "--warmup N (scanner) / --warmup N (run_experiments, default "
+                   "20, applied uniformly to every condition).",
+        "config_key": "testers.warmup_requests",
+    },
+    "robust_baseline_variance": {
+        "problem": "JVM stop-the-world GC pauses add random multi-hundred-ms "
+                   "spikes. mean + k*stdev of a few samples is swung by a single "
+                   "spike (masks hits) or a single fast sample (invites false "
+                   "positives).",
+        "mitigation": "Time-based trigger uses median + sigma*1.4826*MAD "
+                      "(robust to one outlier in either direction) over the "
+                      "benign samples, plus a bounded rolling window (median+MAD "
+                      "of the most recent benign latencies) that re-estimates "
+                      "the bar mid-sweep as the JVM warms / GC pressure shifts.",
+        "control": "--baseline-samples N (default 3), --latency-window N "
+                   "(default 12); sigma = TIME_BASED_SIGMA (3.0).",
+        "config_key": "testers.baseline_latency_samples / testers.latency_window",
+    },
+    "two_sample_confirmation": {
+        "problem": "A single confirmation replay that happens to land on a GC "
+                   "pause can produce a spurious CONFIRMED verdict.",
+        "mitigation": "confirm_time_based() samples every stage twice (replays=2) "
+                      "and requires the delay to reproduce on ALL replays — the "
+                      "reduced-delay variant must track baseline+~2s on both, or "
+                      "the min original-payload replay must clear both "
+                      "baseline+threshold and the rolling upper bound.",
+        "control": "confirm_time_based(replays=2) — engine default.",
+        "config_key": None,
+    },
+}
+
+
+def bias_mitigations_block(runs: list[RunInfo]) -> dict:
+    """Build the ``stats.json`` bias-mitigations block.
+
+    Combines the static documentation with the *actual* per-run knobs read from
+    each run's ``manifest_*.json`` (``manifest_async`` snapshots the full
+    CLI-derived config), so the report records what really ran.
+    """
+    observed: dict[str, dict] = {}
+    notes: list[str] = []
+    for run in runs:
+        manifests = sorted(run.run_dir.glob("manifest_*.json"))
+        if not manifests:
+            continue
+        try:
+            cfg = json.loads(manifests[-1].read_text(encoding="utf-8"))
+            testers = (cfg.get("config") or {}).get("testers") or {}
+        except (OSError, json.JSONDecodeError, AttributeError):
+            continue
+        key = f"budget{run.budget}_{run.condition}"
+        observed[key] = {
+            "warmup_requests": testers.get("warmup_requests", 0),
+            "baseline_latency_samples": testers.get("baseline_latency_samples", 3),
+            "latency_window": testers.get("latency_window", 12),
+        }
+        if not testers.get("warmup_requests"):
+            notes.append(f"{key}: ran with warmup_requests=0 (JVM warm-up bias "
+                         f"NOT mitigated for this run)")
+    return {"description": _BIAS_MITIGATIONS_DOC, "observed": observed,
+            "notes": notes}
+
+
+def run_stats(meta: dict, gt: oracle.GroundTruth) -> dict:
     from scipy.stats import friedmanchisquare, wilcoxon
     from statsmodels.stats.multitest import multipletests
     try:
@@ -364,10 +455,10 @@ def _block_tests(mat: pd.DataFrame, friedmanchisquare, wilcoxon,
     # Baseline vs each ablation: Wilcoxon signed-rank + McNemar, BH-corrected.
     base = mat["baseline"].to_numpy(dtype=float)
     pairs, raw_p = [], []
-    detail = {}
+    detail: dict[str, dict[str, Any]] = {}
     for cond in CONDITIONS[1:]:
         arm = mat[cond].to_numpy(dtype=float)
-        entry = {}
+        entry: dict[str, Any] = {}
         try:
             w_stat, w_p = wilcoxon(base, arm, zero_method="zsplit")
             entry["wilcoxon"] = {"statistic": float(w_stat), "p_value": float(w_p)}
@@ -402,7 +493,7 @@ def _block_tests(mat: pd.DataFrame, friedmanchisquare, wilcoxon,
 
     if raw_p:
         rej, p_adj, *_ = multipletests(raw_p, method="fdr_bh")
-        for cond, r, pa in zip(pairs, rej, p_adj):
+        for cond, r, pa in zip(pairs, rej, p_adj, strict=True):
             detail[cond]["wilcoxon"]["p_value_bh"] = float(pa)
             detail[cond]["wilcoxon"]["reject_h0_bh"] = bool(r)
 
@@ -467,7 +558,7 @@ def _first_tp_block(base_costs: list[float], arm_costs: list[float],
     return res
 
 
-def first_tp_analysis(meta: dict, gt: "oracle.GroundTruth") -> dict:
+def first_tp_analysis(meta: dict, gt: oracle.GroundTruth) -> dict:
     """Early-recall study for the Phase 3 feedback loop.
 
     For every budget at which both ``baseline`` and ``no-adaptive-sorting`` ran,
@@ -479,7 +570,7 @@ def first_tp_analysis(meta: dict, gt: "oracle.GroundTruth") -> dict:
     out: dict = {"per_budget": {}, "pooled": None, "notes": []}
     keys = sorted(gt.positives)
 
-    pooled = {"b": [], "a": [], "bh": [], "ah": []}
+    pooled: dict[str, list[Any]] = {"b": [], "a": [], "bh": [], "ah": []}
     for budget in budgets:
         base = per.get((budget, "baseline"))
         arm = per.get((budget, ADAPTIVE_CONDITION))
@@ -508,8 +599,198 @@ def first_tp_analysis(meta: dict, gt: "oracle.GroundTruth") -> dict:
 
 
 # ---------------------------------------------------------------------------
+# TASK 2c — Friedman test: F1-score across static / adaptive / ai-triage
+# ---------------------------------------------------------------------------
+
+# Maps a human-facing strategy name to the ``condition`` value graded into
+# experiment_results.csv for it. ``static`` = a-priori payload order
+# (no-adaptive-sorting), ``adaptive`` = the live Phase 3 feedback loop
+# (baseline), ``ai_triage`` = the LLM triage stage on top of the heuristic
+# engine (ai-triage; the --ai-synthesize variant is intentionally excluded
+# so the comparison stays a clean 3-arm design rather than mixing two
+# ai-triage flavours into one column).
+STRATEGY_CONDITIONS: dict[str, str] = {
+    "static": ADAPTIVE_CONDITION,
+    "adaptive": "baseline",
+    "ai_triage": "ai-triage",
+}
+
+FRIEDMAN_ALPHA = 0.05
+
+
+def strategy_f1_friedman(csv_path: Path) -> dict[str, Any]:
+    """Friedman test on F1-score across the static/adaptive/ai-triage arms.
+
+    Non-parametric repeated-measures test: the block/subject axis is
+    ``budget`` (each budget that graded all three strategies contributes one
+    matched F1 triple), and the treatment axis is the strategy. This is the
+    same family of test ``_block_tests`` already runs on per-GT-instance
+    detection cost for the 4-arm ablation family; here it runs on the
+    oracle-graded F1-score itself, one level up, to answer "does the choice
+    of scheduling/triage strategy move F1 at all across budgets?".
+
+    Requires at least 3 budgets with a graded (status == "ok") row for all of
+    ``STRATEGY_CONDITIONS`` — Friedman needs >= 3 non-degenerate blocks to
+    produce a meaningful chi-square statistic. Returns
+    ``{"available": False, "reason": ...}`` when that is not met (missing
+    CSV, missing columns, or too few complete budgets) so callers can print
+    a one-line note and move on, mirroring ``ai_triage_analysis``.
+    """
+    from scipy.stats import friedmanchisquare
+
+    if not csv_path.exists():
+        return {"available": False, "reason": "no graded CSV"}
+    df = pd.read_csv(csv_path).rename(columns=str.lower)
+    if not {"budget", "condition", "f1"}.issubset(df.columns):
+        return {"available": False, "reason": "CSV missing budget/condition/f1 columns"}
+    if "status" in df.columns:
+        df = df[df["status"].astype(str).eq("ok")]
+    df = df.assign(f1=pd.to_numeric(df["f1"], errors="coerce"))
+
+    pivot: dict[int, dict[str, float]] = {}
+    for budget, grp in df.groupby("budget"):
+        row: dict[str, float] = {}
+        for strategy, condition in STRATEGY_CONDITIONS.items():
+            rows = grp[grp["condition"].astype(str).eq(condition)]
+            f1_values = rows["f1"].dropna()
+            if f1_values.empty:
+                continue
+            row[strategy] = float(f1_values.mean())
+        if len(row) == len(STRATEGY_CONDITIONS):
+            pivot[int(budget)] = row
+
+    if len(pivot) < 3:
+        return {
+            "available": False,
+            "reason": (
+                f"need >= 3 budgets with a graded F1 for every strategy in "
+                f"{sorted(STRATEGY_CONDITIONS)} — found {len(pivot)} complete "
+                f"budget(s)"
+            ),
+            "strategies": dict(STRATEGY_CONDITIONS),
+        }
+
+    budgets_used = sorted(pivot)
+    samples: dict[str, list[float]] = {
+        strategy: [pivot[b][strategy] for b in budgets_used]
+        for strategy in STRATEGY_CONDITIONS
+    }
+
+    try:
+        statistic, p_value = friedmanchisquare(*samples.values())
+    except ValueError as e:
+        return {
+            "available": False,
+            "reason": f"friedmanchisquare failed: {e}",
+            "strategies": dict(STRATEGY_CONDITIONS),
+            "budgets_used": budgets_used,
+        }
+
+    reject_null = bool(p_value < FRIEDMAN_ALPHA)
+    return {
+        "available": True,
+        "test": "friedman",
+        "metric": "f1_score",
+        "strategies": dict(STRATEGY_CONDITIONS),
+        "budgets_used": budgets_used,
+        "n_blocks": len(budgets_used),
+        "statistic": float(statistic),
+        "p_value": float(p_value),
+        "alpha": FRIEDMAN_ALPHA,
+        "reject_null": reject_null,
+        "conclusion": (
+            "reject H0: at least one strategy's F1 differs significantly "
+            "across budgets" if reject_null else
+            "fail to reject H0: no significant F1 difference detected among "
+            "the strategies at this alpha"
+        ),
+        "mean_f1": {s: float(np.mean(v)) for s, v in samples.items()},
+        "median_f1": {s: float(np.median(v)) for s, v in samples.items()},
+    }
+
+
+# ---------------------------------------------------------------------------
 # TASK 3 — publication figures
 # ---------------------------------------------------------------------------
+
+def ai_triage_analysis(csv_path: Path) -> dict:
+    """False-positive suppression / false-negative cost of the LLM triage agent.
+
+    Reads the graded CSV directly (the ``AI_*`` columns written by
+    ``run_experiments.metrics_to_row``) and, per budget, contrasts the
+    ``ai-triage`` / ``ai-triage-synth`` arms with ``baseline``:
+
+      * ``fp_suppressed_vs_baseline_fp`` — real false positives removed,
+        expressed as a multiple of ``baseline`` FP at that budget. NOT a
+        bounded 0-100% rate: ``fp_suppressed`` is counted over the agent's
+        full pre-dedup candidate pool (every tester hypothesis per
+        parameter), while ``baseline`` FP is the final, deduplicated
+        per-parameter finding count graded by the oracle — a much smaller
+        population. Values > 1 are therefore expected and do not mean more
+        FPs were removed than existed; use ``suppression_precision`` for a
+        properly bounded per-candidate accuracy figure.
+      * ``fn_introduced`` — real vulnerabilities the model hid;
+      * ``recall_delta`` — recall(with agent) - recall(without agent), read off
+        the audit block so it is exact rather than inferred from FP/FN.
+
+    Returns ``{"available": False, ...}`` when the CSV predates the agent or
+    has no ai-triage rows, so the caller can print a one-line note and move on.
+    """
+    if not csv_path.exists():
+        return {"available": False, "reason": "no graded CSV"}
+    df = pd.read_csv(csv_path).rename(columns=str.lower)
+    if "ai_suppressed" not in df.columns:
+        return {"available": False, "reason": "CSV has no AI_* columns (pre-agent run)"}
+    if "status" in df.columns:
+        df = df[df["status"].astype(str).eq("ok")]
+
+    def _num(series):
+        return pd.to_numeric(series, errors="coerce")
+
+    ai_arms = sorted({c for c in df["condition"].astype(str)
+                      if c.startswith("ai-triage")})
+    if not ai_arms:
+        return {"available": False, "reason": "no ai-triage rows in CSV"}
+
+    per_budget: dict[str, Any] = {}
+    for budget, grp in df.groupby("budget"):
+        base = grp[grp["condition"].astype(str).eq("baseline")]
+        base_fp = float(_num(base["fp"]).mean()) if not base.empty else float("nan")
+        base_recall = float(_num(base["recall"]).mean()) if not base.empty else float("nan")
+        arms: dict[str, Any] = {}
+        for arm in ai_arms:
+            rows = grp[grp["condition"].astype(str).eq(arm)]
+            if rows.empty:
+                continue
+            suppressed = float(_num(rows["ai_suppressed"]).mean())
+            fp_suppressed = float(_num(rows["ai_fp_suppressed"]).mean())
+            fn_introduced = float(_num(rows["ai_fn_introduced"]).mean())
+            recall_with = float(_num(rows["recall"]).mean())
+            recall_without = float(_num(rows["ai_recall_noagent"]).mean())
+            arms[arm] = {
+                "candidates_triaged": float(_num(rows["ai_triaged"]).mean()),
+                "suppressed": suppressed,
+                "fp_suppressed": fp_suppressed,
+                "fn_introduced": fn_introduced,
+                "suppression_precision": (fp_suppressed / suppressed
+                                          if suppressed else float("nan")),
+                # Not a bounded rate — see docstring. Kept as a multiple of
+                # baseline FP (candidate-level count / final-report count).
+                "fp_suppressed_vs_baseline_fp": (fp_suppressed / base_fp
+                                                 if base_fp else float("nan")),
+                "recall_with_agent": recall_with,
+                "recall_without_agent": recall_without,
+                "recall_delta": recall_with - recall_without,
+                "precision_baseline": base_recall and float(_num(base["precision"]).mean()),
+            }
+        if arms:
+            per_budget[str(int(budget))] = {
+                "baseline_fp": base_fp,
+                "baseline_recall": base_recall,
+                "arms": arms,
+            }
+    return {"available": True, "arms": ai_arms, "per_budget": per_budget}
+
 
 def _academic_style():
     import matplotlib
@@ -558,7 +839,8 @@ def fig1_detection_vs_budget(summary: pd.DataFrame, fig_dir: Path):
     order_lbl = [_COND_LABELS_ES[c] for c in CONDITIONS]
 
     fig, ax = plt.subplots(figsize=(5.2, 3.4))
-    palette = dict(zip(order_lbl, sns.color_palette("colorblind", 4)))
+    palette = dict(zip(order_lbl, sns.color_palette("colorblind", len(order_lbl)),
+                       strict=True))
     for lbl in order_lbl:
         g = df[df["Condición"] == lbl].sort_values("x")
         if g.empty:
@@ -662,7 +944,7 @@ def fig3_cd_diagram(stats: dict, fig_dir: Path):
     plt.close(fig)
 
 
-def fig4_first_tp_ecdf(meta: dict, gt: "oracle.GroundTruth", fig_dir: Path):
+def fig4_first_tp_ecdf(meta: dict, gt: oracle.GroundTruth, fig_dir: Path):
     """ECDF of the per-instance First-TP request index: adaptive vs static.
 
     A curve that climbs earlier = vulnerabilities reached in fewer requests.
@@ -671,7 +953,8 @@ def fig4_first_tp_ecdf(meta: dict, gt: "oracle.GroundTruth", fig_dir: Path):
     """
     per = meta["per_run_costs"]
     keys = sorted(gt.positives)
-    ad, st = [], []
+    ad: list[float] = []
+    st: list[float] = []
     for (budget, cond), costs in per.items():
         target = ad if cond == "baseline" else st if cond == ADAPTIVE_CONDITION else None
         if target is None:
@@ -749,7 +1032,8 @@ def main(argv=None) -> int:
         graded = pd.read_csv(args.csv).rename(columns=str.lower)
         ok = graded[graded.get("status", "ok").astype(str).eq("ok")] \
             if "status" in graded.columns else graded
-        keys = {(int(b), str(c)) for b, c in zip(ok["budget"], ok["condition"])}
+        keys = {(int(b), str(c))
+                for b, c in zip(ok["budget"], ok["condition"], strict=True)}
         kept = [r for r in runs if (r.budget, r.condition) in keys]
         dropped = sorted({(r.budget, r.condition) for r in runs} - keys)
         if dropped:
@@ -772,6 +1056,9 @@ def main(argv=None) -> int:
     # ---- TASK 2 --------------------------------------------------------------
     print("\n=== TASK 2 — significance tests ===")
     stats = run_stats(meta, gt)
+    stats["bias_mitigations"] = bias_mitigations_block(runs)
+    for note in stats["bias_mitigations"]["notes"]:
+        print(f"  bias-note: {note}")
     for note in stats["notes"]:
         print(f"  note: {note}")
     for budget, block in stats["per_budget"].items():
@@ -785,6 +1072,20 @@ def main(argv=None) -> int:
             print(f"   {cond:>20s}: recall {e['recall_baseline']:.2f}->{e['recall_arm']:.2f}  "
                   f"Wilcoxon p_bh={w.get('p_value_bh', float('nan')):.4g}  "
                   f"Cliff δ={cd.get('delta', float('nan')):+.3f} ({cd.get('magnitude')})")
+
+    print("\n=== TASK 2c — Friedman: F1-score, static vs adaptive vs ai-triage ===")
+    stats["strategy_f1_friedman"] = strategy_f1_friedman(args.csv)
+    f1_friedman = stats["strategy_f1_friedman"]
+    if not f1_friedman.get("available"):
+        print(f"  n/a: {f1_friedman.get('reason')}")
+    else:
+        print(f"  budgets used: {f1_friedman['budgets_used']}  "
+              f"(n_blocks={f1_friedman['n_blocks']})")
+        print(f"  chi2={f1_friedman['statistic']:.3f}  p={f1_friedman['p_value']:.4g}  "
+              f"alpha={f1_friedman['alpha']}  reject_h0={f1_friedman['reject_null']}")
+        for strategy, mean_f1 in f1_friedman["mean_f1"].items():
+            print(f"   {strategy:>10s}: mean F1={mean_f1:.4f}  "
+                  f"median F1={f1_friedman['median_f1'][strategy]:.4f}")
     (args.analysis_dir / "stats.json").write_text(
         json.dumps(stats, indent=2, default=_json_default), encoding="utf-8")
     # Persist the cost matrix (pooled over budgets) for downstream use.
@@ -833,6 +1134,28 @@ def main(argv=None) -> int:
     (args.analysis_dir / "early_recall.json").write_text(
         json.dumps(early, indent=2, default=_json_default), encoding="utf-8")
     print(f"  wrote {args.analysis_dir / 'early_recall.json'}")
+
+    # ---- TASK 2c — LLM triage: FP suppression vs FN cost -------------------
+    print("\n=== TASK 2c — LLM triage agent (--enable-ai-triaging) ===")
+    ai = ai_triage_analysis(args.csv)
+    if not ai.get("available"):
+        print(f"  n/a: {ai.get('reason')}")
+    else:
+        for budget, blk in sorted(ai["per_budget"].items(), key=lambda kv: int(kv[0])):
+            print(f"\n budget {budget}: baseline FP={blk['baseline_fp']:.1f}  "
+                  f"recall={blk['baseline_recall']:.3f}")
+            for arm, e in blk["arms"].items():
+                print(f"   {arm:>16s}: suppressed {e['suppressed']:.1f} "
+                      f"({e['fp_suppressed']:.1f} real FP, "
+                      f"{e['fn_introduced']:.1f} FN introduced)  "
+                      f"suppression precision {100 * e['suppression_precision']:.0f}%  "
+                      f"(FP suppressed = {e['fp_suppressed_vs_baseline_fp']:.1f}x baseline FP "
+                      f"— candidate-level vs. final-report-level count, see docstring)  "
+                      f"recall {e['recall_without_agent']:.3f}->{e['recall_with_agent']:.3f} "
+                      f"(Δ{e['recall_delta']:+.3f})")
+    (args.analysis_dir / "ai_triage.json").write_text(
+        json.dumps(ai, indent=2, default=_json_default), encoding="utf-8")
+    print(f"  wrote {args.analysis_dir / 'ai_triage.json'}")
 
     # ---- TASK 3 --------------------------------------------------------------
     if not args.no_figures:

@@ -8,6 +8,12 @@ and consolidates the metrics into testbed/experiment_results.csv.
 Stdlib only. Designed to be re-run: an existing run directory is skipped
 unless --force is given, so an interrupted sweep resumes cheaply.
 
+Every run is prefixed with a warm-up phase (``--warmup``, default 20 discard
+requests per endpoint) to neutralise the OWASP Benchmark JVM's JIT warm-up
+latency bias before any baseline / telemetry capture. It is applied identically
+to all conditions, so it is a machine-bias control, not an ablation axis. See
+testbed/THREATS_TO_VALIDITY.md.
+
 --------------------------------------------------------------------------
 GRID
 --------------------------------------------------------------------------
@@ -78,6 +84,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -96,7 +103,21 @@ CONDITIONS: dict[str, list[str]] = {
     # Phase 3.3: pin the a-priori order (disable the live feedback loop) so the
     # graded run is directly comparable to `baseline` (adaptive ON).
     "no-adaptive-sorting": ["--no-adaptive-sorting"],
+    # LLM triage agent: identical heuristic engine to `baseline`, plus the
+    # false-positive triage stage. Diff `baseline` vs `ai-triage` to read off
+    # the real FP-suppression rate and any FN the model introduced (the oracle
+    # prints both from the report's `ai_triage` audit block). The inference
+    # backend is selected out-of-band — set AI_AGENT_BACKEND / AI_AGENT_BASE_URL
+    # in the environment, or pass `--extra-args "--ai-backend openai ..."`.
+    "ai-triage": ["--enable-ai-triaging"],
+    # + agentic payload synthesis when a parameter's static list is exhausted.
+    "ai-triage-synth": ["--enable-ai-triaging", "--ai-synthesize"],
 }
+
+# The ablation arms that run without any external dependency. The ai-triage*
+# arms need a reachable inference backend, so they are opt-in via an explicit
+# --conditions list rather than part of the default sweep.
+DEFAULT_CONDITIONS = [c for c in CONDITIONS if not c.startswith("ai-triage")]
 
 # Mandatory keys on every per-probe telemetry JSONL row (see
 # core/telemetry_async.py). Used by :func:`validate_jsonl` to prove the adaptive
@@ -108,7 +129,16 @@ TELEMETRY_REQUIRED_KEYS = (
 )
 
 CSV_COLUMNS = ["budget", "condition", "TP", "FP", "FN",
-               "Precision", "Recall", "F1", "FPR", "run_dir", "status", "timestamp"]
+               "Precision", "Recall", "F1", "FPR",
+               # LLM triage audit (populated only for the ai-triage* conditions):
+               #   AI_Triaged        candidates that reached the model
+               #   AI_Suppressed     findings the model dropped as false positives
+               #   AI_FP_Suppressed  of those, ones that were NOT ground-truth vulns
+               #   AI_FN_Introduced  of those, real vulns the model hid (the cost)
+               #   AI_Recall_NoAgent recall the heuristic engine alone would score
+               "AI_Triaged", "AI_Suppressed", "AI_FP_Suppressed",
+               "AI_FN_Introduced", "AI_Recall_NoAgent",
+               "run_dir", "status", "timestamp"]
 
 
 # --------------------------------------------------------------------------
@@ -152,10 +182,10 @@ class ProgressReporter:
         self._current = ""
         self._start = time.monotonic()
         self.backend = "plain"
-        self._progress = None
-        self._task = None
-        self._tqdm = None
-        self._console = None
+        self._progress: Any = None
+        self._task: Any = None
+        self._tqdm: Any = None
+        self._console: Any = None
 
         want_bar = enabled and total > 0 and sys.stderr.isatty()
         if want_bar and self._init_rich():
@@ -464,6 +494,16 @@ def validate_jsonl(jsonl: Path) -> tuple[bool, str]:
                   f"{len(seen_ctx)} payload families")
 
 
+def newest_json_report(run_dir: Path) -> Path | None:
+    """The scanner's final JSON report (``<output>/scan_*.json``), if any.
+
+    Carries the ``ai_triage`` audit block for the --enable-ai-triaging runs.
+    """
+    reports = sorted((run_dir / "report").glob("scan_*.json"),
+                     key=lambda p: p.stat().st_mtime)
+    return reports[-1] if reports else None
+
+
 def run_oracle(jsonl: Path, ground_truth: Path, run_dir: Path) -> dict:
     metrics_path = run_dir / "metrics.json"
     cmd = [
@@ -472,6 +512,9 @@ def run_oracle(jsonl: Path, ground_truth: Path, run_dir: Path) -> dict:
         "--ground-truth", str(ground_truth),
         "--json-out", str(metrics_path),
     ]
+    report = newest_json_report(run_dir)
+    if report is not None:
+        cmd += ["--report", str(report)]
     subprocess.run(cmd, check=True, capture_output=True, text=True)
     return json.loads(metrics_path.read_text(encoding="utf-8"))
 
@@ -486,6 +529,8 @@ def metrics_to_row(budget: int, condition: str, run_dir: Path,
     except ValueError:
         run_dir_str = str(run_dir)   # results dir lives outside the repo tree
 
+    ai = m.get("ai_triage") or {}
+
     return {
         "budget": budget,
         "condition": condition,
@@ -496,14 +541,83 @@ def metrics_to_row(budget: int, condition: str, run_dir: Path,
         "Recall": num(m.get("recall")),
         "F1": num(m.get("f1_score")),
         "FPR": num(m.get("fpr")),
+        "AI_Triaged": ai.get("candidates_triaged", ""),
+        "AI_Suppressed": ai.get("suppressed", ""),
+        "AI_FP_Suppressed": ai.get("fp_suppressed", ""),
+        "AI_FN_Introduced": ai.get("fn_introduced", ""),
+        "AI_Recall_NoAgent": num(ai.get("recall_without_agent")),
         "run_dir": run_dir_str,
         "status": status,
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
 
 
+# The pre-AI_* schema (kept only to repair CSVs written before those columns
+# existed). AI_* was inserted right before run_dir/status/timestamp, so a row
+# under either schema can be recovered by its field *count* alone.
+_LEGACY_CSV_COLUMNS = ["budget", "condition", "TP", "FP", "FN",
+                       "Precision", "Recall", "F1", "FPR",
+                       "run_dir", "status", "timestamp"]
+
+
+def _migrate_csv_schema(csv_path: Path) -> None:
+    """Rewrite ``csv_path`` under the current ``CSV_COLUMNS`` header.
+
+    Handles a file whose header is stale AND whose rows are individually a
+    mix of the legacy 12-column schema and the current 17-column one (some
+    runs appended new-schema rows via DictWriter without ever rewriting the
+    old header on disk — a raw DictReader keyed off that stale header would
+    silently misalign every new-schema row). Each row is decoded positionally
+    by its own length instead of trusting the file's header line.
+
+    A row matching neither known column count is a corrupt/truncated write
+    (e.g. a crash mid-flush) rather than a recoverable schema variant — this
+    is data feeding the paper's numbers, so it must not be dropped silently.
+    Raise with the 1-indexed file line number so the bad row can be found
+    and fixed (or deliberately removed) by hand.
+    """
+    with csv_path.open("r", newline="", encoding="utf-8") as fh:
+        raw_rows = list(csv.reader(fh))
+    if not raw_rows:
+        return
+    migrated: list[dict] = []
+    for offset, raw in enumerate(raw_rows[1:]):  # skip whatever header is on disk
+        if not raw:
+            continue
+        line_no = offset + 2  # +1 for the header, +1 for 1-indexing
+        if len(raw) == len(CSV_COLUMNS):
+            migrated.append(dict(zip(CSV_COLUMNS, raw, strict=True)))
+        elif len(raw) == len(_LEGACY_CSV_COLUMNS):
+            migrated.append(dict(zip(_LEGACY_CSV_COLUMNS, raw, strict=True)))
+        else:
+            raise ValueError(
+                f"{csv_path}: line {line_no} has {len(raw)} field(s), expected "
+                f"{len(CSV_COLUMNS)} (current schema) or {len(_LEGACY_CSV_COLUMNS)} "
+                f"(legacy schema); row is corrupt and cannot be safely migrated: "
+                f"{raw!r}"
+            )
+    with csv_path.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
+        w.writeheader()
+        w.writerows(migrated)
+
+
 def append_csv(csv_path: Path, row: dict) -> None:
+    """Append one row, migrating an older (narrower) header in place first.
+
+    ``CSV_COLUMNS`` has grown over time (the AI_* audit columns were added
+    after some CSVs already existed on disk). A raw append with the new
+    fieldnames against an old header produces a ragged CSV that ``pandas``
+    refuses to parse. Detect that mismatch and rewrite the file under the
+    current schema — missing cells backfill empty, matching how DictWriter
+    already treats a row missing a key.
+    """
     new_file = not csv_path.exists()
+    if not new_file:
+        with csv_path.open("r", newline="", encoding="utf-8") as fh:
+            existing_header = next(csv.reader(fh), [])
+        if existing_header != CSV_COLUMNS:
+            _migrate_csv_schema(csv_path)
     with csv_path.open("a", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
         if new_file:
@@ -525,10 +639,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--csv", default=str(REPO_ROOT / "testbed" / "experiment_results.csv"))
     ap.add_argument("--target-list", default=str(REPO_ROOT / "testbed" / "benchmark_targets.json"))
     ap.add_argument("--budgets", default=",".join(map(str, DEFAULT_BUDGETS)))
-    ap.add_argument("--conditions", default=",".join(CONDITIONS))
+    ap.add_argument("--conditions", default=",".join(DEFAULT_CONDITIONS),
+                    help="Comma list. Add 'ai-triage' / 'ai-triage-synth' "
+                         "explicitly (they need a reachable inference backend).")
     ap.add_argument("--compose-file", default=str(REPO_ROOT / "testbed" / "docker-compose.yml"))
     ap.add_argument("--skip-precondition", action="store_true")
     ap.add_argument("--scan-timeout", type=int, default=7200)
+    ap.add_argument("--warmup", type=int, default=20, metavar="N",
+                    help="Discard requests per endpoint before baseline/telemetry "
+                         "capture — mitigates JVM JIT warm-up latency bias. "
+                         "Applied uniformly to every run (not an ablation axis). "
+                         "0 disables. See testbed/THREATS_TO_VALIDITY.md.")
     ap.add_argument("--extra-args", default="")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
@@ -557,6 +678,10 @@ def main(argv: list[str] | None = None) -> int:
     results_dir = Path(args.results_dir).resolve()
     csv_path = Path(args.csv)
     extra = args.extra_args.split() if args.extra_args else []
+    # Warm-up is a machine-bias control, applied identically to every condition
+    # so it removes a confound without becoming an ablation dimension.
+    if args.warmup and "--warmup" not in extra:
+        extra += ["--warmup", str(args.warmup)]
 
     target_list = Path(args.target_list)
     if not target_list.exists():
