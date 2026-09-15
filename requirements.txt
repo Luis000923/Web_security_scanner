@@ -1,0 +1,9 @@
+neo4j>=5.24
+sqlglot>=25.0
+yara-python>=4.5
+outlines>=0.1
+pydantic>=2.7
+transformers>=4.44
+torch>=2.3
+bitsandbytes>=0.43
+accelerate>=0.33
