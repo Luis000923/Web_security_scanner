@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Literal, TypedDict
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -27,6 +29,7 @@ from langgraph.types import Command, interrupt
 
 from agents.attacker import RealAttackClient
 from agents.fuzzer import AdaptiveFuzzer
+from agents.reporter import ReportingAgent
 from db.client import GraphDBClient
 from load_llm import load_model
 from security.validator import HybridPayloadValidator, RiskAssessment
@@ -54,6 +57,8 @@ class AgentState(TypedDict):
     # FASE 6: evidencia de la ejecución real de attack_node contra el
     # laboratorio (OWASP Benchmark). "" hasta que attack_node corre.
     attack_evidence: str
+    # FASE 8: ruta del informe Markdown generado por reporting_node.
+    report_path: str
 
 
 # ============================================================
@@ -68,6 +73,11 @@ _llm_model, _llm_tokenizer = load_model()
 
 _validator = HybridPayloadValidator(llm_model=_llm_model, llm_tokenizer=_llm_tokenizer)
 _fuzzer = AdaptiveFuzzer(model=_llm_model, tokenizer=_llm_tokenizer)
+_reporter = ReportingAgent()
+
+# FASE 8: carpeta de informes de engagement (gitignored — pueden contener
+# evidencia sensible de explotación real contra el laboratorio).
+_REPORTS_DIR = Path(__file__).resolve().parent / "reports"
 
 
 # ============================================================
@@ -213,6 +223,36 @@ async def rejected_node(state: AgentState) -> AgentState:
     return state
 
 
+async def reporting_node(state: AgentState) -> AgentState:
+    """
+    FASE 8: cierra el engagement generando un informe Markdown determinista
+    (ReportingAgent), consultando la cadena de ataque en vivo desde Neo4j
+    (mismo método evaluate_attack_chain() que usa el planner_node) para que
+    el informe refleje el grafo real, no una copia estática de lo que vio
+    el planner en su momento.
+
+    Se alcanza tanto tras attack_node (ataque ejecutado, éxito o fallo)
+    como tras rejected_node (payload abortado en HITL) o blocked_node
+    (payload bloqueado por el Escudo antes de cualquier ejecución) — un
+    intento abortado también se documenta.
+    """
+    cve = state.get("discovered_cve", "")
+    attack_chain_data: list[dict] = []
+    if cve:
+        with GraphDBClient() as db:
+            attack_chain_data = db.evaluate_attack_chain(cve)
+
+    markdown = _reporter.generate_markdown_report(state, attack_chain_data)
+
+    _REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    report_path = _REPORTS_DIR / f"engagement_report_{timestamp}.md"
+    report_path.write_text(markdown, encoding="utf-8")
+
+    print(f"[reporting_node] Informe generado: {report_path}")
+    return {**state, "report_path": str(report_path)}
+
+
 # ============================================================
 # ENRUTAMIENTO CONDICIONAL
 # ============================================================
@@ -246,6 +286,7 @@ def build_graph():
     graph.add_node("blocked_node", blocked_node)
     graph.add_node("hitl_node", hitl_node)
     graph.add_node("rejected_node", rejected_node)
+    graph.add_node("reporting_node", reporting_node)
 
     graph.add_edge(START, "recon_node")
     graph.add_edge("recon_node", "planner_node")
@@ -269,9 +310,10 @@ def build_graph():
         },
     )
 
-    graph.add_edge("attack_node", END)
-    graph.add_edge("blocked_node", END)
-    graph.add_edge("rejected_node", END)
+    graph.add_edge("attack_node", "reporting_node")
+    graph.add_edge("blocked_node", "reporting_node")
+    graph.add_edge("rejected_node", "reporting_node")
+    graph.add_edge("reporting_node", END)
 
     checkpointer = MemorySaver()
     return graph.compile(checkpointer=checkpointer)
@@ -294,6 +336,7 @@ async def _main() -> None:
         "discovered_cve": "",
         "discovered_tech": "",
         "attack_evidence": "",
+        "report_path": "",
     }
 
     thread_config = {"configurable": {"thread_id": str(uuid.uuid4())}}
