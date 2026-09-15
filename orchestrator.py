@@ -25,6 +25,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
+from agents.attacker import RealAttackClient
 from agents.fuzzer import AdaptiveFuzzer
 from db.client import GraphDBClient
 from load_llm import load_model
@@ -50,6 +51,9 @@ class AgentState(TypedDict):
     # FASE 5: tecnología descubierta por recon_node, consumida por planner_node
     # para que el AdaptiveFuzzer adapte el payload al stack específico.
     discovered_tech: str
+    # FASE 6: evidencia de la ejecución real de attack_node contra el
+    # laboratorio (OWASP Benchmark). "" hasta que attack_node corre.
+    attack_evidence: str
 
 
 # ============================================================
@@ -158,9 +162,25 @@ async def validator_node(state: AgentState) -> AgentState:
 
 
 async def attack_node(state: AgentState) -> AgentState:
-    """Nodo mock de ejecución de ataque (solo alcanzable con EJECUCION_AUTOMATICA)."""
-    print(f"[attack_node] Ejecutando payload autorizado: {state['current_payload']!r}")
-    return state
+    """
+    FASE 6: ejecuta el payload autorizado de verdad contra el laboratorio
+    autorizado (OWASP Benchmark local, contenedor `owasp-benchmark`),
+    usando el caso de prueba real pathtraver-00/BenchmarkTest00001. Se
+    alcanza solo con EJECUCION_AUTOMATICA directa o tras aprobación humana
+    en la cola HITL — nunca con un payload no autorizado.
+    """
+    client = RealAttackClient()
+    result = await client.execute(state["current_payload"])
+
+    evidence = (
+        f"target={result.target_url} status={result.http_status} "
+        f"exploited={result.exploited} rationale={result.rationale!r} "
+        f"snippet={result.response_snippet!r}"
+    )
+    print(f"[attack_node] Payload ejecutado contra el laboratorio: {state['current_payload']!r}")
+    print(f"[attack_node] Evidencia: {evidence}")
+
+    return {**state, "attack_evidence": evidence}
 
 
 async def blocked_node(state: AgentState) -> AgentState:
@@ -273,6 +293,7 @@ async def _main() -> None:
         "human_approval": False,
         "discovered_cve": "",
         "discovered_tech": "",
+        "attack_evidence": "",
     }
 
     thread_config = {"configurable": {"thread_id": str(uuid.uuid4())}}
