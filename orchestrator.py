@@ -6,6 +6,11 @@ Validador (Capa Híbrida de la FASE 2) alrededor de un estado global de misión,
 con un punto de interrupción nativo (HITL) cuando el Validador enruta un
 payload a COLA_HITL.
 
+FASE 5: el planner_node ya no hardcodea payloads — invoca al AdaptiveFuzzer
+(agents/fuzzer.py), que comparte el mismo modelo local
+(Qwen2.5-1.5B-Instruct-bnb-4bit) cargado una sola vez para el Validador,
+evitando duplicar VRAM.
+
 Uso:
     .venv/bin/python orchestrator.py
 """
@@ -20,6 +25,9 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
+from agents.fuzzer import AdaptiveFuzzer
+from db.client import GraphDBClient
+from load_llm import load_model
 from security.validator import HybridPayloadValidator, RiskAssessment
 
 
@@ -34,15 +42,28 @@ class AgentState(TypedDict):
     current_payload: str
     validation_status: str  # "EJECUCION_AUTOMATICA" | "COLA_HITL" | "BLOQUEADO" | ""
     human_approval: bool
+    # FASE 4: CVE descubierto por recon_node y consumido por planner_node para
+    # consultar el Knowledge Graph. Campo añadido de forma retrocompatible:
+    # el resto de nodos que no lo usan lo ignoran, y build_graph()/AgentState
+    # no rompe ningún consumidor previo del TypedDict.
+    discovered_cve: str
+    # FASE 5: tecnología descubierta por recon_node, consumida por planner_node
+    # para que el AdaptiveFuzzer adapte el payload al stack específico.
+    discovered_tech: str
 
 
 # ============================================================
-# VALIDADOR (Capa Híbrida — FASE 2)
-# Instancia única a nivel de módulo: sin llm_model se ejerce el camino
-# fail-safe descrito en validator.py (nunca fail-open).
+# MODELO LOCAL COMPARTIDO (Qwen2.5-1.5B-Instruct-bnb-4bit)
+# Cargado UNA sola vez a nivel de proceso y reutilizado tanto por la Capa 2
+# del Validador Híbrido (FASE 2) como por el AdaptiveFuzzer (FASE 5) — nunca
+# se duplica la huella de VRAM. Si no hay GPU disponible, load_model()
+# devuelve (None, None) y ambos componentes caen a su camino fail-safe.
 # ============================================================
 
-_validator = HybridPayloadValidator()
+_llm_model, _llm_tokenizer = load_model()
+
+_validator = HybridPayloadValidator(llm_model=_llm_model, llm_tokenizer=_llm_tokenizer)
+_fuzzer = AdaptiveFuzzer(model=_llm_model, tokenizer=_llm_tokenizer)
 
 
 # ============================================================
@@ -51,20 +72,77 @@ _validator = HybridPayloadValidator()
 
 
 async def recon_node(state: AgentState) -> AgentState:
-    """Simula el descubrimiento de superficie de ataque sobre target_domain."""
+    """
+    Descubrimiento de superficie de ataque sobre target_domain, escrito
+    realmente en el Knowledge Graph (Neo4j) vía GraphDBClient.
+
+    El hallazgo simulado reutiliza deliberadamente los datos seed ya
+    presentes en el grafo (Host 10.0.4.12, Apache 2.4.49, CVE-2021-41773)
+    para que la consulta estratégica del planner_node encuentre la ruta
+    de movimiento lateral hasta el crown_jewel (10.0.4.50) ya sembrada.
+    """
     discovered = f"api.{state['target_domain']}"
-    print(f"[recon_node] Activo descubierto: {discovered}")
+    ip = "10.0.4.12"
+    tech = "Apache 2.4.49"
+    cve = "CVE-2021-41773"
+
+    with GraphDBClient() as db:
+        db.write_recon_data(target_domain=state["target_domain"], ip=ip, cve=cve, tech=tech)
+
+    print(
+        f"[recon_node] Activo descubierto: {discovered} "
+        f"(host={ip}, tech={tech}, cve={cve}) -> escrito en Neo4j (MERGE idempotente)"
+    )
     return {
         **state,
         "discovered_assets": [*state["discovered_assets"], discovered],
+        "discovered_cve": cve,
+        "discovered_tech": tech,
     }
 
 
 async def planner_node(state: AgentState) -> AgentState:
-    """Simula la decisión estratégica de qué payload probar contra el asset."""
-    print(f"[planner_node] Planificando payload para {state['discovered_assets'][-1]}")
-    # El payload ya viene fijado en current_payload por el caller (o un default aquí).
-    return state
+    """
+    El Estratega: consulta la cadena de ataque real en el Knowledge Graph
+    para el CVE descubierto por recon_node y decide la intención (agresiva
+    vs. pasiva) en función de si existe una ruta de movimiento lateral hasta
+    un activo `crown_jewel`. El payload en sí ya no está hardcodeado (FASE 5):
+    se le pide al AdaptiveFuzzer que lo genere dinámicamente con el modelo
+    local, adaptado a la tecnología descubierta.
+
+      - Ruta encontrada (objetivo_alto_valor no nulo en al menos una fila):
+        intención agresiva -> RCE/SQLi con mutación de estado. Se espera que
+        el Validador lo enrute a COLA_HITL (blast radius incluye un activo
+        crítico).
+      - Sin ruta: intención pasiva -> reconocimiento de solo lectura, se
+        espera EJECUCION_AUTOMATICA.
+    """
+    cve = state["discovered_cve"]
+    tech = state["discovered_tech"]
+    print(f"[planner_node] Planificando payload para {state['discovered_assets'][-1]} (cve={cve})")
+
+    with GraphDBClient() as db:
+        rows = db.evaluate_attack_chain(cve)
+
+    print(f"[planner_node] Resultado de la query estratégica para {cve} ({len(rows)} fila(s)):")
+    for row in rows:
+        print(f"    {row}")
+
+    has_crown_jewel_path = any(row.get("objetivo_alto_valor") is not None for row in rows)
+
+    reason = (
+        "existe ruta de movimiento lateral hasta un activo crown_jewel "
+        "-> se pide al Fuzzer una intención agresiva para forzar revisión humana (COLA_HITL)"
+        if has_crown_jewel_path
+        else "no se encontró ruta a ningún activo crown_jewel "
+        "-> se pide al Fuzzer una intención pasiva de solo lectura"
+    )
+    print(f"[planner_node] Intención: {'AGRESIVA' if has_crown_jewel_path else 'PASIVA'} — razón: {reason}")
+
+    payload = _fuzzer.generate_payload(technology=tech, cve=cve, aggressive=has_crown_jewel_path)
+    print(f"[planner_node] Payload generado dinámicamente por el Fuzzer: {payload!r}")
+
+    return {**state, "current_payload": payload}
 
 
 async def validator_node(state: AgentState) -> AgentState:
@@ -190,9 +268,11 @@ async def _main() -> None:
     initial_state: AgentState = {
         "target_domain": "target.com",
         "discovered_assets": [],
-        "current_payload": "' OR 1=1--",  # payload "peligroso" -> COLA_HITL (ver FASE 2.4)
+        "current_payload": "",  # planner_node lo fija en función de la cadena de ataque real
         "validation_status": "",
         "human_approval": False,
+        "discovered_cve": "",
+        "discovered_tech": "",
     }
 
     thread_config = {"configurable": {"thread_id": str(uuid.uuid4())}}
