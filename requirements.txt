@@ -7,3 +7,4 @@ transformers>=4.44
 torch>=2.3
 bitsandbytes>=0.43
 accelerate>=0.33
+langgraph>=1.2

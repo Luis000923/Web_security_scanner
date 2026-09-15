@@ -19,6 +19,7 @@ dependencies = [
     "pyyaml>=6.0",
     "dnspython>=2.3.0",
     "reportlab>=4.0",
+    "langgraph>=0.6.11",
 ]
 
 [project.optional-dependencies]
@@ -56,6 +57,7 @@ ai = [
 ai-local = [
     "torch>=2.6.0",
     "transformers>=4.48.0",
+    "accelerate>=0.34.0",
     "outlines>=0.1.0",
 ]
 # QLoRA fine-tuning of the local triage/synthesis agent (ai_module/train_qlora.py),
