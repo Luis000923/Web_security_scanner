@@ -1,0 +1,75 @@
+%% 05_amenazas_validez.tex — Internal, external, and construct validity.
+
+\section{Threats to Validity}
+\label{sec:amenazas}
+
+\subsection{Internal validity: JVM warm-up and isolation}
+
+OWASP Benchmark is a Java application on a servlet container. The JVM's JIT
+compiler optimizes hot code paths after several invocations, so the first
+requests to an endpoint are systematically slower than later ones. This
+introduces two biases: (i)~the time-based confirmation stage
+(\cref{sec:confirmacion}) could interpret warm-up latency as a
+payload-induced delay, inflating \textsc{confirmed} findings in the early
+phases of the scan; and (ii)~the detection-cost metric is measured in request
+index, not time, so it is robust to warm-up, but comparing absolute latency
+across configurations is not.
+
+Mitigations applied: baseline latency is resampled immediately before every
+timed test (not once at the start); the threshold $\tau = \SI{4}{\second}$ is
+generous relative to the observed warm-up variance; and every configuration
+runs against the same freshly started container, with a single client and no
+concurrent traffic, so any residual warm-up bias is common to every arm and
+cancels out in the paired contrast. Resource isolation (dedicated container,
+local network, no other scanners) reduces run-to-run variance, but does not
+eliminate that introduced by the OS scheduler or JVM garbage collection. A
+replication with explicit warm-up ($N$ discard requests per endpoint) remains
+future work.
+
+\subsection{External validity: restriction to \code{GET} vectors}
+
+The study is limited to \num{338}~injection points in \code{GET} query
+parameters, each saturating at \num{20}~requests. This corpus is too small
+to exercise the combinatorial explosion motivating
+\cref{sec:intro}'s architecture; the ablation demonstrates the scheduling
+mechanics work correctly under a modest, saturating budget, not that they
+scale favorably against a payload space large enough to actually explode.
+\code{POST} vectors with an
+\code{application/x-www-form-urlencoded} or JSON body, headers, cookies, and
+path parameters are out of scope. Consequently, the recall and cost results
+do \emph{not} generalize directly to the full attack surface of a real
+application: categories with higher incidence in \code{POST} bodies (e.g.,
+SQL injection in authentication forms) are under-represented. In addition,
+OWASP Benchmark is a synthetic testbed; its trigger payloads and response
+patterns are more regular than those of production applications, which likely
+overestimates any scanner's absolute
+recall~\cite{doupe2010johnny}. The contribution that does hold under this
+restriction is the \emph{relative} one: the effect of each pipeline stage on a
+homogeneous, controlled target set.
+
+The cross-tool comparison in \cref{sec:res-external} is a single run of each
+tool, not repeated trials, and the two scanners' default policies test
+different, non-identical rule sets by design; a single run cannot rule out
+run-to-run variance on either side, and the \emph{unrestricted} precision
+comparison in particular conflates ``did not report this category'' with
+``reported it incorrectly'' for whichever scanner's default policy is
+narrower in scope. Readers should treat \cref{tab:zap} as one honest data
+point, not a leaderboard result generalizing to other targets, policies, or
+tool versions.
+
+\subsection{Construct and conclusion validity}
+
+The oracle collapses type aliases onto common buckets; a detection with the
+``correct'' type but the ``wrong'' subclass (e.g., \emph{blind} versus
+\emph{error-based}) counts as a hit. FPR is defined only over the
+\num{144}~explicit traps; false positives against tuples that ground truth
+does not mention have no reference population and are not scored. Finally, the
+number of blocks per budget is bounded by $\lvert P \rvert = 194$, sufficient
+for the Friedman test but modest for the Nemenyi post-hoc; critical-difference
+diagrams are interpreted as indicative rather than conclusive.
+
+The LLM-triage evaluation (\cref{sec:ai-triage}) carries an additional threat:
+the backend model, prompt, and \code{ai\_fp\_threshold} are fixed at their
+defaults for a single provider; the null suppression rate reported there is a
+property of that specific configuration on this benchmark, not a general
+claim about LLM-based triage.

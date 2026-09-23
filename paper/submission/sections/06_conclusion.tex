@@ -1,0 +1,65 @@
+%% 06_conclusion.tex — Conclusion and future work.
+
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+We presented \herramienta, an asynchronous DAST engine whose architecture
+explicitly separates payload scheduling and finding confirmation into
+decoupled stages, together with a reproducible evaluation methodology on
+OWASP Benchmark, an independent oracle, an RCBD design, and a
+corpus-hashing manifest.
+
+The ablation study yields a nuanced result. Over the \NumObjetivos{}
+\code{GET}-parameter targets, the full heuristic pipeline reaches
+\ValorRecallTecho{} recall at \ValorFPRBaseline{} FPR, and \emph{saturates}
+already at \num{20}~requests per parameter. Of the four scheduling
+optimizations evaluated, only \textbf{confidence-based prioritization}
+produces a practically consequential change, and it is bounded to tight
+budgets: disabling it costs \DeltaRecallNoPriority{} recall and
+\DeltaPrecisionNoPriority{} precision at budget \num{20}, and nothing from
+\num{50} onward. \textbf{Context interleaving}, \textbf{runtime
+confirmation}, and \textbf{live adaptive sorting} do not change recall,
+precision, or FPR on this benchmark; the Friedman test detects differences in
+request \emph{order} ($p = \ValorFriedmanP{}$), but with negligible effect
+sizes ($\lvert\delta\rvert < \num{0.02}$). Layering \textbf{LLM-based triage}
+on top of the baseline pipeline suppressed no findings at any of the four
+evaluated budgets under the default confidence threshold, at no measured
+wall-clock cost (\cref{sec:ai-triage}) ---
+consistent with the same underlying explanation as the scheduling ablation:
+OWASP Benchmark's trigger signals are regular enough that a conservative
+triage model finds nothing it is confident enough to drop. The operational
+conclusion is that, on a benchmark with trigger signals as regular as OWASP
+Benchmark's, the benefit of payload scheduling is one of \emph{anticipation}
+--- higher area under the detection curve when the budget is tight --- rather
+than a higher detection \emph{ceiling}, and that neither runtime confirmation
+nor LLM triage penalize precision because the raw indicators are already
+reliable in this scenario.
+
+\noindent\textbf{Future work.}
+\begin{enumerate}
+  \item Repeat the external baseline of \cref{sec:res-external} with
+  multiple trials of OWASP ZAP (and add Burp Suite and/or Nuclei) to turn the
+  current single-run comparison into a statistically tested one, and restrict
+  each tool's active-scan policy to a matched rule set for a stricter
+  apples-to-apples reading.
+  \item Repeat the study on real-world applications and benchmarks with noisy
+  signals, where runtime confirmation and LLM-based triage should show the
+  false-positive-reduction value that was not observable here.
+  \item Extend the benchmark to \code{POST} vectors, headers, and cookies to
+  characterize categories that are currently under-represented.
+  \item Widen the grid to budgets $\le \num{10}$ with replicates, where the
+  effect of prioritization is largest, to narrow the confidence intervals.
+  \item Add explicit JVM warm-up and repeat the absolute-latency analysis
+  across configurations.
+  \item Sweep the LLM triage confidence threshold and backend model, and
+  evaluate triage on a corpus with a deliberately elevated false-positive
+  rate to characterize the suppression/false-negative trade-off this
+  benchmark could not exercise.
+  \item Publish the complete set of manifests and JSONL traces as a
+  verifiable research artifact.
+  \item Extend the engine into the autonomous red-team pipeline currently
+  under development in this repository --- a LangGraph orchestrator
+  coordinating attacker, adaptive-fuzzer, CTI-ingestion, and reporting agents
+  on top of \herramienta's scanning core --- and evaluate it as its own
+  experimental subject once it reaches a stable interface.
+\end{enumerate}

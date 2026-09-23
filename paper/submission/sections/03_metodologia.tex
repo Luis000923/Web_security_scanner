@@ -1,0 +1,144 @@
+%% 03_metodologia.tex — Testbed, oracle, RCBD design, reproducibility.
+
+\section{Experimental Methodology}
+\label{sec:metodologia}
+
+\subsection{Testbed}
+\label{sec:testbed}
+
+The evaluation target is OWASP Benchmark~\cite{owaspbenchmark}, a
+deliberately vulnerable Java application with labeled test cases. It is
+deployed via \code{docker compose}, serving HTTPS on port \num{8443} with a
+self-signed certificate (hence every probe uses \code{-{}-no-verify-ssl}). To
+bound the study to a single vector type, the benchmark is restricted to the
+\textbf{\num{338}~\code{GET}-parameter cases} (\code{vector = getparam}). The
+\code{build\_ground\_truth.py} generator produces the ground-truth file as an
+array of
+$\langle \code{url}, \code{param}, \code{type}, \code{vulnerable} \rangle$
+records; records with \code{vulnerable = false} are explicit \emph{traps}
+(known-safe points that must not fire). \Cref{tab:testbed} summarizes its
+composition.
+
+\begin{table}[t]
+  \centering
+  \caption{Ground-truth composition (OWASP Benchmark, \code{getparam}
+  vectors).}
+  \label{tab:testbed}
+  \begin{tabular}{lrr}
+    \toprule
+    Category & Vulnerable instances & Traps \\
+    \midrule
+    Reflected XSS            & 68 & \multirow{5}{*}{144} \\
+    SQL Injection             & 65 & \\
+    Path Traversal            & 30 & \\
+    Command Injection         & 25 & \\
+    LDAP Injection             & 6  & \\
+    \midrule
+    \textbf{Total}            & \textbf{194} & \textbf{144} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Grading oracle}
+\label{sec:oraculo}
+
+Grading is performed by \code{tools/eval\_oracle.py}, an independent script
+with no third-party dependencies. It normalizes every
+$(\code{url}, \code{param}, \code{type})$ tuple with the same folding
+functions the scan pipeline uses (query string and fragment are dropped; type
+aliases collapse onto the same bucket), and computes:
+\begin{align}
+  \mathrm{TP} &= \lvert H \cap P \rvert, &
+  \mathrm{FP} &= \lvert H \setminus P \rvert, \nonumber\\
+  \mathrm{FN} &= \lvert P \setminus H \rvert, &
+  \mathrm{FPR} &= \frac{\lvert H \cap T \rvert}{\lvert T \rvert},
+  \label{eq:metricas}
+\end{align}
+where $H$ is the set of findings, $P$ the set of vulnerable instances, and $T$
+the set of traps. FPR is defined \emph{exclusively} over the known-trap
+population; when ground truth defines no traps, \code{N/A} is reported.
+Precision, recall, and $F_1$ are derived from these.
+
+\subsection{Experimental design}
+\label{sec:diseno}
+
+A \textbf{randomized complete block design} (RCBD) is used, where:
+
+\begin{itemize}
+  \item The \textbf{factor} is the pipeline configuration, with five
+  heuristic-pipeline levels --- \code{baseline} (all optimizations on,
+  including the live adaptive-sorting loop), \code{no-interleave},
+  \code{no-priority}, \code{no-runtime-confirm}, and
+  \code{no-adaptive-sorting} --- i.e., a single-component ablation per arm.
+  A sixth arm, \code{ai-triage}, layers the LLM-based triage stage on top of
+  \code{baseline} and is evaluated and reported separately
+  (\cref{sec:ai-triage}), since it targets false-positive suppression rather
+  than request scheduling.
+  \item The \textbf{request budget}
+  (\code{-{}-max-payloads} $\in \{10, 20, 50, \infty\}$) is treated as a
+  blocking factor: detection is trivially monotone in the budget, and
+  blocking on it isolates the configuration effect.
+  \item The \textbf{blocking unit} for significance testing is the
+  \emph{per-vulnerable-instance detection cost}: the \code{request\_index} of
+  the first probe that detects it, censored at $(\text{budget}+1)$ when never
+  detected.
+\end{itemize}
+
+The full ablation grid is $4 \times 5 = 20$ runs, orchestrated by
+\code{tools/run\_experiments.py} and consolidated into
+\code{testbed/experiment\_results.csv}; all \num{20} were graded successfully
+(\cref{sec:resultados}). The \code{ai-triage} arm adds \num{4} further runs
+(one per budget) on top of \code{baseline}, graded and reported in
+\cref{sec:ai-triage}. Every run produces its own JSONL telemetry, its JSON
+report, and its \code{metrics.json}.
+
+\subsection{Efficiency metric: detection-curve AUC}
+\label{sec:auc}
+
+For each run we build the step curve
+$c(k) = \lvert \{\text{instances detected with } \code{request\_index} \le k\} \rvert$.
+Taken on normalized axes (recall versus fraction of budget), its area
+\begin{equation}
+  \mathrm{AUC} = \int_0^1 \frac{c(k)}{\lvert P \rvert}\, \mathrm{d}\hat{k}
+  \label{eq:auc}
+\end{equation}
+equals mean recall over the budget and is the primary efficiency measure: a
+pipeline that detects the same set but earlier has a higher AUC.
+
+\subsection{Statistical tests}
+\label{sec:tests}
+
+For every budget at which \code{baseline}, \code{no-interleave},
+\code{no-priority}, and \code{no-runtime-confirm} completed, the four
+detection-cost vectors are compared with:
+\begin{enumerate}
+  \item a \textbf{Friedman} test~\cite{friedman1937use} across the
+  configurations (blocks $=$ vulnerable instances);
+  \item a \textbf{Nemenyi}~\cite{nemenyi1963distribution} post-hoc for
+  pairwise comparisons;
+  \item \textbf{Wilcoxon} signed-rank and \textbf{McNemar} tests for
+  \code{baseline} versus each ablation, with
+  \textbf{Benjamini--Hochberg}~\cite{benjamini1995controlling} correction
+  across the family of pairs;
+  \item \textbf{Cliff's $\delta$}~\cite{cliff1993dominance} as a
+  non-parametric effect size (a $\delta > 0$ indicates the ablation is slower
+  or worse).
+\end{enumerate}
+This protocol follows Dem\v{s}ar's recommendations for comparing methods
+across multiple datasets~\cite{demsar2006statistical}. Blocks are further
+pooled across all budgets for a global test. The fifth arm,
+\code{no-adaptive-sorting}, is contrasted separately against \code{baseline}
+as a paired adaptive-versus-static test on first-true-positive cost
+(\cref{sec:res-adaptive}), since it targets the live feedback loop rather
+than a static scheduling stage.
+
+\subsection{Reproducibility pillars}
+\label{sec:reprod}
+
+Every reported run ships with: (i)~the manifest of \cref{sec:manifiesto},
+carrying the corpus's SHA-256 hash and the \code{git} commit; (ii)~a global
+seed (\code{-{}-global-seed}) that fixes the \code{random} payload ordering,
+User-Agent rotation, jitter, and case mutation; and (iii)~the orchestration
+script, which is idempotent --- an existing results directory is skipped
+unless \code{-{}-force} is given, so an interrupted sweep resumes without
+recomputation.

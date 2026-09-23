@@ -1,0 +1,110 @@
+%% 04b_ai_triage.tex — LLM-based triage evaluation.
+%%
+%% Numeric content: testbed/experiment_results.csv (ai-triage rows) +
+%% testbed/analysis/ai_triage.json, produced by tools/analyze_results.py.
+
+\section{LLM-Based Triage Evaluation}
+\label{sec:ai-triage}
+
+Beyond the scheduling pipeline, \herramienta offers an opt-in LLM-based
+triage stage (\code{-{}-enable-ai-triaging}) that re-scores every raw finding
+using the request/response evidence already collected by the heuristic
+engine, without an additional network round trip to the target. Each
+candidate finding is sent to an LLM backend (\code{AgentClient}) together
+with its payload, response snippet, and heuristic confidence; the model
+returns a suppression probability, and findings scoring above
+\code{ai\_fp\_threshold} ($=\num{0.75}$ by default) are dropped before the
+report is written. Degradation is transparent: if \code{ai\_module} is
+unavailable, the backend fails its health check, or a per-call request
+errors, the tester falls back to the deterministic heuristic decision and the
+scan continues.
+
+\subsection{Setup}
+
+The \code{ai-triage} arm layers this stage on top of \code{baseline} ---
+identical scheduling pipeline, identical corpus, identical budgets --- so any
+difference against \code{baseline} isolates the triage stage's effect.
+\Cref{tab:aitriage} reports, per budget: the number of candidates the model
+triaged (\code{AI\_Triaged}), how many it suppressed
+(\code{AI\_Suppressed}), how many of those were true false positives
+(\code{AI\_FP\_Suppressed}), and how many were real vulnerabilities the model
+incorrectly hid (\code{AI\_FN\_Introduced}).
+
+\begin{table}[t]
+  \centering
+  \caption{LLM triage audit trail, \code{ai-triage} arm (\code{baseline}
+  pipeline + LLM-based triage, \code{ai\_fp\_threshold}$=\num{0.75}$). Source:
+  \code{experiment\_results.csv}.}
+  \label{tab:aitriage}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{r S[table-format=3.0] S[table-format=2.0] S[table-format=2.0] S[table-format=2.0]}
+    \toprule
+    Budget & {Triaged} & {Suppr.} & {FP suppr.} & {FN introd.} \\
+    \midrule
+    10        & 441 & 0 & 0 & 0 \\
+    20        & 459 & 0 & 0 & 0 \\
+    50        & \ValorAITriageBudgetFiftyTriaged{} & \ValorAITriageBudgetFiftySuppressed{}
+              & \ValorAITriageBudgetFiftyFPSuppressed{} & \ValorAITriageBudgetFiftyFNIntroduced{} \\
+    $\infty$  & \ValorAITriageBudgetInfTriaged{} & \ValorAITriageBudgetInfSuppressed{}
+              & \ValorAITriageBudgetInfFPSuppressed{} & \ValorAITriageBudgetInfFNIntroduced{} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Latency overhead}
+\label{sec:ai-triage-latency}
+
+Triage calls run through a \code{BatchingTriageClient} that queues candidates
+and issues them off the event loop, overlapped with the scan's own in-flight
+requests, rather than blocking on a round trip per finding. Comparing the
+wall-clock span of each \code{ai-triage} run against its \code{baseline}
+counterpart at the same budget (identical telemetry row count, so identical
+work) isolates the added cost: \SI{+12.2}{\second} at budget \num{10},
+\SI{-32.2}{\second} at budget \num{20}, \SI{+0.6}{\second} at budget
+\num{50}, and \SI{-41.3}{\second} at budget $\infty$ (a \SI{1568}{\second}
+run) --- within ordinary run-to-run variance in both directions, not a
+systematic overhead. This does not mean LLM inference is free: it means the
+async batching design keeps its latency off the scan's critical path for
+this backend and candidate volume (\ValorAITriageTotalTriaged{} candidates
+across four runs). A backend with materially higher per-call latency, or a
+target with a much larger candidate volume, could still saturate the batching
+queue; that stress case is not exercised here.
+
+\subsection{Result: null suppression under the default threshold}
+\label{sec:ai-triage-result}
+
+Across every evaluated budget, the LLM triage stage suppressed
+\textbf{zero} findings: \ValorAITriageTotalTriaged{} candidates were sent to
+the model and none scored above the \num{0.75} suppression threshold. As a
+direct consequence, \code{ai-triage} precision, recall, and $F_1$ are
+identical to \code{baseline}'s at every budget (\cref{tab:auc} versus
+\cref{tab:aitriage}), and no false negative was introduced.
+
+This is a legitimate negative result, not an inconclusive one, and it is
+consistent with the same root cause identified in the scheduling ablation
+(\cref{sec:res-sintesis}): OWASP Benchmark's trigger signals are unusually
+regular. Its reflected-XSS and error-based-SQLi findings carry unambiguous
+textual evidence (the payload verbatim in the response, or a
+database-specific error string), which is exactly the kind of signal a
+threshold-\num{0.75} triage model is calibrated \emph{not} to override,
+since doing so risks the false negative the related-work literature
+identifies as the real cost of aggressive
+triage~\cite{du2026reducing,ameen2026qasecclaw}. On this benchmark the
+already-low false-positive population (\NumTrampas{} known traps, a
+\ValorFPRBaseline{} FPR at \code{baseline}) leaves little genuine noise for
+an LLM triage stage to remove: the reported 88--98\,\% false-positive
+reductions in the static-analysis
+literature~\cite{munson2025llmfriends,ameen2026qasecclaw,du2026reducing} are
+measured against corpora with a substantially higher false-positive rate than
+the one this DAST pipeline already achieves through its heuristic
+confirmation stage (\cref{sec:confirmacion}) before triage ever runs: this
+benchmark is close to the wrong instrument for the question the stage is
+meant to answer, and a null suppression rate here is evidence about the
+target, not a validation of the triage stage's safety or effectiveness in
+general. We report it anyway, instead of omitting an inconvenient arm, because
+the alternative --- silently dropping the evaluation --- would be worse
+scientific practice than an honest negative result. Whether the stage
+suppresses real noise, and at what recall cost, on a target with a
+deliberately elevated false-positive rate is the open question the future
+work of \cref{sec:conclusion} takes up.

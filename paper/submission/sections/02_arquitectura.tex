@@ -1,0 +1,187 @@
+%% 02_arquitectura.tex — Async engine, ablation pipeline, telemetry.
+
+\section{Architecture and Design}
+\label{sec:arquitectura}
+
+\herramienta is structured into four subsystems: the asynchronous HTTP core,
+the payload loader, the vulnerability-tester hierarchy with its scheduling
+pipeline, and the telemetry/reproducibility instrumentation.
+\Cref{fig:arquitectura} summarizes the workflow.
+
+% ---------------------------------------------------------------- figure ----
+\begin{figure*}[t]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[node distance=6mm and 10mm]
+    % --- input
+    \node[bloque] (cli) {CLI / \\ target list};
+    \node[nucleo, right=of cli] (core) {HTTP core \\ \code{AsyncScannerCore}\\[-1pt]
+      \scriptsize \code{aiohttp} session, GET cache,\\[-2pt]
+      \scriptsize token bucket, SSRF guard};
+    \node[nucleo, right=of core] (pool) {Worker pool \\ with back-pressure\\[-1pt]
+      \scriptsize $(tester, url)$ pairs};
+
+    % --- ablation pipeline
+    \node[ablac, below=14mm of core] (load) {Payload loader\\[-2pt]
+      \scriptsize 14 categories, on-disk corpus\\[-2pt]
+      \scriptsize \code{PAYLOAD/data/*.json}};
+    \node[ablac, right=of load] (sched) {Scheduling pipeline\\[-2pt]
+      \scriptsize \code{drop\_oob} $\to$ \textbf{interleave} $\to$\\[-2pt]
+      \scriptsize \textbf{prioritize} $\to$ \textbf{order} $\to$ mutate};
+    \node[ablac, right=of sched] (probe) {Probe + \\ confirmation\\[-2pt]
+      \scriptsize reflection / error / \\[-2pt]
+      \scriptsize \code{confirm\_time\_based} ($\tau=\SI{4}{\second}$)};
+
+    % --- artifacts
+    \node[artefacto, below=14mm of load] (tel) {\code{TelemetryWorker}\\[-2pt]
+      \scriptsize non-blocking queue,\\[-2pt]
+      \scriptsize \code{asyncio.to\_thread} write};
+    \node[artefacto, right=of tel] (jsonl) {JSONL telemetry\\[-2pt]
+      \scriptsize 1 row / payload probe};
+    \node[artefacto, right=of jsonl] (manif) {Manifest\\[-2pt]
+      \scriptsize corpus SHA-256, \code{git},\\[-2pt]
+      \scriptsize global seed};
+    \node[artefacto, right=of manif] (report) {Report\\[-2pt]
+      \scriptsize JSON / HTML,\\[-2pt]
+      \scriptsize secrets masked};
+
+    % --- arrows
+    \draw[flecha] (cli) -- (core);
+    \draw[flecha] (core) -- (pool);
+    \draw[flecha] (pool.south) to[out=-90,in=90] (probe.north);
+    \draw[flecha] (load) -- (sched);
+    \draw[flecha] (sched) -- (probe);
+    \draw[flecha] (core.south) to[out=-90,in=90] (load.north);
+    \draw[flecha] (probe.south) to[out=-90,in=90] (jsonl.north);
+    \draw[flecha] (load.south) to[out=-90,in=90] (tel.north);
+    \draw[flecha] (tel) -- (jsonl);
+    \draw[flecha] (jsonl) -- (manif);
+    \draw[flecha] (manif) -- (report);
+
+    \begin{scope}[on background layer]
+      \node[fit=(load)(sched)(probe), draw=orange!50, dashed,
+            rounded corners, inner sep=4mm,
+            label={[orange!70!black,font=\footnotesize]above:%
+            Payload ablation pipeline}] {};
+    \end{scope}
+  \end{tikzpicture}%
+  }
+  \caption{Workflow of \herramienta. The asynchronous HTTP core concentrates
+  all network I/O; the worker pool dispatches $(tester, url)$ pairs with
+  back-pressure. Each tester loads its payload corpus and runs it through the
+  scheduling pipeline before probing the target. The confirmation stage
+  relabels finding confidence. \code{TelemetryWorker} writes one JSONL row per
+  probe without blocking the event loop; the manifest fixes the
+  reproducibility inputs.}
+  \label{fig:arquitectura}
+\end{figure*}
+
+\subsection{Asynchronous HTTP core}
+\label{sec:nucleo}
+
+All network traffic goes through \code{AsyncScannerCore.request()}, a single
+choke point built on an \code{aiohttp.ClientSession}. Centralizing I/O lets
+the engine uniformly apply: (a)~a response cache for \code{200}-status
+\code{GET} requests; (b)~token-bucket rate limiting; (c)~seedable User-Agent
+rotation; (d)~separate timeouts for connection establishment and socket
+reads; (e)~a \SI{5}{\mebi\byte} cap on the response body, with chunked reading
+and a truncation flag; and (f)~a Server-Side Request Forgery safeguard that
+rejects redirects toward private addresses unless explicitly authorized. The
+\code{elapsed} field the core returns is monotonic and spans redirects; for
+per-probe latency measured for scientific purposes, \code{time.perf\_counter()}
+is instead measured at the tester boundary.
+
+Work dispatch uses \code{run\_worker\_pool()}, which enforces back-pressure
+through a bounded queue (\code{queue\_factor}) so that target discovery cannot
+overrun memory or saturate the target. \code{SIGINT} handling is orderly: the
+queue is drained and the session is closed idempotently.
+
+\subsection{Payload-scheduling pipeline}
+\label{sec:pipeline}
+
+Every tester derives from a common base class that resolves payload loading
+through \code{load\_payloads()}. Internally, this routine applies, in order,
+the following stages, all of them independently toggleable for the ablation
+study:
+
+\begin{enumerate}
+  \item \code{\_drop\_useless\_oob}: discards out-of-band payloads when no
+  collector is configured.
+  \item \code{\_interleave\_by\_context} (\textsc{interleave}): reorders the
+  list to alternate across syntactic contexts (HTML, attribute, JavaScript,
+  URL, SQL, \dots) instead of exhausting one context before moving to the
+  next. The intuition is that, under a tight budget, covering one
+  representative payload per context first maximizes the probability of an
+  early hit.
+  \item \code{\_prioritize} (\textsc{prioritize}): a stable sort by
+  $(\text{a-priori confidence}, \text{severity})$, so that vectors with higher
+  historical success probability and greater impact are tried first.
+  \item \code{\_apply\_payload\_order} (\textsc{order}): a configurable
+  terminal policy --- \code{natural} (identity), \code{random} (seeded
+  shuffle), or \code{freq} (most-populated context groups first).
+  \item \textbf{Live adaptive sorting} (\textsc{adaptive}): a
+  feedback loop that re-ranks the remaining queue mid-scan using the
+  hit/miss outcomes observed so far for each context, in place of the
+  a-priori \code{freq} order fixed before the scan starts. Disabling it
+  (\code{--no-adaptive-sorting}) pins the pipeline to the static a-priori
+  order and isolates the contribution of the online feedback loop
+  (\cref{sec:resultados}).
+  \item \code{\_apply\_runtime\_mutations}: WAF-evasion transformations and
+  case variation applied at send time.
+\end{enumerate}
+
+\subsection{Runtime confirmation and calibrated confidence}
+\label{sec:confirmacion}
+
+Every finding carries a confidence level from the ordered domain
+$\{\textsc{low}, \textsc{medium}, \textsc{high}, \textsc{confirmed}\}$. The
+corpus assigns an a-priori confidence to each payload; the confirmation stage
+produces the \emph{final} confidence:
+
+\begin{itemize}
+  \item \textbf{Time-based SQL injection.} Baseline latency is resampled
+  (\code{measure\_baseline\_latency}) and the response to the timed payload is
+  contrasted against a threshold $\tau = \SI{4}{\second}$
+  (\code{confirm\_time\_based}); only if the difference exceeds the threshold
+  is the finding marked \textsc{confirmed}.
+  \item \textbf{XSS.} A raw reflection is refined according to the HTML
+  context in which it appears (\code{\_assess}), promoting it to \textsc{high}
+  or downgrading it to \textsc{low}.
+  \item Under the \code{--no-runtime-confirm} ablation, both branches are
+  short-circuited and the finding is reported with the payload's a-priori
+  confidence, leaving a record (\code{verification=skipped}) in the evidence.
+  The probe is logged to telemetry either way.
+\end{itemize}
+
+\subsection{Non-blocking telemetry}
+\label{sec:telemetria}
+
+\code{TelemetryWorker} decouples event generation from persistence. Its
+\code{record()} method is synchronous and non-blocking: it enqueues the row
+and assigns a \code{request\_index} (run-scoped, monotonic), an ISO-8601 UTC
+timestamp, and a \rid. An asynchronous consumer batches rows and writes them
+through \code{asyncio.to\_thread()}, so the event loop never blocks on disk
+I/O. If the queue fills up, excess rows are dropped and counted
+(\code{dropped}), preserving the back-pressure property.
+
+The \textbf{granularity} is deliberate: one JSONL row per \emph{payload
+probe}, after the tester's confirmation heuristics, not per socket write.
+Baseline and confirmation sub-requests are not logged individually. Each
+row's schema includes \code{run\_id, timestamp, tester\_id, payload\_id,
+context, confidence\_apriori, url, method, elapsed\_time, decision,
+confidence\_final}, and \code{request\_index}. This trace is the primary input
+for the detection-cost analysis in \cref{sec:resultados}.
+
+\subsection{Reproducibility: the per-run manifest}
+\label{sec:manifiesto}
+
+Alongside telemetry, every instrumented run emits a JSON manifest that fixes:
+the schema version, the \rid, the creation timestamp, the \code{git} commit
+(\code{unknown} when not applicable), the RNG's global seed, and a
+\code{corpus} block with the SHA-256 hash computed over the sorted
+\code{PAYLOAD/data/*.json} files (each file name is mixed into the digest)
+plus the file list and its count. The complete run configuration dictionary
+is also included. Hash computation and the \code{git} query run on a separate
+thread; a failure is logged and ignored, without aborting or delaying the
+scan. This artifact makes it possible to verify \emph{a posteriori} that two
+runs share exactly the same corpus and configuration.

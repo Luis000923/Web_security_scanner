@@ -1,0 +1,96 @@
+%% _datos.tex — Result-variable macros, auto-replaceable from the analysis.
+%%
+%%  Source: tools/analyze_results.py over testbed/experiment_results.csv
+%%  (20 graded ablation runs: budgets {10,20,50,inf} x 5 pipeline
+%%  configurations, all complete blocks; plus 4 ai-triage runs, one per
+%%  budget, evaluated separately). Regenerated 2026-09-23 from a real
+%%  telemetry sweep against the live OWASP Benchmark testbed.
+%%
+%%  Convention: percentages include "\%"; statistics use \num{}.
+%%  Unless stated otherwise, recall/AUC/cost values are at the intermediate
+%%  budget of 20 requests/parameter (where the configurations diverge; at
+%%  larger budgets they converge).
+
+% --- Fixed experiment parameters -------------------------------------------
+\newcommand{\NumObjetivos}{338}
+\newcommand{\NumVulnerables}{194}
+\newcommand{\NumTrampas}{144}
+\newcommand{\NumCorridas}{20}
+\newcommand{\NumConfigsAblation}{5}
+\newcommand{\NumBloquesCompletos}{4}
+\newcommand{\UmbralTiempo}{4\,s}
+
+% --- Recall at budget 10 and at saturation (budget >= 20) ------------------
+\newcommand{\ValorRecallBudgetTen}{\num{0.675}}
+\newcommand{\ValorRecallTecho}{\num{70.6}\%}
+
+% --- Area under the detection curve (AUC = mean recall / budget) ----------
+% At the intermediate budget of 20 requests/parameter:
+\newcommand{\ValorAUCBaseline}{\num{0.356}}
+\newcommand{\ValorAUCNoInterleave}{\num{0.356}}
+\newcommand{\ValorAUCNoPriority}{\num{0.350}}
+\newcommand{\ValorAUCNoRuntimeConfirm}{\num{0.355}}
+\newcommand{\ValorAUCNoAdaptiveSorting}{\num{0.355}}
+% Per-budget AUC and Prec./Rec./F1 for all five configurations are hardcoded
+% directly in Table tab:auc's S-columns (siunitx S columns reject nested
+% \num{} macros), sourced from testbed/analysis/summary_by_run.csv.
+
+% --- Aggregate baseline metrics (budget 20) --------------------------------
+\newcommand{\ValorPrecisionBaseline}{\num{64.0}\%}
+\newcommand{\ValorRecallBaseline}{\num{70.6}\%}
+\newcommand{\ValorFOneBaseline}{\num{67.2}\%}
+\newcommand{\ValorFPRBaseline}{\num{1.4}\%}
+\newcommand{\ValorFPRBudgetAlto}{\num{2.1}\%}
+
+% --- Recall/precision drop from disabling each optimization vs. baseline,
+%     at budget 20 (percentage points) ---------------------------------
+\newcommand{\DeltaRecallNoInterleave}{\num{0.0}~p.p.}
+\newcommand{\DeltaRecallNoPriority}{\num{3.1}~p.p.}
+\newcommand{\DeltaRecallNoRuntimeConfirm}{\num{0.0}~p.p.}
+\newcommand{\DeltaPrecisionNoPriority}{\num{5.5}~p.p.}
+\newcommand{\DeltaFOneNoPriority}{\num{4.5}~p.p.}
+\newcommand{\NoPriorityVulnPerdidas}{6}
+\newcommand{\NoPriorityFPnuevos}{16}
+
+% --- Mean detection cost (index of the first hit, censored; pooled block) -
+\newcommand{\ValorCosteBaseline}{\num{40247}}
+\newcommand{\ValorCosteNoInterleave}{\num{40042}}
+\newcommand{\ValorCosteNoPriority}{\num{39847}}
+\newcommand{\ValorCosteNoRuntimeConfirm}{\num{40226}}
+
+% --- Friedman test on per-instance detection cost, pooled block over the
+%     4 complete budgets {10,20,50,inf} -----------------------------------
+\newcommand{\ValorFriedmanChiSq}{\num{1001.7}}
+\newcommand{\ValorFriedmanP}{\num{7.8e-217}}
+\newcommand{\ValorFriedmanN}{\num{776}}
+
+% --- Paired Wilcoxon (baseline vs. ablation), BH-corrected p (pooled) -----
+\newcommand{\ValorWilcoxonPNoInterleave}{\num{9.1e-31}}
+\newcommand{\ValorWilcoxonPNoPriority}{\num{4.4e-103}}
+\newcommand{\ValorWilcoxonPNoRuntimeConfirm}{\num{3.6e-4}}
+
+% --- Effect size: Cliff's delta (baseline vs. ablation, pooled) -----------
+\newcommand{\ValorCliffNoInterleave}{\num{-0.001}}
+\newcommand{\ValorCliffNoPriority}{\num{-0.012}}
+\newcommand{\ValorCliffNoRuntimeConfirm}{\num{-0.001}}
+\newcommand{\MagnitudCliffNoInterleave}{negligible}
+\newcommand{\MagnitudCliffNoPriority}{negligible}
+\newcommand{\MagnitudCliffNoRuntimeConfirm}{negligible}
+
+% --- Nemenyi post-hoc (pooled): p of baseline vs. each ablation ----------
+\newcommand{\ValorNemenyiNoInterleave}{\ensuremath{<}\,\num{0.001}}
+\newcommand{\ValorNemenyiNoPriority}{\ensuremath{<}\,\num{0.001}}
+\newcommand{\ValorNemenyiNoRuntimeConfirm}{\num{0.361}}
+
+% --- LLM triage arm (ai-triage): total candidates across the 4 budgets and
+%     per-budget audit trail (50 / unlimited rows referenced in Table
+%     tab:aitriage; 10 / 20 are inlined directly in sec:ai-triage-result) --
+\newcommand{\ValorAITriageTotalTriaged}{\num{1852}}
+\newcommand{\ValorAITriageBudgetFiftyTriaged}{476}
+\newcommand{\ValorAITriageBudgetFiftySuppressed}{0}
+\newcommand{\ValorAITriageBudgetFiftyFPSuppressed}{0}
+\newcommand{\ValorAITriageBudgetFiftyFNIntroduced}{0}
+\newcommand{\ValorAITriageBudgetInfTriaged}{476}
+\newcommand{\ValorAITriageBudgetInfSuppressed}{0}
+\newcommand{\ValorAITriageBudgetInfFPSuppressed}{0}
+\newcommand{\ValorAITriageBudgetInfFNIntroduced}{0}

@@ -1,0 +1,121 @@
+%% 01_introduccion.tex — Context, challenges, related work, contributions.
+
+\section{Introduction}
+\label{sec:intro}
+
+Dynamic Application Security Testing (DAST) evaluates a running system by
+sending manipulated requests and observing the response, with no access to
+source code. Compared to static analysis, its main advantage is the absence
+of assumptions about the target's language or framework; its main drawback is
+cost. Comparative studies have repeatedly shown that black-box scanners
+exhibit uneven coverage and elevated false-positive
+rates~\cite{doupe2010johnny,bau2010state,parvez2015analysis}, which erodes the
+development team's trust and, in practice, leads reports to be ignored.
+
+We identify three concrete challenges that this work addresses explicitly:
+
+\begin{enumerate}
+  \item \textbf{Accumulated latency.} A realistic scan involves on the order
+  of $10^4$--$10^5$ HTTP requests. Executed sequentially, network latency
+  dominates total run time and makes integrating DAST into every \emph{commit}
+  infeasible.
+  \item \textbf{Noise (false positives).} Detection based solely on a
+  reflected string or a database error pattern produces findings that are not
+  exploitable. Telling an inert reflection apart from real execution requires
+  a second, targeted observation.
+  \item \textbf{Combinatorial explosion.} The product (injection points)
+  $\times$ (payloads per category) $\times$ (evasion transformations) grows
+  until testing everything under a fixed time budget becomes impossible; the
+  order in which that budget is spent determines what gets detected. This
+  paper's architecture is designed to withstand that growth (\cref{sec:pipeline}),
+  but the evaluation in \cref{sec:resultados} exercises the scheduling
+  mechanics on a constrained corpus --- \num{338}~\code{GET} parameters that
+  saturate at \num{20}~requests each --- not a payload space large enough to
+  demonstrate the explosion itself; \cref{sec:amenazas} discusses this
+  restriction.
+\end{enumerate}
+
+\subsection{Related work}
+\label{sec:related}
+
+\noindent\textbf{LLM-based vulnerability triage.} LLM-assisted triage of
+security findings is an active area outside of DAST. Static-analysis
+pipelines that pair a deterministic scanner (Semgrep, CodeQL) with an LLM
+adjudication stage report large false-positive reductions: Munson~\emph{et
+al.} enrich static findings with reachability context before LLM
+adjudication~\cite{munson2025llmfriends}; Ameen~\emph{et al.}'s multi-agent
+\textsc{QASecClaw} raises the $F_1$ score of standalone Semgrep from
+78.4\,\% to 90.9\,\% on Java test cases by suppressing non-exploitable
+alerts~\cite{ameen2026qasecclaw}; Agrawal and Ahi's \textsc{SAST-Genius}
+hybrid framework cuts Semgrep's false positives by 91\,\% (225 to 20) through
+LLM-driven triage, dynamic bug descriptions, and exploit-generation
+validation~\cite{agrawal2025sastgenius}; and Du~\emph{et al.}'s industrial
+study at Tencent reports that hybrid LLM/static-analysis triage eliminates
+94--98\,\% of false positives while preserving recall, at a marginal cost of
+\SIrange{2.1}{109.5}{\second} per alert~\cite{du2026reducing}. These results
+motivate the LLM-triage stage evaluated in \cref{sec:ai-triage}: unlike the
+static-analysis setting, a DAST finding already carries live request/response
+evidence, so triage here re-scores an executed probe rather than a static
+alert. All four studies report their false-positive reductions against
+corpora with a substantial false-positive population to begin with; none
+addresses the scheduling problem that determines \emph{which} payloads reach
+the target under a fixed request budget in the first place, nor evaluates
+triage on a target whose noise floor is already low --- both of which
+\cref{sec:resultados,sec:ai-triage} take up directly.
+
+\noindent\textbf{Payload and seed scheduling.} Outside DAST, the greybox
+fuzzing literature treats seed/input scheduling as a first-class problem:
+She~\emph{et al.} prioritize fuzzing seeds by graph-centrality analysis of
+the program's control-flow graph to maximize coverage growth per
+execution~\cite{she2022effective}, the same anticipation argument this paper
+makes for confidence-based payload prioritization
+(\cref{sec:pipeline,sec:res-sintesis}) --- earlier detection per request
+under a fixed budget, not necessarily a higher final yield. To our knowledge
+no prior work transfers this scheduling framing to black-box DAST payload
+selection, where the search space is a fixed, tester-supplied corpus rather
+than a mutation-generated one.
+
+\noindent\textbf{OWASP Benchmark as an evaluation target.} Potti~\emph{et
+al.} benchmark OWASP ZAP v2.12.0 and v2.13.0 on the OWASP Benchmark project,
+reporting an aggregate true-positive rate of 68.75--74.63\,\% at a
+0.86--3.45\,\% false-positive rate across vulnerability
+categories~\cite{potti2025benchmarking}. \Cref{sec:res-external} runs a newer
+ZAP release (2.17.0) ourselves against this paper's own \num{338}-target
+list under the same oracle used throughout this paper, and finds their
+published range consistent with our own single-run result.
+
+\noindent\textbf{Contributions.} This paper makes the following
+contributions:
+
+\begin{itemize}
+  \item An asynchronous DAST engine with a single HTTP choke point,
+  back-pressured concurrency control, token-bucket rate limiting, and
+  safeguards against SSRF in redirect following (\cref{sec:arquitectura}).
+  \item A payload-scheduling pipeline with decoupled stages --- context
+  interleaving, prioritization, ordering, and a live adaptive-sorting
+  feedback loop --- plus a runtime-confirmation stage that calibrates finding
+  confidence (\cref{sec:arquitectura,sec:metodologia}).
+  \item An optional LLM-based triage stage that re-scores executed probes
+  using request/response context, and an honest evaluation of it against the
+  same budget grid, including a null-result case where it suppresses nothing
+  and a measured wall-clock overhead of zero (\cref{sec:ai-triage}).
+  \item A non-blocking \code{TelemetryWorker} that logs one JSONL row per
+  payload probe, enabling instance-by-instance detection-cost measurement
+  (\cref{sec:telemetria}).
+  \item A reproducible evaluation methodology: a containerized testbed, an
+  independent grading oracle, an RCBD experimental design, and a
+  reproducibility manifest with a corpus hash (\cref{sec:metodologia}).
+  \item An ablation study that isolates each pipeline stage's contribution to
+  the detection-versus-cost curve and to the false-positive rate
+  (\cref{sec:resultados}).
+  \item An external baseline against OWASP ZAP on the identical target list
+  under the same oracle, reported honestly including the categories where
+  ZAP outperforms \herramienta (\cref{sec:res-external}).
+\end{itemize}
+
+The rest of the paper is organized as follows. \Cref{sec:arquitectura}
+describes the engine's design. \Cref{sec:metodologia} details the testbed and
+the experimental design. \Cref{sec:resultados} presents the ablation
+evaluation and \cref{sec:ai-triage} the LLM-triage evaluation.
+\Cref{sec:amenazas} discusses threats to validity, and \cref{sec:conclusion}
+concludes.

@@ -1,0 +1,70 @@
+%% 00_abstract.tex — Title, authorship, abstract, keywords.
+
+\title{Efficiency of Asynchronous Dynamic Application Security Testing:\\
+Payload Scheduling, Runtime Confirmation, and LLM-Based Triage\\
+for False-Positive Reduction}
+
+\author{%
+\IEEEauthorblockN{Luis Ernesto Gald\'amez Vides}
+\IEEEauthorblockA{%
+Universidad Evang\'elica de El Salvador (UEES)\\
+San Salvador, El Salvador\\
+\texttt{2026010235@cvirtualuees.edu.sv}%
+}
+}
+
+\maketitle
+
+\begin{abstract}
+Dynamic Application Security Testing (DAST) scanners are widely used in
+continuous-integration pipelines, but their practical adoption is limited by
+three factors: the accumulated latency of thousands of sequential requests,
+the noise produced by a high false-positive rate, and the combinatorial
+explosion of the payload space per injection point. This paper presents and
+evaluates \herramienta, a DAST engine built entirely on \code{asyncio} that
+introduces (i)~a payload-scheduling pipeline --- context interleaving,
+a-priori confidence prioritization, and configurable ordering, including a
+live adaptive-sorting feedback loop --- (ii)~a runtime-confirmation stage that
+relabels every finding with a calibrated confidence level before it is
+reported, and (iii)~an optional LLM-based triage stage that re-scores each raw
+finding using request/response context, without an additional network round
+trip to the target. The central hypothesis is that
+these techniques improve the detection-to-cost ratio (number of requests)
+without increasing the false-positive rate. To test it we built a reproducible
+testbed on OWASP Benchmark restricted to \num{338}~\code{GET}-parameter
+targets (\num{194}~vulnerable instances and \num{144}~known traps), an
+ablation study under a randomized complete block design (RCBD) with four
+request budgets and six pipeline configurations, and a battery of
+non-parametric tests (Friedman, Nemenyi post-hoc, paired Wilcoxon with
+Benjamini--Hochberg correction, and Cliff's $\delta$ as effect size).
+Reproducibility is guaranteed through a per-run manifest that fixes the
+SHA-256 hash of the payload corpus, the \code{git} commit, and the global seed
+of the random-number generator. The full heuristic pipeline reaches
+\ValorRecallTecho{} recall at a \ValorFPRBaseline{} false-positive rate and
+already saturates at \num{20}~requests per parameter. Of the three
+heuristic-pipeline optimizations, only confidence-based prioritization has a
+practically consequential effect --- and it is bounded to tight budgets:
+context interleaving and runtime confirmation shift the request order in a
+statistically detectable way (Friedman, $p \ll 0.001$) but with negligible
+effect sizes ($\lvert\delta\rvert < 0.02$). Layering LLM-based triage on top
+of the baseline pipeline, evaluated separately across the same budget grid,
+suppressed \emph{zero} findings at every budget under its default confidence
+threshold, adding no measurable wall-clock overhead to the scan; we report
+this null result openly and attribute it to the benchmark's unusually
+unambiguous trigger signals rather than to the triage stage being validated
+as safe or effective in general. Run against OWASP ZAP 2.17.0 on the
+identical target list under the same oracle, \code{baseline} matches ZAP's
+recall exactly (both detect the same \num{137}/\num{194} instances), at the
+cost of a higher false-positive rate on the known traps (ZAP: \num{0}\,\%).
+It reaches that recall \num{11}$\times$ faster than ZAP at its saturating
+budget. We conclude that, on a benchmark with regular trigger signals, the
+value of payload scheduling is one of \emph{anticipation} (higher AUC under
+a tight budget), not of a higher detection ceiling. The LLM-triage stage
+remains to be stress-tested on a noisier target.
+\end{abstract}
+
+\begin{IEEEkeywords}
+web application security, DAST, dynamic analysis, asynchronous programming,
+false positives, payload scheduling, LLM triage, reproducible evaluation,
+OWASP Benchmark.
+\end{IEEEkeywords}

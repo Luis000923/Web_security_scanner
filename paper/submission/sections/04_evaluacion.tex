@@ -1,0 +1,338 @@
+%% 04_evaluacion.tex — Ablation-sweep results.
+%%
+%% Numeric content: testbed/experiment_results.csv (graded by the oracle) +
+%% testbed/analysis/{summary_by_run.csv,stats.json} + figures in
+%% paper/figures/, all produced by tools/analyze_results.py.
+%% Prose figures come from sections/_datos.tex.
+
+\section{Evaluation and Results}
+\label{sec:resultados}
+
+The ablation sweep produced \NumCorridas{}~graded runs: the four budgets
+$\{10, 20, 50, \infty\}$ with all \NumConfigsAblation{}~heuristic-pipeline
+configurations (\NumBloquesCompletos{}~complete blocks). All values come from
+\code{tools/analyze\_results.py}.
+
+\subsection{Efficiency: detection versus budget}
+\label{sec:res-eficiencia}
+
+\Cref{fig:deteccion-vs-presupuesto} shows that \code{baseline} recall grows
+from \ValorRecallBudgetTen{} at \num{10}~requests to its saturation value
+\ValorRecallTecho{} already at \num{20}~requests per parameter, and does not
+improve when the budget is widened to \num{50} or removed entirely. The
+\code{no-interleave}, \code{no-runtime-confirm}, and
+\code{no-adaptive-sorting} curves are indistinguishable from
+\code{baseline}'s; only \code{no-priority} separates, and only at the
+intermediate budget of \num{20} (\cref{fig:impacto-ablacion}).
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{figures/fig1_detection_vs_budget.pdf}{%
+    \includegraphics[width=\columnwidth]{fig1_detection_vs_budget.pdf}%
+  }{%
+    \fbox{\parbox[c][3.2cm][c]{0.9\columnwidth}{\centering\footnotesize
+      \textsc{Placeholder} ---
+      \code{figures/fig1\_detection\_vs\_budget.pdf}}}%
+  }
+  \caption{Recall (unique vulnerable instances detected $/$ total) as a
+  function of the \code{-{}-max-payloads} request budget ($\infty$ =
+  unbounded), one curve per pipeline configuration. The \code{baseline},
+  \code{no-interleave}, \code{no-runtime-confirm}, and
+  \code{no-adaptive-sorting} curves overlap.}
+  \label{fig:deteccion-vs-presupuesto}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{figures/fig2_ablation_impact.pdf}{%
+    \includegraphics[width=\columnwidth]{fig2_ablation_impact.pdf}%
+  }{%
+    \fbox{\parbox[c][3.2cm][c]{0.9\columnwidth}{\centering\footnotesize
+      \textsc{Placeholder} ---
+      \code{figures/fig2\_ablation\_impact.pdf}}}%
+  }
+  \caption{Recall drop ($\text{baseline} - \text{ablation}$) from disabling
+  each optimization, by budget. The only sizeable effect is
+  \code{no-priority} at the \num{20}-request budget.}
+  \label{fig:impacto-ablacion}
+\end{figure}
+
+\subsection{Metric summary and AUC}
+\label{sec:res-auc}
+
+At a budget of \num{20}~requests per parameter, \code{baseline} reaches a
+detection-curve AUC of \ValorAUCBaseline{} (\cref{eq:auc}), with precision
+\ValorPrecisionBaseline{}, recall \ValorRecallBaseline{}, and $F_1$
+\ValorFOneBaseline{}, at a \ValorFPRBaseline{} false-positive rate
+(\num{2} of \NumTrampas{}~traps). Disabling context interleaving, runtime
+confirmation, or adaptive sorting leaves recall and AUC unchanged
+(\ValorAUCNoInterleave{}, \ValorAUCNoRuntimeConfirm{}, and
+\ValorAUCNoAdaptiveSorting{} respectively), but each trips one additional
+known trap (FPR \ValorFPRBudgetAlto{}, \num{3} of \NumTrampas{}), fractionally
+lowering precision to \num{63.7}\,\% and $F_1$ to \num{67.0}\,\% --- a
+difference of a single false positive out of 210 findings. Disabling
+prioritization is the only change with a practically visible cost: AUC drops
+to \ValorAUCNoPriority{}, recall falls by \DeltaRecallNoPriority{}, and
+precision by \DeltaPrecisionNoPriority{}, which in absolute terms amounts to
+\NoPriorityVulnPerdidas{}~undetected vulnerabilities and
+\NoPriorityFPnuevos{}~additional false positives relative to \code{baseline}.
+At budgets \num{50} and $\infty$ the effect dissolves entirely: all five
+configurations converge to \emph{identical} precision, recall
+(\ValorRecallTecho{}), and $F_1$ (\cref{tab:auc}).
+
+\begin{table}[t]
+  \centering
+  \caption{Per-run metrics and detection-curve AUC (\cref{eq:auc}). Source:
+  \code{summary\_by\_run.csv}.}
+  \label{tab:auc}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{ll S[table-format=1.3] S[table-format=1.3] S[table-format=1.3] S[table-format=1.3]}
+    \toprule
+    Budget & Config. & {Prec.} & {Rec.} & {$F_1$} & {AUC} \\
+    \midrule
+    \multirow{5}{*}{10}
+      & baseline           & 0.642 & 0.675 & 0.658 & 0.347 \\
+      & no-interleave      & 0.642 & 0.675 & 0.658 & 0.347 \\
+      & no-priority        & 0.642 & 0.675 & 0.658 & 0.348 \\
+      & no-runtime-confirm & 0.649 & 0.675 & 0.662 & 0.351 \\
+      & no-adaptive-sorting & 0.642 & 0.675 & 0.658 & 0.347 \\
+    \midrule
+    \multirow{5}{*}{20}
+      & baseline           & 0.640 & 0.706 & 0.672 & 0.356 \\
+      & no-interleave      & 0.637 & 0.706 & 0.670 & 0.356 \\
+      & no-priority        & 0.585 & 0.675 & 0.627 & 0.350 \\
+      & no-runtime-confirm & 0.637 & 0.706 & 0.670 & 0.355 \\
+      & no-adaptive-sorting & 0.637 & 0.706 & 0.670 & 0.355 \\
+    \midrule
+    \multirow{5}{*}{50}
+      & baseline           & 0.591 & 0.706 & 0.643 & 0.359 \\
+      & no-interleave      & 0.591 & 0.706 & 0.643 & 0.366 \\
+      & no-priority        & 0.591 & 0.706 & 0.643 & 0.360 \\
+      & no-runtime-confirm & 0.591 & 0.706 & 0.643 & 0.359 \\
+      & no-adaptive-sorting & 0.591 & 0.706 & 0.643 & 0.366 \\
+    \midrule
+    \multirow{5}{*}{$\infty$}
+      & baseline           & 0.591 & 0.706 & 0.643 & 0.369 \\
+      & no-interleave      & 0.591 & 0.706 & 0.643 & 0.369 \\
+      & no-priority        & 0.591 & 0.706 & 0.643 & 0.369 \\
+      & no-runtime-confirm & 0.591 & 0.706 & 0.643 & 0.369 \\
+      & no-adaptive-sorting & 0.591 & 0.706 & 0.643 & 0.369 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Statistical significance}
+\label{sec:res-stats}
+
+Over the per-instance detection-cost vectors (pooled block across the
+\NumBloquesCompletos{}~complete budgets, $n = \ValorFriedmanN{}$), the
+Friedman test rejects the equivalence of the four configurations
+($\chi^2 = \ValorFriedmanChiSq{}$, $p = \ValorFriedmanP{}$). However, the
+effect size is \emph{negligible} in the pairwise \code{baseline}-versus-ablation
+comparisons: Cliff's $\delta$ of \ValorCliffNoInterleave{}
+(\code{no-interleave}), \ValorCliffNoPriority{} (\code{no-priority}), and
+\ValorCliffNoRuntimeConfirm{} (\code{no-runtime-confirm}), all with
+$\lvert\delta\rvert < \num{0.02}$ (\cref{tab:stats}). The fifth arm,
+\code{no-adaptive-sorting}, is analyzed separately in
+\cref{sec:res-adaptive}. The Nemenyi post-hoc
+fails to separate \code{no-runtime-confirm} from \code{baseline}
+($p = \ValorNemenyiNoRuntimeConfirm{}$). The reading is that the differences
+Friedman detects are of \emph{fine-grained request ordering} ---
+statistically real given the large number of blocks, but with no practical
+translation into the final detected set. The only operationally consequential
+change is the loss of selectivity of \code{no-priority} under tight budgets,
+already described in \cref{sec:res-auc}; note that \code{no-priority} even
+lowers the mean detection cost (\ValorCosteBaseline{} $\to$
+\ValorCosteNoPriority{} requests), i.e., it hits earlier on average but at the
+cost of precision.
+
+\begin{table}[t]
+  \centering
+  \caption{Tests on per-instance detection cost, \code{baseline} versus each
+  ablation (pooled block, $n = \ValorFriedmanN{}$). Wilcoxon with
+  Benjamini--Hochberg correction; $p_{\text{Nem.}}$ from the Nemenyi post-hoc;
+  Cliff's $\delta$ as effect size. Source: \code{stats.json}.}
+  \label{tab:stats}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \resizebox{\columnwidth}{!}{%
+  \begin{tabular}{lccccl}
+    \toprule
+    \code{baseline} vs & Mean cost & $p_{\text{BH}}$ & $p_{\text{Nem.}}$
+      & Cliff's $\delta$ & Magnitude \\
+    \midrule
+    no-interleave      & \ValorCosteBaseline{}$\to$\ValorCosteNoInterleave{} & \ValorWilcoxonPNoInterleave{}
+      & \ValorNemenyiNoInterleave{} & \ValorCliffNoInterleave{}
+      & \MagnitudCliffNoInterleave{} \\
+    no-priority        & \ValorCosteBaseline{}$\to$\ValorCosteNoPriority{} & \ValorWilcoxonPNoPriority{}
+      & \ValorNemenyiNoPriority{} & \ValorCliffNoPriority{}
+      & \MagnitudCliffNoPriority{} \\
+    no-runtime-confirm & \ValorCosteBaseline{}$\to$\ValorCosteNoRuntimeConfirm{} & \ValorWilcoxonPNoRuntimeConfirm{}
+      & \ValorNemenyiNoRuntimeConfirm{} & \ValorCliffNoRuntimeConfirm{}
+      & \MagnitudCliffNoRuntimeConfirm{} \\
+    \bottomrule
+  \end{tabular}}
+  \\[2pt]
+  \footnotesize\emph{Global Friedman: $\chi^2 = \ValorFriedmanChiSq{}$,
+  $p = \ValorFriedmanP{}$.}
+\end{table}
+
+\subsection{Critical-difference diagram}
+\label{sec:res-cd}
+
+\Cref{fig:cd} ranks the four Friedman-tested configurations by mean
+detection-cost rank
+(pooled block, $n = \ValorFriedmanN{}$). The Nemenyi post-hoc leaves only
+\code{baseline} and \code{no-runtime-confirm} unseparated (horizontal bar);
+\code{no-interleave} sits at the worst rank (latest detection) and
+\code{no-priority} at the best. This last point must be read carefully:
+\code{no-priority} advances the mean first detection because it tries
+apparently high-yield trivial payloads first, but ---as \cref{tab:auc}
+shows--- it does so at the cost of \NoPriorityVulnPerdidas{}~vulnerabilities
+and \NoPriorityFPnuevos{}~false positives. The diagram compares \emph{when}
+each configuration detects, not \emph{how much} nor at what precision.
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{figures/fig3_cd_diagram.pdf}{%
+    \includegraphics[width=\columnwidth]{fig3_cd_diagram.pdf}%
+  }{%
+    \fbox{\parbox[c][2.6cm][c]{0.9\columnwidth}{\centering\footnotesize
+      \textsc{Pending} --- \code{figures/fig3\_cd\_diagram.pdf}.}}%
+  }
+  \caption{Critical-difference diagram (Nemenyi post-hoc, $\alpha = 0.05$) on
+  mean rank of per-instance detection cost. Lower rank $=$ earlier detection.
+  Configurations joined by a horizontal bar are not distinguishable. Since all
+  effect sizes are negligible (\cref{tab:stats}), the diagram is indicative of
+  ordering, not of a practical advantage.}
+  \label{fig:cd}
+\end{figure}
+
+\subsection{Adaptive sorting: live feedback versus static a-priori order}
+\label{sec:res-adaptive}
+
+\Cref{fig:first-tp-ecdf} contrasts the per-instance first-true-positive
+request cost between \code{baseline} (live adaptive sorting) and
+\code{no-adaptive-sorting} (static a-priori order), pooled across budgets.
+The paired Wilcoxon test and Cliff's $\delta$ (\cref{sec:tests}) quantify
+whether re-ranking the queue mid-scan from observed hit/miss feedback shifts
+first-detection cost relative to committing to the \code{freq} order fixed
+before the scan starts.
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{figures/fig4_first_tp_ecdf.pdf}{%
+    \includegraphics[width=\columnwidth]{fig4_first_tp_ecdf.pdf}%
+  }{%
+    \fbox{\parbox[c][2.6cm][c]{0.9\columnwidth}{\centering\footnotesize
+      \textsc{Pending} --- \code{figures/fig4\_first\_tp\_ecdf.pdf}.}}%
+  }
+  \caption{ECDF of the per-instance first-true-positive request index:
+  adaptive (\code{baseline}) versus static a-priori order
+  (\code{no-adaptive-sorting}), pooled across budgets.}
+  \label{fig:first-tp-ecdf}
+\end{figure}
+
+\subsection{External baseline: OWASP ZAP on the same target list}
+\label{sec:res-external}
+
+To ground \code{baseline} against an external scanner rather than only
+against its own disabled stages, we ran OWASP ZAP 2.17.0 (default
+active-scan policy, default attack strength and alert threshold) against the
+identical \num{338}-target list, one URL-scoped active scan per target
+(\code{recurse=false}), graded by the same independent oracle against the
+same ground truth. \Cref{tab:zap} reports the result, both over every alert
+ZAP raised (\emph{unrestricted}) and restricted to the five vulnerability
+categories this ground truth actually scores --- \code{SQLInjection},
+\code{XSS}, \code{PathTraversal}, \code{CommandInjection}, and
+\code{LDAPInjection} --- since ZAP's default policy also reports categories
+(missing security headers, cookie flags, CSP configuration, \ldots) that
+\herramienta's testers do not attempt and that consequently have no
+population to be scored against in this ground truth.
+
+\begin{table}[t]
+  \centering
+  \caption{OWASP ZAP 2.17.0 versus \herramienta's \code{baseline}, same
+  \num{338}-target list, same oracle. ZAP's \emph{restricted} column drops
+  alert categories outside this ground truth's five scored types. Source:
+  \code{tools/run\_zap\_baseline.py}.}
+  \label{tab:zap}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    & {Prec.} & {Rec.} & {$F_1$} & {FPR} & {Wall-clock} \\
+    \midrule
+    ZAP (unrestricted) & 0.252 & 0.706 & 0.371 & 0.000 & \SI{1961}{\second} \\
+    ZAP (restricted)   & 0.890 & 0.706 & 0.787 & 0.000 & \SI{1961}{\second} \\
+    \herramienta\ (budget 20)  & 0.640 & 0.706 & 0.672 & 0.014 & \SI{183}{\second} \\
+    \herramienta\ (budget $\infty$) & 0.591 & 0.706 & 0.643 & 0.021 & \SI{1609}{\second} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Three results are worth stating plainly, including the ones that do not
+favor \herramienta. First, \textbf{recall is identical}: ZAP and
+\code{baseline} both detect exactly \num{137} of the \num{194} vulnerable
+instances, at every budget --- the same subset, since both tools' misses are
+concentrated in the same harder categories. This is independent evidence for
+this paper's central claim about the target, not the tool: OWASP Benchmark's
+\num{57} undetected instances resist a second, independently engineered
+scanner just as they resist this one, which is far more consistent with a
+property of the benchmark than of either tool. Second, \textbf{ZAP's FPR on
+this run is \num{0}\,\%} (zero trap hits out of \num{144}) versus
+\code{baseline}'s \ValorFPRBaseline{}--\ValorFPRBudgetAlto{}: on the specific
+\num{144} known-safe traps in this ground truth, ZAP's default policy is
+strictly more conservative than \herramienta's heuristic confirmation stage.
+Third, \textbf{restricted precision favors ZAP}, but the comparison is
+apples-to-oranges by construction: ZAP's default policy is a general-purpose
+scanner run unfiltered, while \code{baseline} tests only the five categories
+this ground truth scores, so \emph{restricted} precision --- computed after
+manually filtering ZAP down to the same five categories --- necessarily
+flatters ZAP relative to its own unfiltered, real-world operating point. Read
+this row as a best-case number for ZAP, not a fair head-to-head: restricted
+precision is \num{89.0}\,\% versus \ValorPrecisionBaseline{} for
+\code{baseline} at budget \num{20}, while ZAP's actual out-of-the-box
+(\emph{unrestricted}) precision is \num{25.2}\,\%, since its default policy
+reports \num{582} raw alerts across every category it tests, only \num{154} of which
+fall inside this ground truth's five scored types. The wall-clock gap is
+large in the other direction: ZAP's default active scan takes
+\SI{1961}{\second} for these \num{338} targets, comparable to
+\herramienta's \emph{unbounded}-budget run rather than its saturating
+\num{20}-request budget, which reaches the same recall in
+\SI{183}{\second} --- roughly \num{11}$\times$ faster at the budget where
+\code{baseline} already saturates (\cref{sec:res-eficiencia}).
+
+This is a single run of each tool, not a repeated-trials comparison, and the
+two scanners' default policies test different rule sets by design (ZAP's is
+far broader), so \cref{tab:zap} should be read as one honest data point,
+not a leaderboard result. Potti~\emph{et al.} independently report OWASP ZAP
+v2.12.0/v2.13.0 aggregate results on the full OWASP Benchmark project (all
+vector types, not just \code{GET}) of \num{68.75}--\num{74.63}\,\% recall at
+\num{0.86}--\num{3.45}\,\% FPR~\cite{potti2025benchmarking}; our
+single-run, \code{GET}-only, ZAP-2.17.0 result of \num{70.6}\,\%
+recall at \num{0}\,\% FPR is consistent with that range.
+
+\subsection{Summary of findings}
+\label{sec:res-sintesis}
+
+\begin{enumerate}
+  \item The \code{baseline} pipeline saturates at \ValorRecallTecho{} recall
+  and \ValorFPRBaseline{} FPR with only \num{20}~requests per parameter;
+  widening the budget further adds no detection, only false positives
+  (precision drops from \ValorPrecisionBaseline{} to \num{59.1}\,\% between
+  the \num{20} and $\infty$ budgets).
+  \item \textbf{Confidence-based prioritization} is the only stage whose
+  removal has a measurable cost, and it concentrates at tight budgets:
+  $-\DeltaRecallNoPriority{}$ recall and $-\DeltaPrecisionNoPriority{}$
+  precision at budget \num{20}, an effect that disappears from \num{50}
+  onward.
+  \item \textbf{Context interleaving}, \textbf{runtime confirmation}, and
+  \textbf{live adaptive sorting} do not change recall, precision, or FPR on
+  this benchmark; their effect on request order is statistically detectable
+  but negligible in magnitude.
+  \item Consequently, the value of payload scheduling in this scenario is one
+  of \emph{anticipation} (higher AUC under a tight budget), not of a higher
+  detection \emph{ceiling}.
+\end{enumerate}

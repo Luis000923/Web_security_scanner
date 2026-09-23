@@ -1,0 +1,94 @@
+%% ===========================================================================
+%%  main.tex — Master file of the paper (IEEE, two-column, English)
+%%
+%%  Efficiency of Asynchronous Dynamic Application Security Testing (DAST):
+%%  Payload Scheduling, Runtime Confirmation, and LLM-Based Triage for
+%%  False-Positive Reduction.
+%%
+%%  Modular structure: each section lives in sections/ and is pulled in here
+%%  via \input{}. See README.md.
+%%
+%%  Build (everything in user space; nothing written to /):
+%%      cd paper/submission/
+%%      tectonic -X compile main.tex --outdir build --keep-logs
+%%  or, with a full TeX Live install:
+%%      latexmk -pdf -output-directory=build main.tex
+%% ===========================================================================
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+% --- Language and encoding --------------------------------------------------
+% inputenc/fontenc are only needed with pdfLaTeX; a Unicode engine
+% (XeLaTeX / LuaLaTeX / Tectonic) already takes UTF-8 input natively.
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+\fi
+\usepackage[english]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% --- Math, tables, figures -------------------------------------------------
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{siunitx}
+\sisetup{detect-weight=true, detect-family=true}
+\usepackage{graphicx}
+\graphicspath{{figures/}{build/}}
+\usepackage{xcolor}
+
+% --- Diagrams ---------------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.geometric}
+
+% --- Hyperlinks and cross-references (load last) ---------------------------
+\usepackage[hidelinks,breaklinks]{hyperref}
+\usepackage{cleveref}
+
+% --- Reusable writing helpers shared by every module ------------------------
+\usepackage{xspace}
+\newcommand{\herramienta}{\textsc{WebSecurityScanner}\xspace}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\rid}{\code{run\_id}\xspace}
+
+% --- Result variables (auto-populated from the analysis) -------------------
+% Every numeric value in Section 4 lives in this file; see its header.
+\input{sections/_datos}
+
+% Block styles for the architecture TikZ diagram.
+\tikzset{
+  bloque/.style    = {rectangle, rounded corners=2pt, draw=black!70,
+                      fill=black!4, align=center, font=\footnotesize,
+                      minimum height=8mm, inner sep=3pt},
+  nucleo/.style    = {bloque, fill=blue!8,   draw=blue!55},
+  ablac/.style     = {bloque, fill=orange!12, draw=orange!60},
+  artefacto/.style = {bloque, fill=green!9,  draw=green!55},
+  flecha/.style    = {-{Stealth[length=2mm]}, thick, draw=black!65},
+}
+
+% ===========================================================================
+\begin{document}
+
+\input{sections/00_abstract}
+\input{sections/01_introduccion}
+\input{sections/02_arquitectura}
+\input{sections/03_metodologia}
+\input{sections/04_evaluacion}
+\input{sections/04b_ai_triage}
+\input{sections/05_amenazas_validez}
+\input{sections/06_conclusion}
+
+% ---------------------------------------------------------------------------
+\section*{Artifact Availability}
+The tool's source code, the ground-truth generator, the experiment
+orchestrator, the grading oracle, and the analysis scripts are distributed
+with the project repository. Every reported run ships its own reproducibility
+manifest (\cref{sec:manifiesto}).
+
+% ---------------------------------------------------------------------------
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
