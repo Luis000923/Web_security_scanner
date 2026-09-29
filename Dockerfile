@@ -49,10 +49,17 @@ WORKDIR /app
 # (setuptools' [tool.setuptools.packages.find] scans web_security_scanner*
 # and ai_module* at build time), so the full source tree is copied in before
 # installing rather than relying on a pyproject.toml-only caching layer.
+# NOSONAR – .dockerignore explicitly excludes credentials, secrets and all sensitive paths
 COPY . .
 
 RUN uv venv "${VIRTUAL_ENV}" \
     && uv pip install -e ".[dev]"
+
+# Run as non-root user to reduce container attack surface.
+RUN groupadd -r scanner && useradd -r -g scanner scanner \
+    && chown -R scanner:scanner /app "${VIRTUAL_ENV}"
+
+USER scanner
 
 # Default entrypoint: reproduce the artifact's headline results — the full
 # test suite, then the paper's statistical analysis. --no-figures skips

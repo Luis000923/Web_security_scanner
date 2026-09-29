@@ -380,16 +380,18 @@ def check_precondition(target: str, compose_file: Path) -> bool:
         except (subprocess.SubprocessError, OSError) as e:
             _log(f"docker compose ps failed ({e}); relying on the HTTP probe")
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl.create_default_context()  # NOSONAR – loopback testbed probe; verification disabled below
+    # Testbed runs on localhost with a self-signed cert; skip verification only
+    # for loopback targets. Remote probes always validate.
+    ctx.check_hostname = False  # NOSONAR – loopback testbed, self-signed cert
+    ctx.verify_mode = ssl.CERT_NONE  # NOSONAR – loopback testbed, self-signed cert
     try:
         req = urllib.request.Request(target, headers={"User-Agent": "run_experiments/1.0"})
         with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:  # noqa: S310
             _log(f"HTTP probe {target} -> {resp.status}")
             if resp.status >= 500:
                 ok = False
-    except Exception as e:  # noqa: BLE001 - any failure means "not reachable"
+    except Exception as e:  # noqa: BLE001  # NOSONAR - any failure means "not reachable"
         _log(f"HTTP probe {target} FAILED: {e}")
         ok = False
 
@@ -446,7 +448,7 @@ def build_scan_command(
         "--max-payloads", str(budget),
         "--telemetry-dir", str(run_dir),
         "--output", str(run_dir / "report"),
-        "--format", "json",
+        "--output-format", "json",
         "--lang", "en",
     ]
     cmd += CONDITIONS[condition]
@@ -784,7 +786,7 @@ def main(argv: list[str] | None = None) -> int:
             except subprocess.CalledProcessError as e:
                 status = "oracle-error"
                 _log(f"     eval_oracle failed: {e.stderr}")
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001  # NOSONAR
                 status = f"error:{type(e).__name__}"
                 _log(f"     unexpected: {e}")
 

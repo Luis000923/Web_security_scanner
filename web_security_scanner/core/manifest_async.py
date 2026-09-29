@@ -111,7 +111,7 @@ _VALUE_SECRET_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"(?P<pre>://)[^/\s:@]+:[^/\s@]+(?P<post>@)"),
      rf"\g<pre>{_MASK}:{_MASK}\g<post>"),
     # Authorization-style header values: "Bearer <token>", "Basic <blob>".
-    (re.compile(r"(?i)\b(?P<scheme>bearer|basic|token)\s+[A-Za-z0-9._~+/=-]{8,}"),
+    (re.compile(r"(?i)\b(?P<scheme>bearer|basic|token)\s+[-A-Za-z0-9._~+/=]{8,}"),
      rf"\g<scheme> {_MASK}"),
     # Bare JWTs (header.payload.signature).
     (re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}(?:\.[A-Za-z0-9_-]*)?"),

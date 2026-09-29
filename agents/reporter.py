@@ -17,7 +17,10 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
+
+from agents.docker_telemetry import ContainerInfo, ContainerStats
 
 # Formato producido por attack_node (orchestrator.py) a partir de
 # agents/attacker.py:AttackResult: "target=... status=... exploited=... "
@@ -76,6 +79,12 @@ class ReportingAgent:
         self,
         state: dict[str, Any],
         attack_chain_data: list[dict[str, Any]],
+        containers: list[ContainerInfo] | None = None,
+        container_stats: list[ContainerStats] | None = None,
+        topology: dict[str, list[str]] | None = None,
+        resource_chart_path: Path | None = None,
+        topology_chart_path: Path | None = None,
+        report_dir: Path | None = None,
     ) -> str:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -85,6 +94,15 @@ class ReportingAgent:
         chain_section = self._render_attack_chain(attack_chain_data)
         mitre_section = self._render_mitre(attack_chain_data)
         remediation_section = self._render_remediation(state.get("discovered_tech", ""))
+        scan_results_section = self._render_scan_results(state.get("attack_results", []))
+        docker_section = self._render_docker_telemetry(
+            containers or [],
+            container_stats or [],
+            topology or {},
+            resource_chart_path,
+            topology_chart_path,
+            report_dir,
+        )
 
         return f"""# Informe de Engagement — Red Team Autónomo
 
@@ -110,7 +128,13 @@ class ReportingAgent:
 
 ---
 
-## 3. Payload Utilizado
+## 3. Escaneo Completo — Resultados por Activo
+
+{scan_results_section}
+
+---
+
+## 4. Último Payload Ejecutado
 
 ```
 {state.get('current_payload', 'N/A')}
@@ -122,15 +146,21 @@ class ReportingAgent:
 
 ---
 
-## 4. Tácticas y Técnicas MITRE ATT&CK
+## 5. Tácticas y Técnicas MITRE ATT&CK
 
 {mitre_section}
 
 ---
 
-## 5. Estrategia de Remediación
+## 6. Estrategia de Remediación
 
 {remediation_section}
+
+---
+
+## 7. Telemetría de Infraestructura y Contenedores (Docker Analytics)
+
+{docker_section}
 
 ---
 
@@ -221,8 +251,109 @@ class ReportingAgent:
         return "\n".join(lines)
 
     @staticmethod
+    def _render_scan_results(attack_results: list[dict[str, Any]]) -> str:
+        """
+        FASE 9c: tabla con el resultado de CADA activo procesado durante el
+        escaneo completo (attack_node/blocked_node/rejected_node acumulan
+        una entrada por activo en AgentState.attack_results) — no solo el
+        último ejecutado, que es lo único que documentaba el informe antes
+        de que el pipeline recorriera más de un endpoint por corrida.
+        """
+        if not attack_results:
+            return (
+                "*No se procesó ningún activo (recon_node no encontró activos reales, o "
+                "el crawler falló antes de poblar la cola de escaneo).*"
+            )
+
+        exploited_count = sum(1 for r in attack_results if r.get("outcome") == "EXPLOTADO")
+        lines = [
+            f"**Total de activos procesados:** {len(attack_results)} "
+            f"(**{exploited_count}** confirmado(s) como explotable(s))",
+            "",
+            "| Activo | Clase | Estado Escudo | Resultado |",
+            "|---|---|---|---|",
+        ]
+        for r in attack_results:
+            lines.append(
+                f"| `{r.get('target', 'N/A')}` | {r.get('vulnerability_class', 'N/A')} | "
+                f"`{r.get('validation_status', 'N/A')}` | **{r.get('outcome', 'N/A')}** |"
+            )
+        return "\n".join(lines)
+
+    @staticmethod
     def _render_remediation(tech: str) -> str:
         if not tech:
             return _GENERIC_REMEDIATION
         recommendation = _REMEDIATION_KNOWLEDGE_BASE.get(tech.strip().lower())
         return recommendation or _GENERIC_REMEDIATION
+
+    @staticmethod
+    def _render_docker_telemetry(
+        containers: list[ContainerInfo],
+        container_stats: list[ContainerStats],
+        topology: dict[str, list[str]],
+        resource_chart_path: Path | None,
+        topology_chart_path: Path | None,
+        report_dir: Path | None,
+    ) -> str:
+        """
+        Render determinista (sin LLM) de la telemetría recolectada por
+        `agents/docker_telemetry.py`. Si el daemon de Docker no estaba
+        disponible en el momento de generar el informe, se documenta
+        explícitamente en vez de omitir la sección.
+        """
+        if not containers:
+            return (
+                "*Telemetría de Docker no disponible: no se pudo conectar al socket "
+                "local (`/var/run/docker.sock`) o no había contenedores activos en el "
+                "momento de generar el informe.*"
+            )
+
+        def rel(path: Path | None) -> str | None:
+            if path is None:
+                return None
+            if report_dir is not None:
+                try:
+                    return str(path.relative_to(report_dir))
+                except ValueError:
+                    pass
+            return str(path)
+
+        lines = ["### Contenedores activos durante el engagement", ""]
+        lines.append("| Nombre | Imagen | Estado | ID |")
+        lines.append("|---|---|---|---|")
+        for c in containers:
+            lines.append(f"| `{c.name}` | `{c.image}` | {c.status} | `{c.container_id}` |")
+
+        if container_stats:
+            lines.append("")
+            lines.append("### Rendimiento instantáneo (CPU / Memoria / Red)")
+            lines.append("")
+            lines.append("| Contenedor | CPU % | Memoria | Memoria % | RX | TX |")
+            lines.append("|---|---|---|---|---|---|")
+            for s in container_stats:
+                lines.append(
+                    f"| `{s.name}` | {s.cpu_percent}% | "
+                    f"{s.mem_usage_mb} MB / {s.mem_limit_mb} MB | {s.mem_percent}% | "
+                    f"{s.net_rx_mb} MB | {s.net_tx_mb} MB |"
+                )
+
+        chart_rel = rel(resource_chart_path)
+        if chart_rel:
+            lines.append("")
+            lines.append(f"![Consumo de recursos por contenedor]({chart_rel})")
+
+        if topology:
+            lines.append("")
+            lines.append("### Topología de red de contenedores")
+            lines.append("")
+            for network_name, members in topology.items():
+                members_fmt = ", ".join(f"`{m}`" for m in members)
+                lines.append(f"- **{network_name}:** {members_fmt}")
+
+        topo_rel = rel(topology_chart_path)
+        if topo_rel:
+            lines.append("")
+            lines.append(f"![Topología de red de contenedores]({topo_rel})")
+
+        return "\n".join(lines)

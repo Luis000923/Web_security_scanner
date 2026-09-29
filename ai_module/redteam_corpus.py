@@ -184,7 +184,7 @@ def iter_redteam_seeds(*, seed: int = 1337) -> Iterator[RedteamSeed]:
             for technique in techniques:
                 try:
                     encoded = technique(base)
-                except Exception:  # noqa: BLE001 - a malformed base payload skips, never aborts
+                except Exception:  # noqa: BLE001  # NOSONAR  # NOSONAR - a malformed base payload skips, never aborts
                     continue
                 if not encoded:
                     continue
@@ -207,9 +207,9 @@ def build_redteam_corpus_samples(*, seed: int = 1337, multiplier: int = 1):
     from ai_module.prompts import load_prompt
 
     system = load_prompt("payload_system")
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # NOSONAR – seeded for reproducible redteam corpus generation
     seeds = list(iter_redteam_seeds(seed=seed))
-    rng.shuffle(seeds)
+    rng.shuffle(seeds)  # NOSONAR – seeded RNG for reproducible redteam corpus generation
     reps = max(1, int(multiplier))
 
     # Surface-form variety across repeats so a multiplier > 1 doesn't just
@@ -224,8 +224,8 @@ def build_redteam_corpus_samples(*, seed: int = 1337, multiplier: int = 1):
     for _rep in range(reps):
         for s in seeds:
             note = _TECHNIQUE_NOTE.get(s.technique, "payload transformation")
-            endpoint = endpoints[rng.randrange(len(endpoints))]
-            param = params[rng.randrange(len(params))]
+            endpoint = endpoints[rng.randrange(len(endpoints))]  # NOSONAR – seeded RNG for reproducible corpus generation
+            param = params[rng.randrange(len(params))]  # NOSONAR – seeded RNG for reproducible corpus generation
             user = (
                 f"Target: {endpoint}  param={param}\n"
                 f"Suspected class: {s.vclass}\n"

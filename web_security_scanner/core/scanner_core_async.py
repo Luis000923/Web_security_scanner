@@ -546,9 +546,9 @@ class AsyncScannerCore:
                 "systems you are authorized to test."
             )
             self._ssl_notice_emitted = True
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        ctx = ssl.create_default_context()  # NOSONAR - intentional: scanner tests misconfigured TLS hosts
+        ctx.check_hostname = False  # NOSONAR
+        ctx.verify_mode = ssl.CERT_NONE  # NOSONAR
         return ctx
 
     def _build_connector(self) -> "aiohttp.BaseConnector":
@@ -651,7 +651,7 @@ class AsyncScannerCore:
         headers: dict[str, str] = {}
         if self.config.rotate_user_agent and not self.config.user_agent:
             pool = self.config.extra_user_agents or USER_AGENTS
-            headers["User-Agent"] = random.choice(pool)
+            headers["User-Agent"] = random.choice(pool)  # NOSONAR – non-security use: rotating user-agent strings for scan diversity
         if extra:
             headers.update(extra)
         return headers

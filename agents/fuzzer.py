@@ -45,6 +45,25 @@ class AdaptiveFuzzer:
         "`payload`, sin explicación ni Markdown."
     )
 
+    # FASE 9b: prompt dedicado a command injection — vectores de ruptura de
+    # shell (separadores `;`/`|`/`&&`, sustitución `` ` ``/`$()`), distintos
+    # de los de path traversal o SQLi que ya cubre el prompt agresivo genérico.
+    _CMDI_SYSTEM_PROMPT = (
+        "Eres un generador de payloads ofensivos para un ejercicio de Red Team "
+        "autorizado. Dada una tecnología y un CVE de command injection, produce "
+        "UN payload que rompa un comando de shell existente (ej. `echo <input>`) "
+        "inyectando un comando adicional mediante un metacaracter de separación "
+        "o sustitución. El payload debe ser una cadena de ataque real y concreta, "
+        "NUNCA una descripción ni un placeholder genérico.\n\n"
+        "Ejemplos de referencia (mismo formato esperado, adapta al CVE/tecnología dados):\n"
+        "- Separador `;` con comando de reconocimiento -> payload: \"test; id\"\n"
+        "- Separador `|` encadenando salida -> payload: \"test | whoami\"\n"
+        "- Sustitución de comando -> payload: \"test $(id)\"\n"
+        "- Operador `&&` (solo si el comando previo tiene éxito) -> payload: \"test && id\"\n\n"
+        "Responde EXCLUSIVAMENTE con el JSON del esquema solicitado, campo "
+        "`payload`, sin explicación ni Markdown."
+    )
+
     _PASSIVE_SYSTEM_PROMPT = (
         "Eres un generador de payloads de reconocimiento para un ejercicio de "
         "Red Team autorizado. Dada una tecnología y un CVE, produce UN payload "
@@ -65,6 +84,7 @@ class AdaptiveFuzzer:
     # tampoco se inventa nada fuera de esquema).
     _FALLBACK_AGGRESSIVE = "' OR 1=1--"
     _FALLBACK_PASSIVE = "id=1"
+    _FALLBACK_CMDI = "test; id"
 
     def __init__(self, model: Any = None, tokenizer: Any = None) -> None:
         # Modelo/tokenizer inyectados: la misma instancia ya cargada para el
@@ -72,11 +92,28 @@ class AdaptiveFuzzer:
         self._model = model
         self._tokenizer = tokenizer
 
-    def generate_payload(self, technology: str, cve: str, aggressive: bool) -> str:
-        if self._model is None:
-            return self._FALLBACK_AGGRESSIVE if aggressive else self._FALLBACK_PASSIVE
+    def generate_payload(
+        self,
+        technology: str,
+        cve: str,
+        aggressive: bool,
+        vulnerability_class: str = "path_traversal",
+    ) -> str:
+        is_cmdi = aggressive and vulnerability_class == "command_injection"
+        fallback = self._FALLBACK_CMDI if is_cmdi else (
+            self._FALLBACK_AGGRESSIVE if aggressive else self._FALLBACK_PASSIVE
+        )
 
-        system_prompt = self._AGGRESSIVE_SYSTEM_PROMPT if aggressive else self._PASSIVE_SYSTEM_PROMPT
+        if self._model is None:
+            return fallback
+
+        if is_cmdi:
+            system_prompt = self._CMDI_SYSTEM_PROMPT
+        elif aggressive:
+            system_prompt = self._AGGRESSIVE_SYSTEM_PROMPT
+        else:
+            system_prompt = self._PASSIVE_SYSTEM_PROMPT
+
         prompt = (
             f"{system_prompt}\n\n"
             f"Tecnología: {technology}\n"
@@ -92,9 +129,9 @@ class AdaptiveFuzzer:
             raw = generator(prompt, max_new_tokens=120)
             result = _PayloadOutput.model_validate_json(raw) if isinstance(raw, str) else raw
         except Exception:
-            return self._FALLBACK_AGGRESSIVE if aggressive else self._FALLBACK_PASSIVE
+            return fallback
 
         payload = result.payload.strip()
         if not payload:
-            return self._FALLBACK_AGGRESSIVE if aggressive else self._FALLBACK_PASSIVE
+            return fallback
         return payload

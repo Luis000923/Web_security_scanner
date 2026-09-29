@@ -349,6 +349,7 @@ def _base_cli_args(**overrides):
         ai_max_retries=None, ai_concurrency=None, ai_batch_size=None, ai_batch_linger=None,
         ai_temperature=None, ai_payload_temperature=None, ai_max_tokens=None,
         ai_repetition_penalty=None, ai_load_in_4bit=False, ai_load_in_8bit=False,
+        enable_ai_discovery=False, ai_discovery_rounds=None, ai_discovery_max_hypotheses=None,
         enable_exploit_engine=False, exploit_max_targets=DEFAULT_MAX_TARGETS,
         enable_waf_evasion=False, waf_evasion_max_retries=4,
         lab_mode=False, acknowledge_offensive_payloads=False,

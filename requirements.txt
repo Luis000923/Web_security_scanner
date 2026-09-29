@@ -10,3 +10,5 @@ accelerate>=0.33
 langgraph>=1.2
 aiohttp>=3.10
 requests>=2.32
+docker>=7.1
+matplotlib>=3.9

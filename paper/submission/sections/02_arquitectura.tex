@@ -1,4 +1,4 @@
-%% 02_arquitectura.tex — Async engine, ablation pipeline, telemetry.
+%% 02_arquitectura.tex — Motor asíncrono, pipeline de ablación, telemetría.
 
 \section{Architecture and Design}
 \label{sec:arquitectura}
@@ -8,12 +8,12 @@ the payload loader, the vulnerability-tester hierarchy with its scheduling
 pipeline, and the telemetry/reproducibility instrumentation.
 \Cref{fig:arquitectura} summarizes the workflow.
 
-% ---------------------------------------------------------------- figure ----
+% ---------------------------------------------------------------- figura ----
 \begin{figure*}[t]
   \centering
   \resizebox{\textwidth}{!}{%
   \begin{tikzpicture}[node distance=6mm and 10mm]
-    % --- input
+    % --- entrada
     \node[bloque] (cli) {CLI / \\ target list};
     \node[nucleo, right=of cli] (core) {HTTP core \\ \code{AsyncScannerCore}\\[-1pt]
       \scriptsize \code{aiohttp} session, GET cache,\\[-2pt]
@@ -21,7 +21,7 @@ pipeline, and the telemetry/reproducibility instrumentation.
     \node[nucleo, right=of core] (pool) {Worker pool \\ with back-pressure\\[-1pt]
       \scriptsize $(tester, url)$ pairs};
 
-    % --- ablation pipeline
+    % --- pipeline de ablación
     \node[ablac, below=14mm of core] (load) {Payload loader\\[-2pt]
       \scriptsize 14 categories, on-disk corpus\\[-2pt]
       \scriptsize \code{PAYLOAD/data/*.json}};
@@ -32,7 +32,7 @@ pipeline, and the telemetry/reproducibility instrumentation.
       \scriptsize reflection / error / \\[-2pt]
       \scriptsize \code{confirm\_time\_based} ($\tau=\SI{4}{\second}$)};
 
-    % --- artifacts
+    % --- artefactos
     \node[artefacto, below=14mm of load] (tel) {\code{TelemetryWorker}\\[-2pt]
       \scriptsize non-blocking queue,\\[-2pt]
       \scriptsize \code{asyncio.to\_thread} write};
@@ -45,7 +45,7 @@ pipeline, and the telemetry/reproducibility instrumentation.
       \scriptsize JSON / HTML,\\[-2pt]
       \scriptsize secrets masked};
 
-    % --- arrows
+    % --- flechas
     \draw[flecha] (cli) -- (core);
     \draw[flecha] (core) -- (pool);
     \draw[flecha] (pool.south) to[out=-90,in=90] (probe.north);

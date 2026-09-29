@@ -83,8 +83,8 @@ COND_LABELS = {
 ADAPTIVE_CONDITION = "no-adaptive-sorting"
 ADAPTIVE_PAIR = ("baseline", ADAPTIVE_CONDITION)
 ADAPTIVE_PAIR_LABELS_ES = {
-    "baseline": "Adaptativo (Fase 3)",
-    "no-adaptive-sorting": "Estático (a priori)",
+    "baseline": "Adaptive (live feedback)",
+    "no-adaptive-sorting": "Static (a-priori)",
 }
 
 # run_experiments.py builds dir tags as f"budget{B}_{condition.replace('-','')}"
@@ -814,10 +814,10 @@ def _save(fig, fig_dir: Path, name: str):
 
 
 _COND_LABELS_ES = {
-    "baseline": "Baseline (todo activo)",
-    "no-interleave": "Sin entrelazado",
-    "no-priority": "Sin priorización",
-    "no-runtime-confirm": "Sin confirmación runtime",
+    "baseline": "Baseline (all on)",
+    "no-interleave": "No interleave",
+    "no-priority": "No priority",
+    "no-runtime-confirm": "No runtime confirm",
 }
 # Orden del eje de presupuesto: crecientes y ∞ (presupuesto 0) al final.
 _BUDGET_ORDER = [10, 20, 50, 0]
@@ -835,24 +835,24 @@ def fig1_detection_vs_budget(summary: pd.DataFrame, fig_dir: Path):
     present = [b for b in _BUDGET_ORDER if b in set(df["budget"])]
     xpos = {b: i for i, b in enumerate(present)}
     df["x"] = df["budget"].map(xpos)
-    df["Condición"] = df["condition"].map(_COND_LABELS_ES)
+    df["Condition"] = df["condition"].map(_COND_LABELS_ES)
     order_lbl = [_COND_LABELS_ES[c] for c in CONDITIONS]
 
     fig, ax = plt.subplots(figsize=(5.2, 3.4))
     palette = dict(zip(order_lbl, sns.color_palette("colorblind", len(order_lbl)),
                        strict=True))
     for lbl in order_lbl:
-        g = df[df["Condición"] == lbl].sort_values("x")
+        g = df[df["Condition"] == lbl].sort_values("x")
         if g.empty:
             continue
         ax.plot(g["x"], g["recall"], marker="o", ms=5, lw=1.6,
                 color=palette[lbl], label=lbl)
     ax.set_xticks(list(xpos.values()))
     ax.set_xticklabels([_BUDGET_TICK[b] for b in present])
-    ax.set_xlabel("Presupuesto de peticiones (--max-payloads; ∞ = sin límite)")
-    ax.set_ylabel("Exhaustividad (TP únicos / total vulnerable)")
+    ax.set_xlabel("Request budget (--max-payloads; ∞ = unbounded)")
+    ax.set_ylabel("Recall (unique TPs / total vulnerable)")
     ax.set_ylim(0, 1)
-    ax.set_title("Exhaustividad de detección frente al presupuesto", fontsize=10, pad=8)
+    ax.set_title("Detection recall vs. budget", fontsize=10, pad=8)
     ax.legend(title="", frameon=False, fontsize=8, loc="lower right")
     sns.despine(ax=ax)
     _save(fig, fig_dir, "fig1_detection_vs_budget")
@@ -874,10 +874,10 @@ def fig2_ablation_impact(summary: pd.DataFrame, fig_dir: Path):
                 continue
             rows.append({
                 "budget": _BUDGET_TICK[budget],
-                "Ablación": _COND_LABELS_ES[cond],
-                "Δ Exhaustividad (baseline − ablación)":
+                "Ablation": _COND_LABELS_ES[cond],
+                "Δ Recall (baseline − ablation)":
                     piv_r.loc[budget, "baseline"] - piv_r.loc[budget, cond],
-                "Δ FPR (ablación − baseline)":
+                "Δ FPR (ablation − baseline)":
                     (piv_f.loc[budget, cond] - piv_f.loc[budget, "baseline"])
                     if "baseline" in piv_f.columns else np.nan,
             })
@@ -887,18 +887,18 @@ def fig2_ablation_impact(summary: pd.DataFrame, fig_dir: Path):
         return
     order_x = [_BUDGET_TICK[b] for b in budgets_present]
     hue_order = [_COND_LABELS_ES[c] for c in CONDITIONS[1:]]
-    m_rec = "Δ Exhaustividad (baseline − ablación)"
+    m_rec = "Δ Recall (baseline − ablation)"
 
-    # La Δ FPR es idénticamente ~0 en todas las celdas (ver tabla), por lo que
-    # se reporta en prosa y solo se grafica la Δ exhaustividad.
+    # Δ FPR is ~identically 0 in every cell (see table), so it is reported in
+    # prose and only Δ recall is plotted.
     fig, ax = plt.subplots(figsize=(5.4, 3.4))
     pal = sns.color_palette("colorblind", len(CONDITIONS) - 1)
-    sns.barplot(data=d, x="budget", y=m_rec, hue="Ablación",
+    sns.barplot(data=d, x="budget", y=m_rec, hue="Ablation",
                 order=order_x, hue_order=hue_order, palette=pal, ax=ax)
     ax.axhline(0, color="0.3", linewidth=0.8)
-    ax.set_xlabel("Presupuesto de peticiones (∞ = sin límite)")
-    ax.set_ylabel("Δ Exhaustividad\n(baseline − ablación)")
-    ax.set_title("Impacto de desactivar cada optimización", fontsize=10, pad=8)
+    ax.set_xlabel("Request budget (∞ = unbounded)")
+    ax.set_ylabel("Δ Recall\n(baseline − ablation)")
+    ax.set_title("Impact of disabling each optimization", fontsize=10, pad=8)
     ax.legend(title="", frameon=False, fontsize=8, loc="upper right")
     sns.despine(ax=ax)
     _save(fig, fig_dir, "fig2_ablation_impact")
@@ -937,7 +937,7 @@ def fig3_cd_diagram(stats: dict, fig_dir: Path):
         marker_props={"marker": "o", "s": 45},
     )
     n = block.get("n_instances")
-    ax.set_title(f"Rango medio de coste de detección — post-hoc de Nemenyi "
+    ax.set_title(f"Mean detection-cost rank — Nemenyi post-hoc "
                  f"(n = {n})", fontsize=9, pad=10)
     fig.tight_layout()
     _save(fig, fig_dir, "fig3_cd_diagram")
@@ -978,11 +978,11 @@ def fig4_first_tp_ecdf(meta: dict, gt: oracle.GroundTruth, fig_dir: Path):
         ys = np.concatenate([[0], ys])
         ax.step(xs, ys, where="post", lw=1.8,
                 label=f"{ADAPTIVE_PAIR_LABELS_ES[key]}  (n={len(data)})")
-    ax.set_xlabel("Índice de petición del primer TP (coste hasta la detección)")
-    ax.set_ylabel("Fracción acumulada de instancias detectadas")
+    ax.set_xlabel("First-TP request index (cost to detection)")
+    ax.set_ylabel("Cumulative fraction of instances detected")
     ax.set_ylim(0, 1)
-    ax.set_title("Coste hasta el primer verdadero positivo\n"
-                 "(bucle adaptativo vs. orden estático)", fontsize=10, pad=8)
+    ax.set_title("Cost to first true positive\n"
+                 "(adaptive feedback loop vs. static order)", fontsize=10, pad=8)
     ax.legend(title="", frameon=False, fontsize=8, loc="lower right")
     sns.despine(ax=ax)
     _save(fig, fig_dir, "fig4_first_tp_ecdf")

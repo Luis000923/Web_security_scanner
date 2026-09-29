@@ -1,25 +1,25 @@
 %% ===========================================================================
-%%  main.tex — Master file of the paper (IEEE, two-column, English)
+%%  main.tex — Archivo maestro del paper (IEEE, dos columnas, en inglés)
 %%
 %%  Efficiency of Asynchronous Dynamic Application Security Testing (DAST):
 %%  Payload Scheduling, Runtime Confirmation, and LLM-Based Triage for
 %%  False-Positive Reduction.
 %%
-%%  Modular structure: each section lives in sections/ and is pulled in here
-%%  via \input{}. See README.md.
+%%  Estructura modular: cada sección vive en sections/ y se incluye aquí
+%%  vía \input{}. Ver README.md.
 %%
-%%  Build (everything in user space; nothing written to /):
+%%  Compilación (todo en espacio de usuario; nada se escribe en /):
 %%      cd paper/submission/
 %%      tectonic -X compile main.tex --outdir build --keep-logs
-%%  or, with a full TeX Live install:
+%%  o, con una instalación completa de TeX Live:
 %%      latexmk -pdf -output-directory=build main.tex
 %% ===========================================================================
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
 
-% --- Language and encoding --------------------------------------------------
-% inputenc/fontenc are only needed with pdfLaTeX; a Unicode engine
-% (XeLaTeX / LuaLaTeX / Tectonic) already takes UTF-8 input natively.
+% --- Idioma y codificación ---------------------------------------------------
+% inputenc/fontenc solo hacen falta con pdfLaTeX; un motor Unicode
+% (XeLaTeX / LuaLaTeX / Tectonic) ya acepta entrada UTF-8 de forma nativa.
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[utf8]{inputenc}
@@ -29,7 +29,7 @@
 \usepackage{lmodern}
 \usepackage{microtype}
 
-% --- Math, tables, figures -------------------------------------------------
+% --- Matemáticas, tablas, figuras --------------------------------------------
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{multirow}
@@ -39,25 +39,25 @@
 \graphicspath{{figures/}{build/}}
 \usepackage{xcolor}
 
-% --- Diagrams ---------------------------------------------------------------
+% --- Diagramas ----------------------------------------------------------------
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.geometric}
 
-% --- Hyperlinks and cross-references (load last) ---------------------------
+% --- Hipervínculos y referencias cruzadas (cargar al final) -----------------
 \usepackage[hidelinks,breaklinks]{hyperref}
 \usepackage{cleveref}
 
-% --- Reusable writing helpers shared by every module ------------------------
+% --- Ayudas de escritura reutilizables por todos los módulos -----------------
 \usepackage{xspace}
 \newcommand{\herramienta}{\textsc{WebSecurityScanner}\xspace}
 \newcommand{\code}[1]{\texttt{\small #1}}
 \newcommand{\rid}{\code{run\_id}\xspace}
 
-% --- Result variables (auto-populated from the analysis) -------------------
-% Every numeric value in Section 4 lives in this file; see its header.
+% --- Variables de resultados (auto-generadas desde el análisis) ------------
+% Todo valor numérico de la Sección 4 vive en este archivo; ver su cabecera.
 \input{sections/_datos}
 
-% Block styles for the architecture TikZ diagram.
+% Estilos de bloque para el diagrama TikZ de arquitectura.
 \tikzset{
   bloque/.style    = {rectangle, rounded corners=2pt, draw=black!70,
                       fill=black!4, align=center, font=\footnotesize,

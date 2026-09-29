@@ -10,6 +10,7 @@ import argparse
 import asyncio
 import json
 import logging
+import math
 import random
 import sys
 from pathlib import Path
@@ -96,6 +97,11 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="Mine endpoints from .js bundles (default: on).")
     scan.add_argument("--no-parse-js", dest="parse_js", action="store_false",
                       help="Disable JavaScript endpoint mining.")
+    scan.add_argument("--no-robots", dest="respect_robots", action="store_false",
+                      default=True,
+                      help="Ignore robots.txt Disallow rules during crawling "
+                           "(useful for authorized testing of apps that block "
+                           "crawlers via robots.txt).")
     # --- Phase 4: headless-browser recon (SPA + DOM-XSS) ---
     scan.add_argument("--browser", dest="use_browser", action="store_true",
                       help="Run a headless-browser recon pass (Playwright): execute "
@@ -292,6 +298,24 @@ def _build_parser() -> argparse.ArgumentParser:
     ai.add_argument("--ai-no-verify", dest="ai_no_verify", action="store_true",
                     help="With --ai-synthesize: keep payload synthesis but skip "
                          "the false-positive triage stage.")
+    ai.add_argument("--enable-ai-discovery", dest="enable_ai_discovery",
+                    action="store_true",
+                    help="After the main scan, ask the agent which "
+                         "already-supported vuln classes (sqli/xss/pathtraver/"
+                         "cmdi) are most worth re-testing against which "
+                         "endpoint, and re-run those testers for a few rounds. "
+                         "Requires --enable-ai-triaging too (shares the same "
+                         "AgentClient). The model is constrained to this fixed "
+                         "taxonomy by structured decoding -- it re-prioritizes "
+                         "where to look, it does not invent new vuln classes.")
+    ai.add_argument("--ai-discovery-rounds", type=int, default=None, metavar="N",
+                    help="Max discovery rounds (context -> hypotheses -> "
+                         "re-test -> feed back); stops early with no new "
+                         "hypotheses/findings (default: 3).")
+    ai.add_argument("--ai-discovery-max-hypotheses", type=int, default=None,
+                    metavar="N",
+                    help="Max hypotheses requested per discovery round "
+                         "(default: 10).")
     ai.add_argument("--ai-backend", default=None,
                     choices=["openai", "transformers", "echo"],
                     help="AgentClient backend (default: env AI_AGENT_BACKEND or 'openai').")
@@ -510,7 +534,7 @@ def _validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) ->
             ai_hits.append("--ai-base-url")
         if args.ai_model is not None:
             ai_hits.append("--ai-model")
-        if args.ai_fp_threshold != 0.75:
+        if not math.isclose(args.ai_fp_threshold, 0.75):
             ai_hits.append("--ai-fp-threshold")
         if args.ai_max_retries is not None:
             ai_hits.append("--ai-max-retries")
@@ -532,6 +556,12 @@ def _validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) ->
             ai_hits.append("--ai-load-in-4bit")
         if args.ai_load_in_8bit:
             ai_hits.append("--ai-load-in-8bit")
+        if args.enable_ai_discovery:
+            ai_hits.append("--enable-ai-discovery")
+        if args.ai_discovery_rounds is not None:
+            ai_hits.append("--ai-discovery-rounds")
+        if args.ai_discovery_max_hypotheses is not None:
+            ai_hits.append("--ai-discovery-max-hypotheses")
         if ai_hits:
             parser.error(
                 f"{', '.join(ai_hits)} only take effect with --enable-ai-triaging "
@@ -556,6 +586,15 @@ def _validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) ->
     if ai_active and args.ai_max_retries is not None and args.ai_max_retries < 0:
         parser.error(
             f"--ai-max-retries must be >= 0 (got {args.ai_max_retries})."
+        )
+    if args.ai_discovery_rounds is not None and args.ai_discovery_rounds < 1:
+        parser.error(
+            f"--ai-discovery-rounds must be >= 1 (got {args.ai_discovery_rounds})."
+        )
+    if args.ai_discovery_max_hypotheses is not None and args.ai_discovery_max_hypotheses < 1:
+        parser.error(
+            "--ai-discovery-max-hypotheses must be >= 1 "
+            f"(got {args.ai_discovery_max_hypotheses})."
         )
     if ai_active and args.ai_concurrency is not None and args.ai_concurrency < 1:
         parser.error(
@@ -762,7 +801,15 @@ def _register_listeners(scanner: WebSecurityScanner, verbose: bool,
             print(f"{Fore.BLUE}[..]{Style.RESET_ALL} {kw.get('message','')}")
 
     def on_log(**kw):
-        if verbose:
+        # AI model load/ready/error status is always surfaced -- the operator
+        # needs an unambiguous answer to "did the model load or not" without
+        # having to pass -v and scroll through the rest of the scan's debug
+        # noise to find it.
+        if kw.get("always"):
+            progress.clear()
+            color = Fore.RED if kw.get("ai_status") == "error" else Fore.GREEN
+            print(f"{color}{Style.BRIGHT}{kw.get('message','')}{Style.RESET_ALL}")
+        elif verbose:
             progress.clear()
             print(f"{Fore.WHITE}{Style.DIM}    {kw.get('message','')}{Style.RESET_ALL}")
 
@@ -932,6 +979,9 @@ def _build_config(args) -> dict:
                        or getattr(args, "ai_synthesize", False)),
         "ai_verify": not getattr(args, "ai_no_verify", False),
         "ai_synthesize": getattr(args, "ai_synthesize", False),
+        "ai_discovery": getattr(args, "enable_ai_discovery", False),
+        "ai_discovery_rounds": getattr(args, "ai_discovery_rounds", None) or 3,
+        "ai_discovery_max_hypotheses": getattr(args, "ai_discovery_max_hypotheses", None) or 10,
         "ai_backend": getattr(args, "ai_backend", None),
         "ai_base_url": getattr(args, "ai_base_url", None),
         "ai_model": getattr(args, "ai_model", None),
@@ -967,6 +1017,7 @@ def _build_config(args) -> dict:
         "jitter": args.jitter,
         "parse_js": args.parse_js,
         "use_sitemap": args.sitemap,
+        "respect_robots": getattr(args, "respect_robots", True),
         "use_browser": getattr(args, "use_browser", False),
         "browser_nav_timeout": getattr(args, "browser_nav_timeout", 15.0),
         # Same source of truth as the standard crawler's spider-trap cap:
@@ -1046,7 +1097,7 @@ async def _run_scan(args) -> int:
     if getattr(args, "target_list", None):
         try:
             target_list = _load_target_list(args.target_list)
-        except (OSError, ValueError, json.JSONDecodeError) as e:
+        except (OSError, ValueError) as e:
             print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} --target-list: {e}", file=sys.stderr)
             return 2
         print(f"{Fore.GREEN}[*] Loaded {len(target_list)} static target(s); "

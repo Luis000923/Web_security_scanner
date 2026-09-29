@@ -21,13 +21,15 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
+from urllib.parse import urlparse
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
-from agents.attacker import RealAttackClient
+from agents import docker_telemetry, recon_scanner
+from agents.attacker import BENCHMARK_BASE_URL, RealAttackClient
 from agents.fuzzer import AdaptiveFuzzer
 from agents.reporter import ReportingAgent
 from db.client import GraphDBClient
@@ -59,6 +61,21 @@ class AgentState(TypedDict):
     attack_evidence: str
     # FASE 8: ruta del informe Markdown generado por reporting_node.
     report_path: str
+    # FASE 9b: clase de vulnerabilidad resuelta a partir de discovered_tech
+    # (_TECH_VULNERABILITY_CLASS_MAP) — determina qué caso de prueba real del
+    # laboratorio ataca attack_node y qué vectores pide el planner al Fuzzer.
+    vulnerability_class: str
+    # FASE 9c: cola de activos reales descubiertos por recon_node
+    # (agents/recon_scanner.py) aún sin atacar, y activo que planner_node
+    # está planificando/attack_node está atacando en la iteración actual.
+    # Permite aplicar el ciclo planner->validator->attack/hitl a TODAS las
+    # rutas encontradas, no solo a un único endpoint fijo.
+    pending_targets: list[dict[str, str]]
+    current_target: dict[str, str]
+    # Resultado acumulado por cada activo ya procesado (éxito, fallo,
+    # bloqueado o rechazado en HITL) — consumido por reporting_node para
+    # documentar el escaneo completo, no solo el último activo atacado.
+    attack_results: list[dict[str, Any]]
 
 
 # ============================================================
@@ -79,6 +96,33 @@ _reporter = ReportingAgent()
 # evidencia sensible de explotación real contra el laboratorio).
 _REPORTS_DIR = Path(__file__).resolve().parent / "reports"
 
+# FASE 9b: mapa tecnología descubierta -> clase de vulnerabilidad atacable
+# por RealAttackClient (agents/attacker.py). Cualquier tecnología no listada
+# cae en "path_traversal" (fail-safe hacia el único caso de prueba sembrado
+# hoy en el Knowledge Graph, agents/attacker.py:_execute_path_traversal).
+_TECH_VULNERABILITY_CLASS_MAP: dict[str, str] = {
+    "apache 2.4.49": "path_traversal",
+    "owasp benchmark cmdi": "command_injection",
+}
+_DEFAULT_VULNERABILITY_CLASS = "path_traversal"
+
+# FASE 9c: tope duro de activos realmente atacados por corrida. El
+# laboratorio expone cientos de casos de prueba reales (ver
+# agents/recon_scanner.py); cada uno agresivo pasa por COLA_HITL, así que
+# sin este tope una corrida requeriría cientos de aprobaciones humanas
+# manuales. discovered_assets sigue listando TODO lo encontrado -- este
+# límite solo acota cuántos se atacan de verdad.
+_MAX_SCAN_TARGETS = 8
+
+# Etiqueta de tecnología usada solo para el prompt del Fuzzer y la búsqueda
+# en la base de conocimiento de remediación (agents/reporter.py) -- una por
+# vulnerability_class, ya que el escaneo completo no tiene una tecnología
+# Neo4j individual por cada activo descubierto por el crawler.
+_VULN_CLASS_TECH_LABEL: dict[str, str] = {
+    "path_traversal": "Apache 2.4.49",
+    "command_injection": "OWASP Benchmark CMDI",
+}
+
 
 # ============================================================
 # NODOS
@@ -88,12 +132,17 @@ _REPORTS_DIR = Path(__file__).resolve().parent / "reports"
 async def recon_node(state: AgentState) -> AgentState:
     """
     Descubrimiento de superficie de ataque sobre target_domain, escrito
-    realmente en el Knowledge Graph (Neo4j) vía GraphDBClient.
+    realmente en el Knowledge Graph (Neo4j) vía GraphDBClient, MÁS (FASE 9c)
+    descubrimiento real de rutas/subdominios vía agents/recon_scanner.py
+    contra el laboratorio autorizado (mismo host que ataca RealAttackClient),
+    para poblar la cola de activos que el ciclo planner->validator->attack
+    va a recorrer completo, no solo un único endpoint fijo.
 
-    El hallazgo simulado reutiliza deliberadamente los datos seed ya
+    El hallazgo Neo4j sigue reutilizando deliberadamente los datos seed ya
     presentes en el grafo (Host 10.0.4.12, Apache 2.4.49, CVE-2021-41773)
     para que la consulta estratégica del planner_node encuentre la ruta
-    de movimiento lateral hasta el crown_jewel (10.0.4.50) ya sembrada.
+    de movimiento lateral hasta el crown_jewel (10.0.4.50) ya sembrada; el
+    crawler real es una fuente de activos independiente y adicional.
     """
     discovered = f"api.{state['target_domain']}"
     ip = "10.0.4.12"
@@ -103,15 +152,41 @@ async def recon_node(state: AgentState) -> AgentState:
     with GraphDBClient() as db:
         db.write_recon_data(target_domain=state["target_domain"], ip=ip, cve=cve, tech=tech)
 
+    vulnerability_class = _TECH_VULNERABILITY_CLASS_MAP.get(tech.lower(), _DEFAULT_VULNERABILITY_CLASS)
+
+    lab_host = urlparse(BENCHMARK_BASE_URL).netloc
+    try:
+        real_assets = await recon_scanner.discover_assets(
+            target_domain=lab_host, base_path="/benchmark/", scheme="https"
+        )
+    except Exception as exc:  # fail-safe: el crawler nunca debe tumbar el pipeline
+        print(f"[recon_node] Descubrimiento real falló ({exc!r}), sin activos adicionales.")
+        real_assets = []
+
+    pending_targets = [
+        {"url": asset.url, "vulnerability_class": asset.vulnerability_class}
+        for asset in real_assets[:_MAX_SCAN_TARGETS]
+    ]
+
     print(
         f"[recon_node] Activo descubierto: {discovered} "
         f"(host={ip}, tech={tech}, cve={cve}) -> escrito en Neo4j (MERGE idempotente)"
     )
+    print(
+        f"[recon_node] Crawler real: {len(real_assets)} activo(s) encontrado(s) en {lab_host} "
+        f"({len(pending_targets)} seleccionados para ataque, tope={_MAX_SCAN_TARGETS})"
+    )
+
+    discovered_asset_labels = [f"{a['vulnerability_class']}: {a['url']}" for a in pending_targets]
+
     return {
         **state,
-        "discovered_assets": [*state["discovered_assets"], discovered],
+        "discovered_assets": [discovered, *discovered_asset_labels],
         "discovered_cve": cve,
         "discovered_tech": tech,
+        "vulnerability_class": vulnerability_class,
+        "pending_targets": pending_targets,
+        "attack_results": [],
     }
 
 
@@ -132,8 +207,22 @@ async def planner_node(state: AgentState) -> AgentState:
         espera EJECUCION_AUTOMATICA.
     """
     cve = state["discovered_cve"]
-    tech = state["discovered_tech"]
-    print(f"[planner_node] Planificando payload para {state['discovered_assets'][-1]} (cve={cve})")
+
+    # FASE 9c: siguiente activo de la cola poblada por recon_node. Cada
+    # llamada a planner_node consume uno -- el ciclo completo (loop back
+    # desde attack_node/blocked_node/rejected_node) vuelve a entrar aquí
+    # hasta vaciar pending_targets (ver route_after_attack/etc.).
+    pending = state["pending_targets"]
+    current_target = pending[0]
+    remaining = pending[1:]
+    vulnerability_class = current_target["vulnerability_class"]
+    tech = _VULN_CLASS_TECH_LABEL.get(vulnerability_class, state["discovered_tech"])
+
+    print(
+        f"[planner_node] Planificando payload para {current_target['url']} "
+        f"(clase={vulnerability_class}, cve={cve}, "
+        f"{len(remaining)} activo(s) restantes tras este)"
+    )
 
     with GraphDBClient() as db:
         rows = db.evaluate_attack_chain(cve)
@@ -153,10 +242,21 @@ async def planner_node(state: AgentState) -> AgentState:
     )
     print(f"[planner_node] Intención: {'AGRESIVA' if has_crown_jewel_path else 'PASIVA'} — razón: {reason}")
 
-    payload = _fuzzer.generate_payload(technology=tech, cve=cve, aggressive=has_crown_jewel_path)
+    payload = _fuzzer.generate_payload(
+        technology=tech,
+        cve=cve,
+        aggressive=has_crown_jewel_path,
+        vulnerability_class=vulnerability_class,
+    )
     print(f"[planner_node] Payload generado dinámicamente por el Fuzzer: {payload!r}")
 
-    return {**state, "current_payload": payload}
+    return {
+        **state,
+        "current_payload": payload,
+        "current_target": current_target,
+        "pending_targets": remaining,
+        "vulnerability_class": vulnerability_class,
+    }
 
 
 async def validator_node(state: AgentState) -> AgentState:
@@ -173,30 +273,59 @@ async def validator_node(state: AgentState) -> AgentState:
 
 async def attack_node(state: AgentState) -> AgentState:
     """
-    FASE 6: ejecuta el payload autorizado de verdad contra el laboratorio
-    autorizado (OWASP Benchmark local, contenedor `owasp-benchmark`),
-    usando el caso de prueba real pathtraver-00/BenchmarkTest00001. Se
-    alcanza solo con EJECUCION_AUTOMATICA directa o tras aprobación humana
-    en la cola HITL — nunca con un payload no autorizado.
+    FASE 6 + FASE 9c: ejecuta el payload autorizado de verdad contra el
+    laboratorio autorizado (OWASP Benchmark local, contenedor
+    `owasp-benchmark`), atacando el activo real (`current_target`)
+    descubierto por recon_node/recon_scanner.py, no un único endpoint fijo.
+    Se alcanza solo con EJECUCION_AUTOMATICA directa o tras aprobación
+    humana en la cola HITL — nunca con un payload no autorizado.
     """
+    target = state["current_target"]
     client = RealAttackClient()
-    result = await client.execute(state["current_payload"])
+    result = await client.execute(
+        state["current_payload"],
+        vulnerability_class=state["vulnerability_class"],
+        test_path=target.get("url"),
+    )
 
     evidence = (
         f"target={result.target_url} status={result.http_status} "
         f"exploited={result.exploited} rationale={result.rationale!r} "
         f"snippet={result.response_snippet!r}"
     )
-    print(f"[attack_node] Payload ejecutado contra el laboratorio: {state['current_payload']!r}")
+    print(f"[attack_node] Payload ejecutado contra {target.get('url')}: {state['current_payload']!r}")
     print(f"[attack_node] Evidencia: {evidence}")
 
-    return {**state, "attack_evidence": evidence}
+    result_entry = {
+        "target": target.get("url", "N/A"),
+        "vulnerability_class": state["vulnerability_class"],
+        "payload": state["current_payload"],
+        "validation_status": state["validation_status"],
+        "outcome": "EXPLOTADO" if result.exploited else "EJECUTADO_SIN_EXITO",
+        "rationale": result.rationale,
+    }
+
+    return {
+        **state,
+        "attack_evidence": evidence,
+        "attack_results": [*state["attack_results"], result_entry],
+    }
 
 
 async def blocked_node(state: AgentState) -> AgentState:
     """Nodo terminal para payloads DESTRUCTIVE — nunca ejecuta nada."""
+    target = state["current_target"]
     print(f"[blocked_node] Payload bloqueado, no se ejecuta: {state['current_payload']!r}")
-    return state
+
+    result_entry = {
+        "target": target.get("url", "N/A"),
+        "vulnerability_class": state["vulnerability_class"],
+        "payload": state["current_payload"],
+        "validation_status": state["validation_status"],
+        "outcome": "BLOQUEADO",
+        "rationale": "Bloqueado por el Escudo (categoría DESTRUCTIVE) antes de cualquier ejecución.",
+    }
+    return {**state, "attack_results": [*state["attack_results"], result_entry]}
 
 
 async def hitl_node(state: AgentState) -> AgentState:
@@ -219,8 +348,18 @@ async def hitl_node(state: AgentState) -> AgentState:
 
 async def rejected_node(state: AgentState) -> AgentState:
     """Nodo terminal cuando el humano rechaza el payload en la cola HITL."""
+    target = state["current_target"]
     print(f"[rejected_node] Humano rechazó el payload: {state['current_payload']!r}")
-    return state
+
+    result_entry = {
+        "target": target.get("url", "N/A"),
+        "vulnerability_class": state["vulnerability_class"],
+        "payload": state["current_payload"],
+        "validation_status": state["validation_status"],
+        "outcome": "RECHAZADO_HITL",
+        "rationale": "Un humano rechazó la ejecución en la cola HITL.",
+    }
+    return {**state, "attack_results": [*state["attack_results"], result_entry]}
 
 
 async def reporting_node(state: AgentState) -> AgentState:
@@ -242,10 +381,34 @@ async def reporting_node(state: AgentState) -> AgentState:
         with GraphDBClient() as db:
             attack_chain_data = db.evaluate_attack_chain(cve)
 
-    markdown = _reporter.generate_markdown_report(state, attack_chain_data)
+    # FASE 9: telemetría de infraestructura Docker (fail-safe: listas vacías
+    # si el daemon no está disponible, nunca lanza).
+    containers = docker_telemetry.list_containers()
+    container_stats = docker_telemetry.get_container_stats()
+    topology = docker_telemetry.get_network_topology()
 
     _REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    assets_dir = _REPORTS_DIR / "assets"
+
+    resource_chart_path = docker_telemetry.render_resource_usage_chart(
+        container_stats, assets_dir / f"docker_resources_{timestamp}.png"
+    )
+    topology_chart_path = docker_telemetry.render_network_topology_chart(
+        topology, assets_dir / f"docker_topology_{timestamp}.png"
+    )
+
+    markdown = _reporter.generate_markdown_report(
+        state,
+        attack_chain_data,
+        containers=containers,
+        container_stats=container_stats,
+        topology=topology,
+        resource_chart_path=resource_chart_path,
+        topology_chart_path=topology_chart_path,
+        report_dir=_REPORTS_DIR,
+    )
+
     report_path = _REPORTS_DIR / f"engagement_report_{timestamp}.md"
     report_path.write_text(markdown, encoding="utf-8")
 
@@ -271,6 +434,21 @@ def route_after_hitl(state: AgentState) -> Literal["attack_node", "rejected_node
     return "attack_node" if state["human_approval"] else "rejected_node"
 
 
+def route_after_recon(state: AgentState) -> Literal["planner_node", "reporting_node"]:
+    """FASE 9c: si el crawler no encontró (o no pudo atacar) ningún activo real, saltar directo al informe."""
+    return "planner_node" if state["pending_targets"] else "reporting_node"
+
+
+def route_after_asset_cycle(state: AgentState) -> Literal["planner_node", "reporting_node"]:
+    """
+    FASE 9c: tras terminar con un activo (atacado, bloqueado o rechazado),
+    seguir con el siguiente de la cola o cerrar el engagement si ya no
+    quedan activos pendientes. Compartida por attack_node/blocked_node/
+    rejected_node -- misma decisión, mismo criterio (pending_targets).
+    """
+    return "planner_node" if state["pending_targets"] else "reporting_node"
+
+
 # ============================================================
 # CONSTRUCCIÓN Y COMPILACIÓN DEL GRAFO
 # ============================================================
@@ -289,7 +467,11 @@ def build_graph():
     graph.add_node("reporting_node", reporting_node)
 
     graph.add_edge(START, "recon_node")
-    graph.add_edge("recon_node", "planner_node")
+    graph.add_conditional_edges(
+        "recon_node",
+        route_after_recon,
+        {"planner_node": "planner_node", "reporting_node": "reporting_node"},
+    )
     graph.add_edge("planner_node", "validator_node")
 
     graph.add_conditional_edges(
@@ -310,9 +492,15 @@ def build_graph():
         },
     )
 
-    graph.add_edge("attack_node", "reporting_node")
-    graph.add_edge("blocked_node", "reporting_node")
-    graph.add_edge("rejected_node", "reporting_node")
+    # FASE 9c: los tres nodos terminales de un ciclo por activo vuelven a
+    # planner_node mientras queden activos en pending_targets, cerrando en
+    # reporting_node solo cuando la cola se vacía (escaneo completo).
+    for terminal_node in ("attack_node", "blocked_node", "rejected_node"):
+        graph.add_conditional_edges(
+            terminal_node,
+            route_after_asset_cycle,
+            {"planner_node": "planner_node", "reporting_node": "reporting_node"},
+        )
     graph.add_edge("reporting_node", END)
 
     checkpointer = MemorySaver()
@@ -337,36 +525,48 @@ async def _main() -> None:
         "discovered_tech": "",
         "attack_evidence": "",
         "report_path": "",
+        "vulnerability_class": "",  # recon_node lo fija en función de discovered_tech
+        "pending_targets": [],  # recon_node lo puebla con el resultado del crawler real
+        "current_target": {},
+        "attack_results": [],
     }
 
     thread_config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
     print("=" * 60)
-    print("PRIMERA EJECUCIÓN — hasta el punto de interrupción HITL")
+    print("EJECUCIÓN — escaneo completo de todos los activos descubiertos")
     print("=" * 60)
 
     result = await app.ainvoke(initial_state, config=thread_config)
 
-    if "__interrupt__" in result:
+    # FASE 9c: con múltiples activos en cola, cada uno que el Validador
+    # enrute a COLA_HITL dispara su propia pausa -- se resuelven una a una
+    # en bucle hasta que el grafo llegue a reporting_node/END sin más
+    # interrupciones pendientes.
+    round_num = 1
+    while "__interrupt__" in result:
         interrupt_payload = result["__interrupt__"][0].value
-        print("\n>>> GRAFO PAUSADO esperando aprobación humana <<<")
+        print(f"\n>>> GRAFO PAUSADO esperando aprobación humana (ronda {round_num}) <<<")
         print(f"    Motivo:  {interrupt_payload['reason']}")
         print(f"    Payload: {interrupt_payload['payload']}")
         print(f"    Target:  {interrupt_payload['target']}")
 
         # Simulación de input humano por consola (en un HITL real esto vendría
         # de una UI/ticket de la cola, no de stdin bloqueante).
-        human_input = input("\n¿Aprobar ejecución de este payload? [y/N]: ").strip().lower()
+        human_input = (await asyncio.to_thread(input, "\n¿Aprobar ejecución de este payload? [y/N]: ")).strip().lower()
         approve = human_input == "y"
 
         print("\n" + "=" * 60)
         print(f"REANUDANDO GRAFO — decisión humana: {'APROBAR' if approve else 'RECHAZAR'}")
         print("=" * 60)
 
-        final_state = await app.ainvoke(Command(resume=approve), config=thread_config)
-        print("\nEstado final:", final_state)
-    else:
-        print("\nEl grafo terminó sin pasar por HITL. Estado final:", result)
+        result = await app.ainvoke(Command(resume=approve), config=thread_config)
+        round_num += 1
+
+    print("\nEstado final:", result)
+    print(f"\nActivos procesados: {len(result.get('attack_results', []))}")
+    for entry in result.get("attack_results", []):
+        print(f"  - {entry['target']} ({entry['vulnerability_class']}) -> {entry['outcome']}")
 
 
 if __name__ == "__main__":

@@ -101,7 +101,7 @@ SENSITIVE_FILE_CATALOG: tuple[SensitiveFileSpec, ...] = (
 _CONTENT_CONFIRMERS: tuple[tuple[re.Pattern[str], re.Pattern[str]], ...] = (
     (re.compile(r"\.git/HEAD$"), re.compile(r"^\s*(ref:\s*refs/|[0-9a-f]{40}\b)", re.IGNORECASE)),
     (re.compile(r"\.git/config$"), re.compile(r"\[core]", re.IGNORECASE)),
-    (re.compile(r"\.env(\.|$)"), re.compile(r"(?m)^[A-Za-z_][A-Za-z0-9_]*\s*=")),
+    (re.compile(r"\.env(\.|$)"), re.compile(r"(?m)^[A-Za-z_]\w*\s*=")),
     (re.compile(r"id_rsa$|\.pem$"), re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----", re.IGNORECASE)),
     (re.compile(r"\.sql(\.gz)?$|dump|backup"), re.compile(r"insert into|create table", re.IGNORECASE)),
 )
@@ -246,7 +246,7 @@ class SensitiveFileDetector:
         probe_url = urljoin(root_url, f"__wss_soft404_check_{nonce}__")
         try:
             resp = await self.scanner.request("GET", probe_url, use_cache=False)
-        except Exception as exc:  # noqa: BLE001 - baseline is best-effort
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - baseline is best-effort
             self._log.debug(f"Sensitive-file soft-404 baseline probe failed: {exc}")
             return None
         return _Baseline(
@@ -259,7 +259,7 @@ class SensitiveFileDetector:
     ) -> SensitiveFileFinding | None:
         try:
             resp = await self.scanner.request("GET", url, use_cache=False)
-        except Exception as exc:  # noqa: BLE001 - one bad probe must not abort the sweep
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - one bad probe must not abort the sweep
             self._log.debug(f"Sensitive-file probe failed for {url}: {exc}")
             return None
 

@@ -42,3 +42,16 @@ docs_context/
 
 Dockerfile
 .dockerignore
+
+# Credentials and secrets — never include in image
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+*.sqlite
+*.db

@@ -82,6 +82,15 @@ en:
     deserialization: "Insecure Deserialization"
     missing_header: "Missing Security Header"
     info_disclosure: "Information Disclosure"
+    stored_xss: "Stored Cross-Site Scripting (XSS)"
+    dom_xss: "DOM-based Cross-Site Scripting (XSS)"
+    xssi: "Cross-Site Script Inclusion (XSSI)"
+    file_upload: "Insecure File Upload"
+    access_control: "Broken Access Control"
+    brute_force: "Missing Brute-Force Protection"
+    credential_exposure: "Credential / Secret Exposure"
+    cookie_security: "Insecure Cookie Configuration"
+    protocol_injection: "Protocol / Header Injection"
     evidence:
       sqli_error: "Database error message found in response"
       missing_header: "Missing {header} header"
@@ -97,6 +106,15 @@ en:
       log4shell: "JNDI lookup payload delivered (out-of-band confirmation required)"
       ldap_injection: "LDAP filter error or filter-logic change triggered by payload"
       deserialization: "Deserialization error signature triggered by a probe object"
+      stored_xss: "Injected payload was reflected unescaped on a second, independent request"
+      dom_xss: "Attacker-controlled source reached a dangerous DOM sink without sanitization"
+      xssi: "Sensitive JSON/JS-array data returned to a script-tag-style request without JSON hijacking protection"
+      file_upload: "Uploaded file with a dangerous/executable extension was accepted and is reachable"
+      access_control: "Restricted resource was reachable without proper authorization"
+      brute_force: "Authentication endpoint has no rate-limiting/lockout after repeated failed attempts"
+      credential_exposure: "Credential-shaped secret found exposed in a publicly reachable file"
+      cookie_security: "Session cookie missing a required security attribute"
+      protocol_injection: "Injected protocol control sequence altered the outbound request/response"
 
   # Tecnologías
   technologies:
@@ -251,6 +269,15 @@ es:
     deserialization: "Deserialización Insegura"
     missing_header: "Cabecera de Seguridad Faltante"
     info_disclosure: "Divulgación de Información"
+    stored_xss: "Cross-Site Scripting Almacenado (XSS)"
+    dom_xss: "Cross-Site Scripting basado en DOM (XSS)"
+    xssi: "Inclusión de Script entre Sitios (XSSI)"
+    file_upload: "Carga de Archivos Insegura"
+    access_control: "Control de Acceso Roto"
+    brute_force: "Falta de Protección contra Fuerza Bruta"
+    credential_exposure: "Exposición de Credenciales / Secretos"
+    cookie_security: "Configuración Insegura de Cookies"
+    protocol_injection: "Inyección de Protocolo / Cabeceras"
     evidence:
       sqli_error: "Mensaje de error de base de datos encontrado en la respuesta"
       missing_header: "Falta la cabecera {header}"
@@ -266,6 +293,15 @@ es:
       log4shell: "Payload de búsqueda JNDI entregado (requiere confirmación out-of-band)"
       ldap_injection: "Error de filtro LDAP o cambio de lógica del filtro provocado por el payload"
       deserialization: "Firma de error de deserialización provocada por un objeto de sondeo"
+      stored_xss: "El payload inyectado se reflejó sin escapar en una segunda solicitud independiente"
+      dom_xss: "Una fuente controlada por el atacante llegó a un sumidero DOM peligroso sin sanitización"
+      xssi: "Datos JSON/JS sensibles devueltos a una solicitud tipo script-tag sin protección contra JSON hijacking"
+      file_upload: "Se aceptó un archivo subido con extensión peligrosa/ejecutable y es accesible"
+      access_control: "Recurso restringido fue accesible sin autorización adecuada"
+      brute_force: "El endpoint de autenticación no tiene limitación de tasa/bloqueo tras intentos fallidos repetidos"
+      credential_exposure: "Se encontró un secreto con forma de credencial expuesto en un archivo públicamente accesible"
+      cookie_security: "A la cookie de sesión le falta un atributo de seguridad requerido"
+      protocol_injection: "La secuencia de control de protocolo inyectada alteró la solicitud/respuesta saliente"
 
   # Tecnologías
   technologies:

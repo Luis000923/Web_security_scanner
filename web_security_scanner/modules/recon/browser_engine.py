@@ -250,6 +250,9 @@ class BrowserRecon:
         # URLs discarded by the structural spider-trap heuristic instead of
         # being fed into the SPA-endpoint / nav-target frontier.
         self.trap_branches_pruned = 0
+        # Seed URL path prefix (set in explore()). Stripped before the entropy
+        # check so a high-entropy instance ID in the base URL is not a trap.
+        self._base_path: str = ""
         # Live/peak open-page accounting (observability + leak assertions).
         self._open_pages = 0
         self.peak_concurrent_pages = 0
@@ -268,7 +271,7 @@ class BrowserRecon:
         if self._scope is not None:
             try:
                 return bool(self._scope.host_in_scope(host))
-            except Exception:  # noqa: BLE001 - never let scoping crash recon
+            except Exception:  # noqa: BLE001  # NOSONAR  # NOSONAR - never let scoping crash recon
                 pass
         if self.same_origin_only:
             return host == origin_host
@@ -288,7 +291,14 @@ class BrowserRecon:
         URL to the discovery/nav-target frontier, pruning that branch before
         it ever consumes a page-navigation slot.
         """
-        trap = evaluate_url_for_trap(url)
+        # Strip the seed URL's path prefix so that a high-entropy instance ID
+        # in the base URL is never classified as a dynamic token / trap.
+        _parsed = urlparse(url)
+        _path = _parsed.path
+        if self._base_path and _path.startswith(self._base_path):
+            _path = _path[len(self._base_path):] or '/'
+        url_for_trap = urlunparse(_parsed._replace(path=_path))
+        trap = evaluate_url_for_trap(url_for_trap)
         if trap.is_trap:
             self.trap_branches_pruned += 1
             self._log.warning(
@@ -334,6 +344,7 @@ class BrowserRecon:
             return BrowserReconResult(available=False)
 
         result = BrowserReconResult()
+        self._base_path = urlparse(base_url).path.rstrip('/') or ''
         origin_host = urlparse(base_url).hostname or ""
         params_by_url = dict(seed_params or {})
 
@@ -367,7 +378,7 @@ class BrowserRecon:
                             try:
                                 rtype = request.resource_type
                                 url = request.url
-                            except Exception:  # noqa: BLE001
+                            except Exception:  # noqa: BLE001  # NOSONAR  # NOSONAR
                                 return
                             if rtype not in ("xhr", "fetch"):
                                 return
@@ -395,7 +406,7 @@ class BrowserRecon:
                         await self._safe_close(context, "context")
                 finally:
                     await self._safe_close(browser, "browser")
-        except Exception as exc:  # noqa: BLE001 - Playwright runtime / browser missing
+        except Exception as exc:  # noqa: BLE001  # NOSONAR  # NOSONAR - Playwright runtime / browser missing
             self._log.warning("Browser recon failed (%s): %s", type(exc).__name__, exc)
             result.error = f"{type(exc).__name__}: {exc}"
 
@@ -410,7 +421,7 @@ class BrowserRecon:
         """
         try:
             await handle.close()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001  # NOSONAR  # NOSONAR
             self._log.debug("closing browser %s failed: %s", label, exc)
 
     async def _visit_targets(
@@ -461,11 +472,11 @@ class BrowserRecon:
             page.set_default_navigation_timeout(self.nav_timeout * 1000)
             try:
                 await page.goto(target, wait_until="networkidle")
-            except Exception as exc:  # noqa: BLE001 - timeouts, nav aborts
+            except Exception as exc:  # noqa: BLE001  # NOSONAR  # NOSONAR - timeouts, nav aborts
                 self._log.debug("browser nav to %s failed: %s", target, exc)
                 try:
                     await page.goto(target, wait_until="domcontentloaded")
-                except Exception:  # noqa: BLE001
+                except Exception:  # noqa: BLE001  # NOSONAR  # NOSONAR
                     return
             if self.settle_time:
                 await asyncio.sleep(self.settle_time)
@@ -483,13 +494,13 @@ class BrowserRecon:
             hrefs = await page.eval_on_selector_all(
                 "a[href]", "els => els.map(e => e.href)"
             )
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001  # NOSONAR  # NOSONAR
             hrefs = []
         try:
             actions = await page.eval_on_selector_all(
                 "form[action]", "els => els.map(e => e.action)"
             )
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001  # NOSONAR  # NOSONAR
             actions = []
         for raw in list(hrefs) + list(actions):
             if not raw or not str(raw).startswith(("http://", "https://")):

@@ -165,7 +165,7 @@ def inject(
         noise = [_make_noise_row(rng, security_system) for _ in range(k)]
         merged = real + noise
         if shuffle:
-            rng.shuffle(merged)
+            rng.shuffle(merged)  # NOSONAR – seeded RNG for reproducible noise injection
         _write_jsonl(dst, merged)
         stats.append({
             "input": str(src), "output": str(dst),
