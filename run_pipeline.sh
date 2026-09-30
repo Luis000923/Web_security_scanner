@@ -4,7 +4,7 @@
 #
 # Runs, in order, on the workstation (RTX 5090 / CUDA 12.8 / uv):
 #   1. environment + uv verification, with auto-install of the ML stack
-#      (bash ai_module/verify_uv_env.sh; on missing deps -> uv pip install -e ".[ai]")
+#      (bash ai_module/verify_uv_env.sh; on missing deps -> uv pip install -e ".[ai,ai-local,training]")
 #   2. dataset (re)generation                    (optional, --regen-data)
 #   3. hardware profiling + base-model choice    (VRAM tier -> model size)
 #   4. base-model cache preparation              (HF snapshot download if missing)
@@ -37,7 +37,7 @@
 #                           fall back to train_qlora.py's own defaults
 #   --no-install            do NOT auto-install missing ML deps; abort instead
 #   --no-cuda-torch         when auto-installing, skip the explicit CUDA 12.8
-#                           torch wheel (use whatever ".[ai]" resolves)
+#                           torch wheel (use whatever ".[ai,ai-local,training]" resolves)
 #   --skip-model-dl         do not pre-download the base model
 #   --model-retries N       base-model download attempts (default: 3)
 #   --no-xet                fetch the base model over plain HTTPS from the start
@@ -250,7 +250,7 @@ install_ml_stack() {
         info "  ${TORCH_SPEC} from ${TORCH_INDEX_URL}"
         uv pip install "$TORCH_SPEC" --index-url "$TORCH_INDEX_URL"
     fi
-    uv pip install -e ".[ai]"
+    uv pip install -e ".[ai,ai-local,training]"
 }
 
 if [[ "$NO_VERIFY" -eq 1 ]]; then
@@ -267,7 +267,7 @@ else
         3)
             if [[ "$NO_INSTALL" -eq 1 ]]; then
                 die "AI stack is missing and --no-install was given — run \
-'uv pip install -e \".[ai]\"' yourself"
+'uv pip install -e \".[ai,ai-local,training]\"' yourself"
             fi
             warn "AI stack incomplete — attempting automatic install"
             install_ml_stack || die "automatic dependency install failed — see \

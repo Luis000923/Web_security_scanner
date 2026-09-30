@@ -92,6 +92,932 @@
       "tags": [
         "uuid"
       ]
+    },
+    {
+      "id": "idor.numeric.seq_3",
+      "vector": "3",
+      "description": "Sequential id probe (3) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_4",
+      "vector": "4",
+      "description": "Sequential id probe (4) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_5",
+      "vector": "5",
+      "description": "Sequential id probe (5) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_6",
+      "vector": "6",
+      "description": "Sequential id probe (6) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_7",
+      "vector": "7",
+      "description": "Sequential id probe (7) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_8",
+      "vector": "8",
+      "description": "Sequential id probe (8) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_9",
+      "vector": "9",
+      "description": "Sequential id probe (9) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_10",
+      "vector": "10",
+      "description": "Sequential id probe (10) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_25",
+      "vector": "25",
+      "description": "Sequential id probe (25) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_50",
+      "vector": "50",
+      "description": "Sequential id probe (50) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_100",
+      "vector": "100",
+      "description": "Sequential id probe (100) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.seq_1000",
+      "vector": "1000",
+      "description": "Sequential id probe (1000) to enumerate neighboring records owned by other users.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "sequential",
+        "enumeration"
+      ]
+    },
+    {
+      "id": "idor.numeric.neg_2",
+      "vector": "-2",
+      "description": "Negative id probe (-2) testing for signed/unsigned integer handling bypasses.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "boundary",
+        "negative"
+      ]
+    },
+    {
+      "id": "idor.numeric.neg_10",
+      "vector": "-10",
+      "description": "Negative id probe (-10) testing for signed/unsigned integer handling bypasses.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "boundary",
+        "negative"
+      ]
+    },
+    {
+      "id": "idor.numeric.neg_100",
+      "vector": "-100",
+      "description": "Negative id probe (-100) testing for signed/unsigned integer handling bypasses.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "boundary",
+        "negative"
+      ]
+    },
+    {
+      "id": "idor.numeric.int32_max",
+      "vector": "2147483647",
+      "description": "Integer boundary probe (int32_max) testing overflow/wraparound in id parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "boundary",
+        "overflow"
+      ]
+    },
+    {
+      "id": "idor.numeric.int32_overflow",
+      "vector": "2147483648",
+      "description": "Integer boundary probe (int32_overflow) testing overflow/wraparound in id parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "boundary",
+        "overflow"
+      ]
+    },
+    {
+      "id": "idor.numeric.int64_max",
+      "vector": "9223372036854775807",
+      "description": "Integer boundary probe (int64_max) testing overflow/wraparound in id parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "boundary",
+        "overflow"
+      ]
+    },
+    {
+      "id": "idor.numeric.int64_overflow",
+      "vector": "9223372036854775808",
+      "description": "Integer boundary probe (int64_overflow) testing overflow/wraparound in id parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "boundary",
+        "overflow"
+      ]
+    },
+    {
+      "id": "idor.numeric.leading_zero",
+      "vector": "0001",
+      "description": "Leading-zero id probe testing string/int normalization mismatches.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "type-confusion"
+      ]
+    },
+    {
+      "id": "idor.numeric.float",
+      "vector": "1.0",
+      "description": "Floating-point id probe testing loose type coercion.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "type-confusion"
+      ]
+    },
+    {
+      "id": "idor.numeric.hex",
+      "vector": "0x1",
+      "description": "Hexadecimal id probe testing alternate numeric base parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "type-confusion"
+      ]
+    },
+    {
+      "id": "idor.numeric.octal",
+      "vector": "0o1",
+      "description": "Octal-prefixed id probe testing alternate numeric base parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "type-confusion"
+      ]
+    },
+    {
+      "id": "idor.numeric.scientific",
+      "vector": "1e1",
+      "description": "Scientific-notation id probe testing loose numeric parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "type-confusion"
+      ]
+    },
+    {
+      "id": "idor.numeric.plus_prefix",
+      "vector": "+1",
+      "description": "Plus-prefixed id probe testing sign-tolerant numeric parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "type-confusion"
+      ]
+    },
+    {
+      "id": "idor.numeric.whitespace",
+      "vector": " 1 ",
+      "description": "Whitespace-padded id probe testing trimming inconsistencies.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "type-confusion"
+      ]
+    },
+    {
+      "id": "idor.numeric.null_byte",
+      "vector": "1%00",
+      "description": "Null-byte-suffixed id probe testing truncation in id parsing.",
+      "context": "numeric",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "type-confusion"
+      ]
+    },
+    {
+      "id": "idor.uuid.max",
+      "vector": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+      "description": "Maximum UUID probe (all-F) for UUID-keyed objects.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.uuid.all_ones",
+      "vector": "11111111-1111-1111-1111-111111111111",
+      "description": "Repeated-digit UUID probe for weak/test UUID generators.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.uuid.all_a",
+      "vector": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "description": "Repeated-hex-digit UUID probe for weak/test UUID generators.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.uuid.v1_epoch",
+      "vector": "00000000-0000-1000-8000-000000000000",
+      "description": "UUIDv1 probe with a zeroed timestamp, testing time-based UUID predictability.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.uuid.v1_node_null",
+      "vector": "1e4c8e00-1c2b-11ee-be56-0242ac120002",
+      "description": "Realistic UUIDv1 probe with a predictable MAC-derived node id, for timestamp/node enumeration.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.uuid.v4_low_entropy",
+      "vector": "00000000-0000-4000-8000-000000000001",
+      "description": "Low-entropy UUIDv4-shaped probe testing whether the app accepts non-random UUIDs.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.uuid.nil_uppercase",
+      "vector": "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
+      "description": "Uppercase maximum-UUID probe testing case-sensitive UUID comparison bypasses against the lowercase 'max' variant.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.uuid.short_form",
+      "vector": "{00000000-0000-0000-0000-000000000000}",
+      "description": "Braced nil-UUID probe testing alternate UUID serialization formats (COM/GUID style).",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.uuid.no_dashes",
+      "vector": "00000000000000000000000000000000",
+      "description": "Dash-stripped nil-UUID probe testing normalization-before-lookup bypasses.",
+      "context": "uuid",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "tags": [
+        "uuid",
+        "predictable"
+      ]
+    },
+    {
+      "id": "idor.special.root",
+      "vector": "root",
+      "description": "Root-account identifier probe.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "role"
+      ]
+    },
+    {
+      "id": "idor.special.superadmin",
+      "vector": "superadmin",
+      "description": "Superadmin role-name identifier probe.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "role"
+      ]
+    },
+    {
+      "id": "idor.special.system",
+      "vector": "system",
+      "description": "System/service account identifier probe.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "role"
+      ]
+    },
+    {
+      "id": "idor.special.me",
+      "vector": "me",
+      "description": "Self-referencing alias probe testing 'me'-style shortcut identifiers.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "special"
+      ]
+    },
+    {
+      "id": "idor.special.current",
+      "vector": "current",
+      "description": "Self-referencing alias probe testing 'current'-style shortcut identifiers.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "special"
+      ]
+    },
+    {
+      "id": "idor.special.test",
+      "vector": "test",
+      "description": "Common seeded test-account identifier probe.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "special"
+      ]
+    },
+    {
+      "id": "idor.special.guest",
+      "vector": "guest",
+      "description": "Guest-account identifier probe.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "special"
+      ]
+    },
+    {
+      "id": "idor.special.null_string",
+      "vector": "null",
+      "description": "Literal 'null' string probe testing null-coalescing lookup bypasses.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "special"
+      ]
+    },
+    {
+      "id": "idor.special.empty",
+      "vector": "​",
+      "description": "Zero-width-space id probe testing effectively-blank/default-record fallback lookup behavior.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "special"
+      ]
+    },
+    {
+      "id": "idor.special.wildcard",
+      "vector": "*",
+      "description": "Wildcard id probe testing overly permissive lookup queries.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "special"
+      ]
+    },
+    {
+      "id": "idor.special.sql_wildcard",
+      "vector": "%",
+      "description": "SQL LIKE wildcard id probe testing unsanitized id use in LIKE clauses.",
+      "context": "special",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "special"
+      ]
+    },
+    {
+      "id": "idor.ownership.user_id_other",
+      "vector": "1101",
+      "description": "Alternate numeric user_id value for a hidden/parallel ownership parameter (e.g. user_id alongside resource id).",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.ownership.account_id_other",
+      "vector": "1102",
+      "description": "Alternate account_id value probing a hidden tenant/account ownership parameter.",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.ownership.owner_id_other",
+      "vector": "1103",
+      "description": "Alternate owner_id value probing a hidden resource-ownership parameter.",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.ownership.tenant_id_other",
+      "vector": "1104",
+      "description": "Alternate tenant_id value probing multi-tenant isolation via a hidden parameter.",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.ownership.org_id_other",
+      "vector": "1105",
+      "description": "Alternate org_id value probing organization-scoped ownership isolation.",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.ownership.is_admin_true",
+      "vector": "true",
+      "description": "Hidden is_admin boolean probe testing client-trusted privilege escalation.",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.ownership.is_admin_one",
+      "vector": "01",
+      "description": "Hidden is_admin numeric-string probe ('01') testing loosely-typed client-trusted privilege escalation.",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.ownership.role_admin",
+      "vector": "administrator",
+      "description": "Hidden role parameter probe ('administrator') testing client-trusted role assignment.",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.ownership.email_other",
+      "vector": "victim@example.com",
+      "description": "Alternate email value probing email-as-identifier ownership bypass.",
+      "context": "ownership_param",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "hidden-parameter",
+        "ownership"
+      ]
+    },
+    {
+      "id": "idor.batch.array_mixed_owner",
+      "vector": "[1,2]",
+      "description": "Batch id array mixing the caller's own id with a neighboring id, testing per-item authorization in bulk endpoints.",
+      "context": "batch",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "batch",
+        "array-param"
+      ]
+    },
+    {
+      "id": "idor.batch.array_all_foreign",
+      "vector": "[2,3,4]",
+      "description": "Batch id array containing only foreign ids, testing whether bulk endpoints skip per-item ownership checks.",
+      "context": "batch",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "batch",
+        "array-param"
+      ]
+    },
+    {
+      "id": "idor.batch.array_wide_range",
+      "vector": "[1,2,3,4,5,6,7,8,9,10]",
+      "description": "Wide sequential batch array probing bulk-fetch enumeration.",
+      "context": "batch",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "batch",
+        "array-param"
+      ]
+    },
+    {
+      "id": "idor.batch.csv_mixed_owner",
+      "vector": "1,2",
+      "description": "Comma-separated id list mixing own and foreign ids for endpoints that accept CSV id parameters.",
+      "context": "batch",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "batch",
+        "array-param"
+      ]
+    },
+    {
+      "id": "idor.batch.json_object_ids",
+      "vector": "{\"ids\":[1,2,3]}",
+      "description": "JSON-object batch payload with a nested ids array, for POST/JSON bulk endpoints.",
+      "context": "batch",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "batch",
+        "array-param"
+      ]
+    },
+    {
+      "id": "idor.batch.nested_ids_key",
+      "vector": "{\"filter\":{\"id\":{\"in\":[1,2,3]}}}",
+      "description": "Nested filter-object batch payload probing GraphQL/REST query-object IDOR.",
+      "context": "batch",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "batch",
+        "array-param"
+      ]
+    },
+    {
+      "id": "idor.batch.range_param",
+      "vector": "1-100",
+      "description": "Range-expression id probe testing endpoints that parse 'start-end' range parameters.",
+      "context": "batch",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "tags": [
+        "batch",
+        "array-param"
+      ]
     }
   ]
 }

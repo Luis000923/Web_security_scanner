@@ -122,7 +122,7 @@ def _disable_xet() -> None:
         from huggingface_hub import constants as _c
 
         _c.HF_HUB_DISABLE_XET = True  # consumed by file_download at call time
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001  # NOSONAR  # NOSONAR
         pass
 
 
@@ -131,7 +131,7 @@ def _cached_size(scan_cache_dir, repo_id: str) -> int | None:
         for repo in scan_cache_dir().repos:
             if repo.repo_id == repo_id and repo.repo_type == "model":
                 return repo.size_on_disk
-    except Exception:  # noqa: BLE001 - cache scan is best-effort
+    except Exception:  # noqa: BLE001  # NOSONAR  # NOSONAR - cache scan is best-effort
         pass
     return None
 
@@ -163,9 +163,12 @@ def main(argv: list[str] | None = None) -> int:
 
     # keep progress / retry chatter in order when stdout is a pipe (run_pipeline.sh)
     for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:      # not a TextIOWrapper (pipe, StringIO, ...)
+            continue
         try:
-            stream.reconfigure(line_buffering=True)
-        except (AttributeError, ValueError):
+            reconfigure(line_buffering=True)
+        except ValueError:
             pass
 
     if args.retries < 1:
@@ -231,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
         except KeyboardInterrupt:
             print("\nensure_base_model: interrupted", file=sys.stderr)
             return 1
-        except BaseException as exc:  # noqa: BLE001 - want the retry path for anything transient
+        except BaseException as exc:  # noqa: BLE001  # NOSONAR  # NOSONAR - want the retry path for anything transient
             retriable = _is_retriable(exc)
             print(
                 f"ensure_base_model: attempt {attempt} failed "

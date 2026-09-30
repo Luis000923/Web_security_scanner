@@ -136,6 +136,1830 @@
         "ruby",
         "detection-only"
       ]
+    },
+    {
+      "id": "deser.java.gadget_commonscollections1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9ucy5mdW5jdG9ycy5JbnZva2VyVHJhbnNmb3JtZXI=",
+      "description": "Base64 marker embedding the CommonsCollections1 (Transformer chain) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.collections.functors.InvokerTransformer",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "commonscollections1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_commonscollections2",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9uczQuZnVuY3RvcnMuSW52b2tlclRyYW5zZm9ybWVy",
+      "description": "Base64 marker embedding the CommonsCollections2 (PriorityQueue + CC4) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.collections4.functors.InvokerTransformer",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "commonscollections2"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_commonscollections3",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9ucy5mdW5jdG9ycy5JbnN0YW50aWF0ZVRyYW5zZm9ybWVy",
+      "description": "Base64 marker embedding the CommonsCollections3 (TemplatesImpl loader) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.collections.functors.InstantiateTransformer",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "commonscollections3"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_commonscollections5",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9ucy5rZXl2YWx1ZS5UaWVkTWFwRW50cnk=",
+      "description": "Base64 marker embedding the CommonsCollections5 (TiedMapEntry/BadAttributeValueExpException) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.collections.keyvalue.TiedMapEntry",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "commonscollections5"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_commonscollections6",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9ucy5tYXAuTGF6eU1hcCNjb21tb25zY29sbGVjdGlvbnM2",
+      "description": "Base64 marker embedding the CommonsCollections6 (LazyMap/HashSet) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.collections.map.LazyMap",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "commonscollections6"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_commonscollections7",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9ucy5tYXAuTGF6eU1hcCNjb21tb25zY29sbGVjdGlvbnM3",
+      "description": "Base64 marker embedding the CommonsCollections7 (LazyMap/Hashtable) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.collections.map.LazyMap",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "commonscollections7"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_commonsbeanutils1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5iZWFudXRpbHMuQmVhbkNvbXBhcmF0b3I=",
+      "description": "Base64 marker embedding the CommonsBeanutils1 (BeanComparator/TemplatesImpl) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.beanutils.BeanComparator",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "commonsbeanutils1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_clone1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9uczQuY29tcGFyYXRvcnMuVHJhbnNmb3JtaW5nQ29tcGFyYXRvcg==",
+      "description": "Base64 marker embedding the Clone1 (PriorityQueue clone) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.collections4.comparators.TransformingComparator",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "clone1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_groovy1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5jb2RlaGF1cy5ncm9vdnkucnVudGltZS5Db252ZXJ0ZWRDbG9zdXJl",
+      "description": "Base64 marker embedding the Groovy1 (ConvertedClosure gadget) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.codehaus.groovy.runtime.ConvertedClosure",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "groovy1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_hibernate1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5oaWJlcm5hdGUudHVwbGUuY29tcG9uZW50LlBvam9Db21wb25lbnRUdXBsaXplcg==",
+      "description": "Base64 marker embedding the Hibernate1 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.hibernate.tuple.component.PojoComponentTuplizer",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "hibernate1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_hibernate2",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5oaWJlcm5hdGUuZW5naW5lLnNwaS5UeXBlZFZhbHVl",
+      "description": "Base64 marker embedding the Hibernate2 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.hibernate.engine.spi.TypedValue",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "hibernate2"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_jdk7u21",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOmNvbS5zdW4ub3JnLmFwYWNoZS54YWxhbi5pbnRlcm5hbC54c2x0Yy50cmF4LlRlbXBsYXRlc0ltcGw=",
+      "description": "Base64 marker embedding the Jdk7u21 (no CommonsCollections dependency) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "jdk7u21"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_jdk8u20",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOmphdmF4LnhtbC5iaW5kLmFubm90YXRpb24uYWRhcHRlcnMuQ29sbGFwc2VkU3RyaW5nQWRhcHRlcg==",
+      "description": "Base64 marker embedding the Jdk8u20 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "javax.xml.bind.annotation.adapters.CollapsedStringAdapter",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "jdk8u20"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_jboss1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5qYm9zcy5pbnRlcmNlcHRvci5idWlsZGVyLkludGVyY2VwdGlvbk1vZGVsQnVpbGRlcg==",
+      "description": "Base64 marker embedding the JBossInterceptors1 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.jboss.interceptor.builder.InterceptionModelBuilder",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "jboss1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_jsonlib",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm5ldC5zZi5qc29uLkpTT05PYmplY3Q=",
+      "description": "Base64 marker embedding the JSON-lib gadget chain (JSON1) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "net.sf.json.JSONObject",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "jsonlib"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_rome",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOmNvbS5zdW4uc3luZGljYXRpb24uZmVlZC5pbXBsLk9iamVjdEJlYW4=",
+      "description": "Base64 marker embedding the ROME gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "com.sun.syndication.feed.impl.ObjectBean",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "rome"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_spring1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5zcHJpbmdmcmFtZXdvcmsuYmVhbnMuZmFjdG9yeS5PYmplY3RGYWN0b3J5",
+      "description": "Base64 marker embedding the Spring1 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.springframework.beans.factory.ObjectFactory",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "spring1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_spring2",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5zcHJpbmdmcmFtZXdvcmsuYW9wLnN1cHBvcnQuQWJzdHJhY3RCZWFuRmFjdG9yeVBvaW50Y3V0QWR2aXNvcg==",
+      "description": "Base64 marker embedding the Spring2 (AbstractBeanFactoryPointcutAdvisor) class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.springframework.aop.support.AbstractBeanFactoryPointcutAdvisor",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "spring2"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_vaadin1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOmNvbS52YWFkaW4uZGF0YS51dGlsLk5lc3RlZE1ldGhvZFByb3BlcnR5",
+      "description": "Base64 marker embedding the Vaadin1 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "com.vaadin.data.util.NestedMethodProperty",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "vaadin1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_click1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY2xpY2suY29udHJvbC5Db2x1bW4=",
+      "description": "Base64 marker embedding the Click1 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.click.control.Column",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "click1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_aspectjweaver",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hc3BlY3RqLndlYXZlci50b29scy5jYWNoZS5TaW1wbGVDYWNoZUZhY3Rvcnk=",
+      "description": "Base64 marker embedding the AspectJWeaver gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.aspectj.weaver.tools.cache.SimpleCacheFactory",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "aspectjweaver"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_beanshell1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOmJzaC5YVGhpcw==",
+      "description": "Base64 marker embedding the BeanShell1 (bsh.XThis) gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "bsh.XThis",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "beanshell1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_c3p0",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOmNvbS5tY2hhbmdlLnYyLmMzcDAuaW1wbC5Qb29sQmFja2VkRGF0YVNvdXJjZUJhc2U=",
+      "description": "Base64 marker embedding the C3P0 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "com.mchange.v2.c3p0.impl.PoolBackedDataSourceBase",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "c3p0"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_fileupload1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUuY29tbW9ucy5maWxldXBsb2FkLmRpc2suRGlza0ZpbGVJdGVt",
+      "description": "Base64 marker embedding the FileUpload1 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.commons.fileupload.disk.DiskFileItem",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "fileupload1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_myfaces1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUubXlmYWNlcy52aWV3LmZhY2VsZXRzLmVsLlZhbHVlRXhwcmVzc2lvbk1ldGhvZEV4cHJlc3Npb24=",
+      "description": "Base64 marker embedding the MyFaces1 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.myfaces.view.facelets.el.ValueExpressionMethodExpression",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "myfaces1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_wicket1",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOm9yZy5hcGFjaGUud2lja2V0LnV0aWwuY3J5cHQuU3VuSmNlQ3J5cHQ=",
+      "description": "Base64 marker embedding the Wicket1 gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "org.apache.wicket.util.crypt.SunJceCrypt",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "wicket1"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.java.gadget_jre8u20",
+      "vector": "QUMgRUQgMDAgMDUgU0lHOmphdmEudXRpbC5Qcmlvcml0eVF1ZXVl",
+      "description": "Base64 marker embedding the JRE8u20 (java.util.PriorityQueue) gadget chain class name inside an inert (truncated) Java serialization stream, to fingerprint whether the vulnerable class is on the classpath.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "java"
+      ],
+      "expected_evidence": [
+        "ObjectInputStream",
+        "ClassNotFoundException",
+        "java.util.PriorityQueue",
+        "InvalidClassException"
+      ],
+      "tags": [
+        "java",
+        "gadget-chain",
+        "ysoserial",
+        "detection-only",
+        "jre8u20"
+      ],
+      "references": [
+        "https://github.com/frohoff/ysoserial"
+      ]
+    },
+    {
+      "id": "deser.php.magic_wakeup",
+      "vector": "O:8:\"stdClass\":1:{s:8:\"__wakeup\";s:13:\"WSSc4n4ry7788\";}",
+      "description": "PHP serialized object probe crafted to trigger the __wakeup magic method during unserialize(), with an embedded canary to confirm code-path execution.",
+      "context": "magic_method",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "__PHP_Incomplete_Class",
+        "__wakeup"
+      ],
+      "tags": [
+        "php",
+        "magic-method",
+        "detection-only",
+        "wakeup"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+      ]
+    },
+    {
+      "id": "deser.php.magic_destruct",
+      "vector": "O:8:\"stdClass\":1:{s:10:\"__destruct\";s:13:\"WSSc4n4ry7788\";}",
+      "description": "PHP serialized object probe crafted to trigger the __destruct magic method during unserialize(), with an embedded canary to confirm code-path execution.",
+      "context": "magic_method",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "__PHP_Incomplete_Class",
+        "__destruct"
+      ],
+      "tags": [
+        "php",
+        "magic-method",
+        "detection-only",
+        "destruct"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+      ]
+    },
+    {
+      "id": "deser.php.magic_tostring",
+      "vector": "O:8:\"stdClass\":1:{s:10:\"__toString\";s:13:\"WSSc4n4ry7788\";}",
+      "description": "PHP serialized object probe crafted to trigger the __toString magic method during unserialize(), with an embedded canary to confirm code-path execution.",
+      "context": "magic_method",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "__PHP_Incomplete_Class",
+        "__toString"
+      ],
+      "tags": [
+        "php",
+        "magic-method",
+        "detection-only",
+        "tostring"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+      ]
+    },
+    {
+      "id": "deser.php.magic_invoke",
+      "vector": "O:8:\"stdClass\":1:{s:8:\"__invoke\";s:13:\"WSSc4n4ry7788\";}",
+      "description": "PHP serialized object probe crafted to trigger the __invoke magic method during unserialize(), with an embedded canary to confirm code-path execution.",
+      "context": "magic_method",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "__PHP_Incomplete_Class",
+        "__invoke"
+      ],
+      "tags": [
+        "php",
+        "magic-method",
+        "detection-only",
+        "invoke"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+      ]
+    },
+    {
+      "id": "deser.php.magic_call",
+      "vector": "O:8:\"stdClass\":1:{s:6:\"__call\";s:13:\"WSSc4n4ry7788\";}",
+      "description": "PHP serialized object probe crafted to trigger the __call magic method during unserialize(), with an embedded canary to confirm code-path execution.",
+      "context": "magic_method",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "__PHP_Incomplete_Class",
+        "__call"
+      ],
+      "tags": [
+        "php",
+        "magic-method",
+        "detection-only",
+        "call"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+      ]
+    },
+    {
+      "id": "deser.php.magic_set_state",
+      "vector": "O:8:\"stdClass\":1:{s:11:\"__set_state\";s:13:\"WSSc4n4ry7788\";}",
+      "description": "PHP serialized object probe crafted to trigger the __set_state magic method during unserialize(), with an embedded canary to confirm code-path execution.",
+      "context": "magic_method",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "__PHP_Incomplete_Class",
+        "__set_state"
+      ],
+      "tags": [
+        "php",
+        "magic-method",
+        "detection-only",
+        "set_state"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+      ]
+    },
+    {
+      "id": "deser.php.phpggc_monolog_rce1",
+      "vector": "Tzo4OiJzdGRDbGFzcyI6MTp7czo2OiJnYWRnZXQiO3M6MTI6Ik1vbm9sb2cvUkNFMSI7fQ==",
+      "description": "Base64-wrapped PHP object graph tagged with the PHPGGC 'Monolog/RCE1' gadget-chain identifier, used as an inert fingerprint probe (no live payload body).",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "Monolog/RCE1",
+        "__destruct"
+      ],
+      "tags": [
+        "php",
+        "phpggc",
+        "gadget-chain",
+        "detection-only",
+        "monolog_rce1"
+      ],
+      "references": [
+        "https://github.com/ambionics/phpggc"
+      ]
+    },
+    {
+      "id": "deser.php.phpggc_laravel_rce9",
+      "vector": "Tzo4OiJzdGRDbGFzcyI6MTp7czo2OiJnYWRnZXQiO3M6MTI6IkxhcmF2ZWwvUkNFOSI7fQ==",
+      "description": "Base64-wrapped PHP object graph tagged with the PHPGGC 'Laravel/RCE9' gadget-chain identifier, used as an inert fingerprint probe (no live payload body).",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "Laravel/RCE9",
+        "__destruct"
+      ],
+      "tags": [
+        "php",
+        "phpggc",
+        "gadget-chain",
+        "detection-only",
+        "laravel_rce9"
+      ],
+      "references": [
+        "https://github.com/ambionics/phpggc"
+      ]
+    },
+    {
+      "id": "deser.php.phpggc_guzzle_fw1",
+      "vector": "Tzo4OiJzdGRDbGFzcyI6MTp7czo2OiJnYWRnZXQiO3M6MTA6Ikd1enpsZS9GVzEiO30=",
+      "description": "Base64-wrapped PHP object graph tagged with the PHPGGC 'Guzzle/FW1' gadget-chain identifier, used as an inert fingerprint probe (no live payload body).",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "Guzzle/FW1",
+        "__destruct"
+      ],
+      "tags": [
+        "php",
+        "phpggc",
+        "gadget-chain",
+        "detection-only",
+        "guzzle_fw1"
+      ],
+      "references": [
+        "https://github.com/ambionics/phpggc"
+      ]
+    },
+    {
+      "id": "deser.php.phpggc_swiftmailer_fw1",
+      "vector": "Tzo4OiJzdGRDbGFzcyI6MTp7czo2OiJnYWRnZXQiO3M6MTU6IlN3aWZ0TWFpbGVyL0ZXMSI7fQ==",
+      "description": "Base64-wrapped PHP object graph tagged with the PHPGGC 'SwiftMailer/FW1' gadget-chain identifier, used as an inert fingerprint probe (no live payload body).",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "SwiftMailer/FW1",
+        "__destruct"
+      ],
+      "tags": [
+        "php",
+        "phpggc",
+        "gadget-chain",
+        "detection-only",
+        "swiftmailer_fw1"
+      ],
+      "references": [
+        "https://github.com/ambionics/phpggc"
+      ]
+    },
+    {
+      "id": "deser.php.phpggc_symfony_rce4",
+      "vector": "Tzo4OiJzdGRDbGFzcyI6MTp7czo2OiJnYWRnZXQiO3M6MTI6IlN5bWZvbnkvUkNFNCI7fQ==",
+      "description": "Base64-wrapped PHP object graph tagged with the PHPGGC 'Symfony/RCE4' gadget-chain identifier, used as an inert fingerprint probe (no live payload body).",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "Symfony/RCE4",
+        "__destruct"
+      ],
+      "tags": [
+        "php",
+        "phpggc",
+        "gadget-chain",
+        "detection-only",
+        "symfony_rce4"
+      ],
+      "references": [
+        "https://github.com/ambionics/phpggc"
+      ]
+    },
+    {
+      "id": "deser.php.phpggc_doctrine_sqli1",
+      "vector": "Tzo4OiJzdGRDbGFzcyI6MTp7czo2OiJnYWRnZXQiO3M6MTQ6IkRvY3RyaW5lL1NRTEkxIjt9",
+      "description": "Base64-wrapped PHP object graph tagged with the PHPGGC 'Doctrine/SQLI1' gadget-chain identifier, used as an inert fingerprint probe (no live payload body).",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "Doctrine/SQLI1",
+        "__destruct"
+      ],
+      "tags": [
+        "php",
+        "phpggc",
+        "gadget-chain",
+        "detection-only",
+        "doctrine_sqli1"
+      ],
+      "references": [
+        "https://github.com/ambionics/phpggc"
+      ]
+    },
+    {
+      "id": "deser.php.phpggc_cakephp_rce2",
+      "vector": "Tzo4OiJzdGRDbGFzcyI6MTp7czo2OiJnYWRnZXQiO3M6MTI6IkNha2VQSFAvUkNFMiI7fQ==",
+      "description": "Base64-wrapped PHP object graph tagged with the PHPGGC 'CakePHP/RCE2' gadget-chain identifier, used as an inert fingerprint probe (no live payload body).",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "php"
+      ],
+      "expected_evidence": [
+        "unserialize()",
+        "CakePHP/RCE2",
+        "__destruct"
+      ],
+      "tags": [
+        "php",
+        "phpggc",
+        "gadget-chain",
+        "detection-only",
+        "cakephp_rce2"
+      ],
+      "references": [
+        "https://github.com/ambionics/phpggc"
+      ]
+    },
+    {
+      "id": "deser.python.pickle_proto0",
+      "vector": "\\x28i0\\ntR.",
+      "description": "Pickle protocol-0 header probe. Confirms the endpoint attempts to unpickle attacker-controlled bytes before any gadget body is sent.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "_pickle",
+        "find_class"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "protocol-header",
+        "detection-only",
+        "proto0"
+      ]
+    },
+    {
+      "id": "deser.python.pickle_proto1",
+      "vector": "\\x80\\x01",
+      "description": "Pickle protocol-1 header probe. Confirms the endpoint attempts to unpickle attacker-controlled bytes before any gadget body is sent.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "_pickle",
+        "find_class"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "protocol-header",
+        "detection-only",
+        "proto1"
+      ]
+    },
+    {
+      "id": "deser.python.pickle_proto2",
+      "vector": "\\x80\\x02",
+      "description": "Pickle protocol-2 header probe. Confirms the endpoint attempts to unpickle attacker-controlled bytes before any gadget body is sent.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "_pickle",
+        "find_class"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "protocol-header",
+        "detection-only",
+        "proto2"
+      ]
+    },
+    {
+      "id": "deser.python.pickle_proto3",
+      "vector": "\\x80\\x03",
+      "description": "Pickle protocol-3 header probe. Confirms the endpoint attempts to unpickle attacker-controlled bytes before any gadget body is sent.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "_pickle",
+        "find_class"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "protocol-header",
+        "detection-only",
+        "proto3"
+      ]
+    },
+    {
+      "id": "deser.python.pickle_proto5",
+      "vector": "\\x80\\x05",
+      "description": "Pickle protocol-5 header probe. Confirms the endpoint attempts to unpickle attacker-controlled bytes before any gadget body is sent.",
+      "context": "detection",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Medium",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "_pickle",
+        "find_class"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "protocol-header",
+        "detection-only",
+        "proto5"
+      ]
+    },
+    {
+      "id": "deser.python.global_os_system",
+      "vector": "cos\nsystem\n(S'id'\ntR.",
+      "description": "Pickle GLOBAL-opcode probe referencing os.system to test whether the unpickler's find_class allow/deny-list blocks dangerous module imports.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "find_class",
+        "GLOBAL",
+        "os.system"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "global-opcode",
+        "detection-only",
+        "os_system"
+      ]
+    },
+    {
+      "id": "deser.python.global_subprocess_run",
+      "vector": "csubprocess\nrun\n(S'id'\ntR.",
+      "description": "Pickle GLOBAL-opcode probe referencing subprocess.run to test whether the unpickler's find_class allow/deny-list blocks dangerous module imports.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "find_class",
+        "GLOBAL",
+        "subprocess.run"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "global-opcode",
+        "detection-only",
+        "subprocess_run"
+      ]
+    },
+    {
+      "id": "deser.python.global_builtins_eval",
+      "vector": "cbuiltins\neval\n(S'id'\ntR.",
+      "description": "Pickle GLOBAL-opcode probe referencing builtins.eval to test whether the unpickler's find_class allow/deny-list blocks dangerous module imports.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "find_class",
+        "GLOBAL",
+        "builtins.eval"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "global-opcode",
+        "detection-only",
+        "builtins_eval"
+      ]
+    },
+    {
+      "id": "deser.python.global_builtins_exec",
+      "vector": "cbuiltins\nexec\n(S'id'\ntR.",
+      "description": "Pickle GLOBAL-opcode probe referencing builtins.exec to test whether the unpickler's find_class allow/deny-list blocks dangerous module imports.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "find_class",
+        "GLOBAL",
+        "builtins.exec"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "global-opcode",
+        "detection-only",
+        "builtins_exec"
+      ]
+    },
+    {
+      "id": "deser.python.global_posix_system",
+      "vector": "cposix\nsystem\n(S'id'\ntR.",
+      "description": "Pickle GLOBAL-opcode probe referencing posix.system to test whether the unpickler's find_class allow/deny-list blocks dangerous module imports.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "find_class",
+        "GLOBAL",
+        "posix.system"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "global-opcode",
+        "detection-only",
+        "posix_system"
+      ]
+    },
+    {
+      "id": "deser.python.reduce_marker",
+      "vector": "\\x80\\x04\\x95\\x0c\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x8c\\x03osS\\x94\\x93\\x94.",
+      "description": "Pickle protocol-4 stream containing a REDUCE opcode reference to the 'os' module, as an inert marker to detect unsafe global resolution.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "High",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "UnpicklingError",
+        "REDUCE",
+        "os"
+      ],
+      "tags": [
+        "python",
+        "pickle",
+        "reduce-opcode",
+        "detection-only"
+      ]
+    },
+    {
+      "id": "deser.python.yaml_unsafe_load",
+      "vector": "!!python/object/apply:os.system ['id']",
+      "description": "YAML tag probe for PyYAML yaml.load()/unsafe_load() misuse, referencing os.system as a canary target class.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "python"
+      ],
+      "expected_evidence": [
+        "yaml.constructor.ConstructorError",
+        "python/object/apply",
+        "os.system"
+      ],
+      "tags": [
+        "python",
+        "yaml",
+        "detection-only"
+      ],
+      "references": [
+        "https://pyyaml.org/wiki/PyYAMLDocumentation"
+      ]
+    },
+    {
+      "id": "deser.dotnet.binaryformatter_typeconfuse",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6U3lzdGVtLldpbmRvd3MuRGF0YS5PYmplY3REYXRhUHJvdmlkZXI=",
+      "description": "TypeConfuseDelegate (ysoserial.net) gadget marker for BinaryFormatter. Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "System.Windows.Data.ObjectDataProvider"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "binaryformatter_typeconfuse"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.binaryformatter_activitysurrogate",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6U3lzdGVtLldvcmtmbG93LkNvbXBvbmVudE1vZGVsLkFjdGl2aXR5U3Vycm9nYXRlU2VsZWN0b3I=",
+      "description": "ActivitySurrogateSelector gadget marker for BinaryFormatter. Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "System.Workflow.ComponentModel.ActivitySurrogateSelector"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "binaryformatter_activitysurrogate"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.binaryformatter_windowsidentity",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6U3lzdGVtLlNlY3VyaXR5LlByaW5jaXBhbC5XaW5kb3dzSWRlbnRpdHk=",
+      "description": "WindowsIdentity gadget marker for BinaryFormatter. Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "System.Security.Principal.WindowsIdentity"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "binaryformatter_windowsidentity"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.binaryformatter_textformatting",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6TWljcm9zb2Z0LlZpc3VhbFN0dWRpby5UZXh0LkZvcm1hdHRpbmcuVGV4dEZvcm1hdHRpbmdSdW5Qcm9wZXJ0aWVz",
+      "description": "TextFormattingRunProperties gadget marker. Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "Microsoft.VisualStudio.Text.Formatting.TextFormattingRunProperties"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "binaryformatter_textformatting"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.netdatacontract_typeconfuse",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6U3lzdGVtLlJ1bnRpbWUuU2VyaWFsaXphdGlvbi5OZXREYXRhQ29udHJhY3RTZXJpYWxpemVy",
+      "description": "NetDataContractSerializer TypeConfuseDelegate marker. Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "System.Runtime.Serialization.NetDataContractSerializer"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "netdatacontract_typeconfuse"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.jsonnet_typenamehandling",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6TmV3dG9uc29mdC5Kc29uLkpzb25TZXJpYWxpemVyU2V0dGluZ3M=",
+      "description": "Json.NET TypeNameHandling.All gadget marker (ObjectDataProvider). Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "Newtonsoft.Json.JsonSerializerSettings"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "jsonnet_typenamehandling"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.losformatter_viewstate",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6U3lzdGVtLldlYi5VSS5Mb3NGb3JtYXR0ZXI=",
+      "description": "ASP.NET ViewState LosFormatter gadget marker. Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "System.Web.UI.LosFormatter"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "losformatter_viewstate"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.objectstateformatter",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6U3lzdGVtLldlYi5VSS5PYmplY3RTdGF0ZUZvcm1hdHRlcg==",
+      "description": "ObjectStateFormatter ViewState deserialization marker. Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "System.Web.UI.ObjectStateFormatter"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "objectstateformatter"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.dataset_typeconfuse",
+      "vector": "QUFFQUFBRC8vLy8vQVFBQUFBQUFBQUFNQWdBQUFBPT1TSUc6U3lzdGVtLkRhdGEuRGF0YVNldA==",
+      "description": "DataSet-based TypeConfuseDelegate gadget marker. Truncated BinaryFormatter header with the gadget's fully-qualified type name appended as a fingerprint, not a functional payload.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "System.Runtime.Serialization",
+        "BinaryFormatter",
+        "SerializationException",
+        "System.Data.DataSet"
+      ],
+      "tags": [
+        "dotnet",
+        "gadget-chain",
+        "ysoserial.net",
+        "detection-only",
+        "dataset_typeconfuse"
+      ],
+      "references": [
+        "https://github.com/pwntester/ysoserial.net"
+      ]
+    },
+    {
+      "id": "deser.dotnet.viewstate_no_mac",
+      "vector": "__VIEWSTATE=%2FwEPDwULLTE2MTY2NTQ2MTlkZM%3D%3D&__VIEWSTATEGENERATOR=00000000",
+      "description": "Forged __VIEWSTATE parameter with a zeroed generator, probing for MAC validation disabled (EnableViewStateMac=false) or a known/leaked validation key.",
+      "context": "viewstate",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "dotnet"
+      ],
+      "expected_evidence": [
+        "MAC verification failed",
+        "The state information is invalid",
+        "System.Web.UI.LosFormatter"
+      ],
+      "references": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+      ],
+      "tags": [
+        "dotnet",
+        "viewstate",
+        "detection-only"
+      ]
+    },
+    {
+      "id": "deser.ruby.universal_gadget",
+      "vector": "\\x04\\x08o:\\x1aGem::Requirement\\x06:\\x0f@requirements\\x00",
+      "description": "Ruby Marshal probe referencing the Gem::Requirement universal deserialization gadget class as an inert marker.",
+      "context": "gadget_chain",
+      "cwe": "CWE-502",
+      "owasp": "A08:2021",
+      "confidence": "LOW",
+      "severity": "Critical",
+      "min_intrusion_level": "low",
+      "engines": [
+        "ruby"
+      ],
+      "expected_evidence": [
+        "marshal data too short",
+        "Marshal.load",
+        "TypeError",
+        "Gem::Requirement"
+      ],
+      "tags": [
+        "ruby",
+        "marshal",
+        "gadget-chain",
+        "detection-only"
+      ],
+      "references": [
+        "https://www.elttam.com/blog/ruby-deserialization/"
+      ]
     }
   ]
 }

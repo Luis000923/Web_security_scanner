@@ -96,6 +96,18 @@ SOFT_EVIDENCE_KINDS: frozenset[str] = frozenset({
     "time_unconfirmed",    # latency spike we could not reproduce
 })
 
+# Within HARD_EVIDENCE_KINDS, only these are distinct enough from "URL
+# validation rejected it" that a CONFIRMED oracle is allowed to waive the
+# severity cap outright. error_signature / interpreter_error are pattern
+# matches against response text: however reproducible and attributable via
+# the double-oracle, a generic validator's own error page can coincidentally
+# contain the same substring, so "CONFIRMED" there still isn't proof of
+# execution the way a timing oracle, an OOB callback, observed code
+# execution or a rendered canary is.
+_CONFIRMED_BYPASS_KINDS: frozenset[str] = frozenset({
+    "time_confirmed", "oob", "code_execution", "canary",
+})
+
 # Severity ladder used to cap a soft-ish finding on a flow-control parameter.
 _SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 _SEVERITY_LABEL = {0: "Info", 1: "Low", 2: "Medium", 3: "High", 4: "Critical"}
@@ -202,8 +214,12 @@ def apply_redirect_param_policy(
       spike) -> dropped, since URL validation and the redirect itself explain
       the divergence without any injection;
     * hard evidence (DB/LDAP/BSON error, confirmed timing oracle, OOB callback,
-      observed execution) -> kept, but severity is capped at ``Medium`` unless
-      the confidence is already ``CONFIRMED``;
+      observed execution) -> kept, but severity is capped at ``Medium``. The
+      cap is waived only for execution-grade kinds (timing/OOB/code-execution/
+      canary — see :data:`_CONFIRMED_BYPASS_KINDS`) whose confidence is already
+      ``CONFIRMED``; a pattern-matched error signature stays capped at every
+      confidence tier, since even a double-oracle-clean match cannot rule out
+      a validator's own error page coincidentally containing the signature;
     * an unlabelled finding (``evidence_kind`` missing) is treated as soft — a
       tester that cannot say why it fired has not proven execution.
     """
@@ -222,7 +238,7 @@ def apply_redirect_param_policy(
                     f"validation or the redirect itself, not by injection"),
         )
 
-    if conf == "CONFIRMED":
+    if conf == "CONFIRMED" and kind in _CONFIRMED_BYPASS_KINDS:
         return RedirectParamVerdict(True, sev, conf)
 
     capped = cap_severity(sev)

@@ -161,7 +161,7 @@ async def _evaluate_one(
                 row=row, predicted=result.verdict, confidence=result.confidence,
                 reasoning=result.reasoning, latency_s=time.monotonic() - start,
             )
-        except Exception as exc:  # noqa: BLE001 - timeout / connection / parse / anything
+        except Exception as exc:  # noqa: BLE001  # NOSONAR  # NOSONAR - timeout / connection / parse / anything
             last_exc = exc
             if attempt < retries:
                 await asyncio.sleep(0.5 * (attempt + 1))
@@ -386,6 +386,112 @@ async def _amain(args: argparse.Namespace, rows: list[GoldenRow]) -> int:
               "the run as a hard failure", file=sys.stderr)
         return 1
     return 0
+
+
+# --------------------------------------------------------------------------- #
+# discovery evaluation (Phase 4 / PLAN_DESARROLLO.md §4.2)
+# --------------------------------------------------------------------------- #
+#
+# ``discover_attack_surface()`` is schema-constrained to the fixed
+# sqli/xss/pathtraver/cmdi taxonomy (see agent_inference.AttackHypothesis and
+# the Phase 3 design note in PLAN_DESARROLLO.md), so -- unlike the plan's
+# original sketch, which scored free-text hypothesis names like "Stored XSS"
+# / "CSRF GET form" -- ``expected_vuln_classes`` here is expressed in that
+# same fixed vocabulary. A scenario whose real-world class falls outside it
+# (CSRF, XSSI, cookie content, ...) is not representable and is not included.
+
+DISCOVERY_GOLDEN_SET: list[dict[str, Any]] = [
+    {
+        "id": "disc-001-reflected-xss-sibling-endpoint",
+        "app_context": {
+            "technologies": {"language": ["Python 2.7"], "framework": ["webapp2"]},
+            "endpoints": ["/snippets.gtl", "/feed.gtl", "/newsnippet2"],
+        },
+        "findings_so_far": [],
+        "expected_vuln_classes": ["xss"],
+    },
+    {
+        "id": "disc-002-upload-filename-traversal",
+        "app_context": {
+            "technologies": {"framework": ["webapp2"]},
+            "endpoints": ["/upload2"],
+        },
+        "findings_so_far": [],
+        "expected_vuln_classes": ["pathtraver"],
+    },
+    {
+        "id": "disc-003-sqli-then-cmdi-shared-path",
+        "app_context": {
+            "technologies": {"language": ["PHP"], "server": ["Apache"]},
+            "endpoints": ["/report.php"],
+        },
+        "findings_so_far": [{"vuln_class": "sqli", "url": "/report.php", "parameter": "fmt"}],
+        "expected_vuln_classes": ["cmdi"],
+    },
+    {
+        "id": "disc-004-exhausted-surface-expects-empty",
+        "app_context": {
+            "technologies": {"framework": ["Django"]},
+            "endpoints": ["/search"],
+        },
+        "findings_so_far": [
+            {"vuln_class": "sqli", "url": "/search", "parameter": "q"},
+            {"vuln_class": "xss", "url": "/search", "parameter": "q"},
+        ],
+        "expected_vuln_classes": [],
+    },
+]
+
+
+def score_discovery(predicted: list[Any], expected: list[str]) -> float:
+    """Recall of ``expected`` vuln classes among ``predicted`` hypotheses.
+
+    ``predicted`` accepts either ``AttackHypothesis`` objects or plain dicts
+    (``{"vuln_class": ...}``). An empty ``expected`` list (the "nothing left
+    to try" case) scores 1.0 iff ``predicted`` is also empty, 0.0 otherwise --
+    proposing noise when the surface is exhausted is exactly the failure mode
+    this case exists to catch.
+    """
+    def _class_of(h: Any) -> str:
+        if isinstance(h, dict):
+            return str(h.get("vuln_class", "")).lower()
+        return str(getattr(h, "vuln_class", "")).lower()
+
+    predicted_classes = {_class_of(h) for h in predicted}
+    expected_lower = {e.lower() for e in expected}
+    if not expected_lower:
+        return 1.0 if not predicted_classes else 0.0
+    overlap = predicted_classes & expected_lower
+    return len(overlap) / len(expected_lower)
+
+
+async def evaluate_discovery_golden(
+    client: AgentClient, golden_set: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Run :data:`DISCOVERY_GOLDEN_SET` (or a caller-supplied set) through
+    ``client.discover_attack_surface()`` and score each case.
+
+    Never raises: a per-case backend failure already degrades to an empty
+    hypothesis list inside ``discover_attack_surface`` itself, so this simply
+    scores whatever comes back.
+    """
+    cases = golden_set if golden_set is not None else DISCOVERY_GOLDEN_SET
+    rows: list[dict[str, Any]] = []
+    for case in cases:
+        hypotheses = await client.discover_attack_surface(
+            case["app_context"], case["findings_so_far"])
+        score = score_discovery(hypotheses, case["expected_vuln_classes"])
+        rows.append({
+            "id": case["id"],
+            "expected_vuln_classes": case["expected_vuln_classes"],
+            "predicted_vuln_classes": sorted({
+                (h.vuln_class if not isinstance(h, dict) else h.get("vuln_class", ""))
+                for h in hypotheses
+            }),
+            "score": score,
+        })
+    mean_score = sum(r["score"] for r in rows) / len(rows) if rows else 0.0
+    return {"mean_score": mean_score, "rows": rows}
 
 
 def main(argv: list[str] | None = None) -> int:

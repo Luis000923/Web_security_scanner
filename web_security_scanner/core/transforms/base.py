@@ -27,15 +27,30 @@ from typing import TypeVar
 __all__ = [
     "BaseTransform",
     "UnknownTransformError",
+    "UnsafeTransformError",
     "register",
     "get_transform",
     "available_transforms",
+    "binary_safe_transforms",
     "build_default_registry",
 ]
 
 
 class UnknownTransformError(KeyError):
     """Raised when a transform name is not present in the registry."""
+
+
+class UnsafeTransformError(ValueError):
+    """Raised when a transform is applied to a vector it can silently corrupt.
+
+    Distinct from :class:`UnknownTransformError`: the transform exists and
+    works fine in general, but its ``binary_safe`` flag says it is not safe
+    for the vector at hand (e.g. flipping the case of a base64-encoded Java
+    gadget chain, or HTML-entity-encoding a numeric IDOR id). Raised by
+    :meth:`~web_security_scanner.core.payload_mutator.PayloadMutator.mutate`
+    when ``enforce_safety=True`` (the default) and the payload's category is
+    in :data:`~web_security_scanner.core.payload_mutator.SENSITIVE_CATEGORIES`.
+    """
 
 
 class BaseTransform(ABC):
@@ -48,6 +63,20 @@ class BaseTransform(ABC):
 
     #: Registry key. Subclasses must override with a short, stable slug.
     name: str = ""
+
+    #: Whether this transform preserves the exact byte sequence a downstream
+    #: parser recovers from the vector -- i.e. it is safe to apply to a raw
+    #: binary/serialized payload (a base64-encoded Java/.NET gadget chain, a
+    #: PHP/Python pickle stream) or a bare identifier (an IDOR id/UUID) and
+    #: still have the target reconstruct the *original* bytes/value before
+    #: the vulnerable sink runs. ``True`` for transforms a standard HTTP
+    #: stack undoes transparently (percent-encoding); ``False`` for
+    #: transforms that only make sense if something *else* downstream
+    #: decodes them first (an HTML parser for numeric character references,
+    #: a Unicode-NFKC-normalizing app layer for fullwidth forms) or that
+    #: rewrite letters in a way that changes decoded bytes (case-flipping a
+    #: base64 alphabet character changes its decoded value).
+    binary_safe: bool = True
 
     @abstractmethod
     def transform(self, value: str) -> str:
@@ -95,8 +124,20 @@ def available_transforms() -> tuple[str, ...]:
     return tuple(sorted(_REGISTRY))
 
 
+def binary_safe_transforms() -> tuple[str, ...]:
+    """Names of registered transforms with ``binary_safe = True``, sorted.
+
+    The subset safe to run on a serialized/binary gadget-chain vector or a
+    bare IDOR identifier without changing what the target decodes it to.
+    """
+    return tuple(sorted(n for n, t in _REGISTRY.items() if t.binary_safe))
+
+
 def build_default_registry() -> dict[str, BaseTransform]:
     """A fresh mapping copy of the global registry (import side effects applied)."""
-    from . import common  # noqa: F401  (import registers the built-in transforms)
+    from . import (  # noqa: F401  (import registers the built-in transforms)
+        common,
+        evasion,
+    )
 
     return dict(_REGISTRY)

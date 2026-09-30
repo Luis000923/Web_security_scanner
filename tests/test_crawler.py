@@ -85,10 +85,15 @@ def test_normalize_url_strips_fragment_and_junk():
 
 
 @pytest.mark.asyncio
-async def test_generate_map_async_is_offloaded(tmp_path, monkeypatch):
+async def test_map_website_data_is_json_serializable(tmp_path, monkeypatch):
+    """map_website's return value feeds report_generator's JSON report
+
+    directly (via WebSecurityScanner.run_scan's "recon" summary) now that
+    the HTML map has been removed, so it must round-trip through json.dumps.
+    """
+    import json
+
     monkeypatch.setattr(WebMapperAsync, "_discover_subdomains", _noop)
     mapper = WebMapperAsync(MockScanner(_trap_responder), max_urls=5, crawl_delay=0)
     data = await mapper.map_website("http://trap.test/1", max_depth=1)
-    out = tmp_path / "map.html"
-    path = await mapper.generate_map_async(data, str(out))
-    assert out.exists() and path == str(out)
+    json.dumps(data)

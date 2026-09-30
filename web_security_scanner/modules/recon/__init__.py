@@ -21,6 +21,7 @@ from .browser_engine import (
     BrowserRecon,
     BrowserReconResult,
     DomXssFinding,
+    resolve_browser_page_cap,
 )
 from .js_miner import extract_js_endpoints
 from .recon_engine import ReconConfig, ReconEngine, ReconResult
@@ -33,7 +34,34 @@ from .scope_engine import (
     is_valid_subdomain,
     normalize_url,
 )
+from .sensitive_files_detector import (
+    SENSITIVE_FILE_CATALOG,
+    SensitiveFileDetectionResult,
+    SensitiveFileDetector,
+    SensitiveFileFinding,
+    SensitiveFileSpec,
+)
+from .server_fingerprinter import (
+    PocFinding,
+    ServerFingerprint,
+    ServerFingerprinter,
+    ServerFingerprintResult,
+)
 from .sitemap import parse_sitemap
+from .spider_trap_heuristics import (
+    TrapVerdict,
+    evaluate_url_for_trap,
+    has_cyclic_segments,
+    has_high_entropy_segment,
+    has_repeated_segment_value,
+    has_repetitive_query_params,
+)
+from .surface_correlator import (
+    PRIORITY_LEVELS,
+    SURFACE_CATEGORIES,
+    PrioritizedTarget,
+    SurfaceCorrelator,
+)
 
 __all__ = [
     "AsyncRobotsPolicy",
@@ -42,15 +70,35 @@ __all__ = [
     "DOM_XSS_CANARY",
     "DomXssFinding",
     "MONITORED_SINKS",
+    "PRIORITY_LEVELS",
+    "PocFinding",
+    "PrioritizedTarget",
     "ReconConfig",
     "ReconEngine",
     "ReconResult",
+    "SENSITIVE_FILE_CATALOG",
+    "SURFACE_CATEGORIES",
     "ScopeEngine",
     "ScopeViolation",
+    "SensitiveFileDetectionResult",
+    "SensitiveFileDetector",
+    "SensitiveFileFinding",
+    "SensitiveFileSpec",
+    "ServerFingerprint",
+    "ServerFingerprinter",
+    "ServerFingerprintResult",
     "SsrfViolation",
+    "SurfaceCorrelator",
+    "TrapVerdict",
+    "evaluate_url_for_trap",
     "extract_js_endpoints",
+    "has_cyclic_segments",
+    "has_high_entropy_segment",
+    "has_repeated_segment_value",
+    "has_repetitive_query_params",
     "is_blocked_ip",
     "is_valid_subdomain",
     "normalize_url",
     "parse_sitemap",
+    "resolve_browser_page_cap",
 ]

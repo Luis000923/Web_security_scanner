@@ -149,7 +149,22 @@ def test_targets_from_list_folds_param_and_dedupes():
         {"url": "http://x/a?id=9", "param": "id"},
         {"method": "GET"},  # no url -> dropped
     ])
-    assert out == ["http://x/a?id=1", "http://x/b"]
+    assert [t["url"] for t in out] == ["http://x/a?id=1", "http://x/b"]
+    assert all(t["kwargs"] == {} for t in out)
+
+
+def test_targets_from_list_builds_advanced_vector_kwargs():
+    out = WebSecurityScanner._targets_from_list([
+        {"url": "http://x/api", "json": {"user": {"name": "a"}}},
+        {"url": "http://x/f", "vector": "formparam", "param": "q"},
+        {"url": "http://x/h", "vector": "header", "param": "X-Forwarded-For"},
+        {"url": "http://x/c", "cookies": {"sid": "abc"}},
+    ])
+    assert out[0]["kwargs"]["form"]["enctype"] == "json"
+    assert out[0]["kwargs"]["form"]["fields"] == {"user": {"name": "a"}}
+    assert out[1]["kwargs"]["form"]["enctype"] == "form"
+    assert out[2]["kwargs"]["inject_headers"] == ["X-Forwarded-For"]
+    assert out[3]["kwargs"]["inject_cookies"] == {"sid": "abc"}
 
 
 def test_load_target_list_roundtrip(tmp_path):

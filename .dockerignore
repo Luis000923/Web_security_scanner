@@ -1,0 +1,37 @@
+# Keep the image build context small and the build reproducible: exclude the
+# host's own virtualenv/git history plus every local, gitignored working
+# artifact that must NOT leak into the image.
+
+.git/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+runs/
+metrics/
+Documentacion/
+docs_context/
+
+Dockerfile
+.dockerignore
+
+# Credentials and secrets — never include in image
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+*.sqlite
+*.db

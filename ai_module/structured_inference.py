@@ -76,6 +76,24 @@ class PayloadOut(BaseModel):
     payloads: list[PayloadItem] = Field(min_length=1, max_length=10)
 
 
+class HypothesisItem(BaseModel):
+    """One proactive-discovery hypothesis — deliberately confined to
+    :class:`VulnClass` rather than free-text vuln naming (see
+    ``ai_module/vuln_discovery.py`` module docstring for why: the model
+    proposes *where in this taxonomy* to look next, never a new, unvetted
+    vulnerability class of its own invention)."""
+    vuln_class: VulnClass
+    endpoint: str = Field(min_length=1, max_length=500)
+    parameter: str = Field(default="", max_length=200)
+    attack_vector: str = Field(default="", max_length=400)
+    rationale: str = Field(default="", max_length=400)
+    priority: float = Field(ge=0.0, le=1.0, default=0.5)
+
+
+class DiscoveryOut(BaseModel):
+    hypotheses: list[HypothesisItem] = Field(default_factory=list, max_length=10)
+
+
 # --------------------------------------------------------------------------- #
 # schema exporters — for vLLM guided_json / OpenAI response_format(json_schema)
 # --------------------------------------------------------------------------- #
@@ -86,6 +104,10 @@ def triage_schema() -> dict[str, Any]:
 
 def payload_schema() -> dict[str, Any]:
     return PayloadOut.model_json_schema()
+
+
+def discovery_schema() -> dict[str, Any]:
+    return DiscoveryOut.model_json_schema()
 
 
 def openai_response_format(model: type[BaseModel]) -> dict[str, Any]:
@@ -156,6 +178,34 @@ def parse_payloads(text: str) -> PayloadOut:
     return PayloadOut(payloads=[PayloadItem(payload="<none>", rationale="parse failure")])
 
 
+def parse_discovery(text: str) -> DiscoveryOut:
+    """Coerce arbitrary model output into a valid :class:`DiscoveryOut`.
+
+    Never raises; the refusal sentinel and any unparseable/off-taxonomy
+    output both fold to an empty hypothesis list -- the discovery loop's
+    contract is that a bad model response simply yields no extra hypotheses
+    for this round, never a crash or a fabricated one.
+    """
+    s = (text or "").strip()
+    if REFUSAL_SENTINEL in s:
+        return DiscoveryOut(hypotheses=[])
+    obj = _first_json_object(s)
+    if obj is not None:
+        try:
+            return DiscoveryOut.model_validate(obj)
+        except Exception:
+            items = []
+            for it in (obj.get("hypotheses") or []):
+                if not isinstance(it, dict):
+                    continue
+                try:
+                    items.append(HypothesisItem.model_validate(it))
+                except Exception:
+                    continue  # drop only the malformed entry, keep the rest
+            return DiscoveryOut(hypotheses=items)
+    return DiscoveryOut(hypotheses=[])
+
+
 # --------------------------------------------------------------------------- #
 # tier 1 — outlines local constrained generation
 # --------------------------------------------------------------------------- #
@@ -177,6 +227,7 @@ class StructuredLocalAgent:
         self._model: Any = None
         self._triage_gen: Any = None
         self._payload_gen: Any = None
+        self._discovery_gen: Any = None
 
     def _ensure(self) -> None:
         if self._model is not None:
@@ -188,6 +239,7 @@ class StructuredLocalAgent:
         self._model = outlines.from_transformers(*_load_hf(self.model_id, self.dtype))
         self._triage_gen = outlines.Generator(self._model, TriageOut)
         self._payload_gen = outlines.Generator(self._model, PayloadOut)
+        self._discovery_gen = outlines.Generator(self._model, DiscoveryOut)
 
     def triage(self, prompt: str, *, max_tokens: int = 384) -> TriageOut:
         self._ensure()
@@ -198,6 +250,11 @@ class StructuredLocalAgent:
         self._ensure()
         out = self._payload_gen(prompt, max_tokens=max_tokens)
         return out if isinstance(out, PayloadOut) else PayloadOut.model_validate(out)
+
+    def discover(self, prompt: str, *, max_tokens: int = 512) -> DiscoveryOut:
+        self._ensure()
+        out = self._discovery_gen(prompt, max_tokens=max_tokens)
+        return out if isinstance(out, DiscoveryOut) else DiscoveryOut.model_validate(out)
 
 
 # --------------------------------------------------------------------------- #

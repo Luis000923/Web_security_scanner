@@ -59,8 +59,7 @@ import json
 import os
 import platform
 import sys
-from dataclasses import dataclass, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass
 
 BYTES_PER_GIB = 1024 ** 3
 
@@ -180,8 +179,8 @@ def _default_num_workers() -> int:
 
 
 def build_recipe(
-    vram_gb: Optional[float],
-    capability: Optional[tuple[int, int]] = None,
+    vram_gb: float | None,
+    capability: tuple[int, int] | None = None,
 ) -> Recipe:
     """Map ``(VRAM, compute capability)`` onto a runnable set of knobs.
 
@@ -248,7 +247,7 @@ class Selection:
     # figure that decides the model size.
     capability: str = ""
     bf16_supported: bool = False
-    recipe: Optional[Recipe] = None
+    recipe: Recipe | None = None
 
     @property
     def degraded(self) -> bool:
@@ -261,7 +260,7 @@ def _env_override(var: str, default: str) -> str:
     return value or default
 
 
-def probe_vram(device: int = 0) -> tuple[Optional[float], str, str, int]:
+def probe_vram(device: int = 0) -> tuple[float | None, str, str, int]:
     """Return ``(vram_gib, status, device_name, device_count)``.
 
     ``vram_gib`` is ``None`` whenever no usable CUDA device was found, in which
@@ -289,7 +288,7 @@ def probe_vram(device: int = 0) -> tuple[Optional[float], str, str, int]:
         return None, STATUS_PROBE_FAILED, f"{exc.__class__.__name__}: {exc}", 0
 
 
-def probe_capability(device: int = 0) -> Optional[tuple[int, int]]:
+def probe_capability(device: int = 0) -> tuple[int, int] | None:
     """Return the CUDA compute capability as ``(major, minor)``, or ``None``.
 
     Kept separate from :func:`probe_vram` so its four-value contract (which
@@ -308,7 +307,7 @@ def probe_capability(device: int = 0) -> Optional[tuple[int, int]]:
         return None
 
 
-def select_for_vram(vram_gb: Optional[float]) -> tuple[str, int]:
+def select_for_vram(vram_gb: float | None) -> tuple[str, int]:
     """Map VRAM in GiB onto ``(model_id, tier)``. ``None`` -> CPU fallback."""
     if vram_gb is None:
         return _env_override(CPU_FALLBACK_ENV, CPU_FALLBACK_MODEL), 0
@@ -322,10 +321,11 @@ def select_for_vram(vram_gb: Optional[float]) -> tuple[str, int]:
 
 def select(
     device: int = 0,
-    simulated_vram_gb: Optional[float] = None,
-    simulated_capability: Optional[tuple[int, int]] = None,
+    simulated_vram_gb: float | None = None,
+    simulated_capability: tuple[int, int] | None = None,
 ) -> Selection:
     """Profile the hardware (or a simulated GPU) and choose a model + recipe."""
+    vram: float | None
     if simulated_vram_gb is not None:
         vram, status, name, count = simulated_vram_gb, STATUS_CUDA, "simulated", 1
         detail = f"simulated {simulated_vram_gb:.2f} GiB"
@@ -351,7 +351,7 @@ def select(
     )
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="ai_module.auto_select_model",
         description="Select a QLoRA base model that fits the local GPU.",

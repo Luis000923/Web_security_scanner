@@ -51,7 +51,13 @@ class HexEntityTransform(BaseTransform):
 
     ``<`` -> ``&#x3c;``. Rendered identically by an HTML parser, opaque to a
     substring signature.
+
+    Only an HTML parser decodes numeric character references -- a base64
+    gadget-chain vector or a bare IDOR id passed through this would reach the
+    sink as the literal ``&#x..;`` text, not the original bytes/value.
     """
+
+    binary_safe = False
 
     def transform(self, value: str) -> str:
         return "".join(f"&#x{ord(ch):x};" for ch in value)
@@ -61,8 +67,11 @@ class HexEntityTransform(BaseTransform):
 class HtmlEntityTransform(BaseTransform):
     """Every character to a decimal HTML numeric character reference.
 
-    ``<`` -> ``&#60;``. The decimal counterpart of :class:`HexEntityTransform`.
+    ``<`` -> ``&#60;``. The decimal counterpart of :class:`HexEntityTransform`,
+    same ``binary_safe = False`` caveat (needs an HTML parser downstream).
     """
+
+    binary_safe = False
 
     def transform(self, value: str) -> str:
         return "".join(f"&#{ord(ch)};" for ch in value)
@@ -78,7 +87,15 @@ class RandomCaseTransform(BaseTransform):
 
     Pass ``seed`` for a deterministic result (tests, reproducible scans);
     otherwise each call draws from the process RNG.
+
+    ``binary_safe = False``: a base64 alphabet is case-sensitive (``A`` and
+    ``a`` decode to different bits), so flipping letter case in a serialized
+    Java/.NET gadget-chain vector silently corrupts it into garbage that
+    still *looks* like a plausible payload -- the scan would report a false
+    negative instead of an obvious error.
     """
+
+    binary_safe = False
 
     def __init__(self, seed: int | None = None) -> None:
         self._seed = seed

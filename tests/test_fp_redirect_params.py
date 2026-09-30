@@ -13,7 +13,10 @@ The rules under test:
 * differential-only evidence on a redirect parameter -> finding dropped;
 * the same evidence on an ordinary parameter (``id``) -> still reported;
 * hard evidence (DB / LDAP parser error) on a redirect parameter -> kept, but
-  never at High/Critical severity unless the confidence is CONFIRMED;
+  never at High/Critical severity — a pattern-matched error signature stays
+  capped even at CONFIRMED confidence, since a validator's own error page can
+  coincidentally contain it; only execution-grade evidence (a confirmed
+  timing oracle, OOB, code execution, a canary) waives the cap at CONFIRMED;
 * the open-redirect tester, whose whole job is those parameters, is untouched.
 """
 
@@ -95,6 +98,19 @@ def test_policy_keeps_full_severity_when_confirmed():
     )
     assert verdict.keep is True
     assert verdict.severity == "High"
+
+
+def test_policy_caps_error_signature_even_when_confirmed():
+    """A pattern match never earns the CONFIRMED bypass -- only the
+    execution-grade kinds (time_confirmed / oob / code_execution / canary)
+    do (see _CONFIRMED_BYPASS_KINDS)."""
+    verdict = apply_redirect_param_policy(
+        parameter="redirect_uri", evidence_kind="error_signature",
+        severity="Critical", confidence="CONFIRMED",
+    )
+    assert verdict.keep is True
+    assert verdict.severity == "Medium"
+    assert verdict.confidence == "CONFIRMED"
 
 
 def test_policy_leaves_ordinary_parameters_untouched():
@@ -227,7 +243,10 @@ async def test_ldap_filter_error_on_return_to_is_kept_but_capped():
         target="http://target/sso?return_to=/portal/")
     assert found
     assert found[0]["severity"] == "Medium"    # capped down from High
-    assert found[0]["confidence"] == "HIGH"
+    # error_signature is a pattern match: capped at every confidence tier,
+    # even the CONFIRMED the double-oracle reaches here (see
+    # _CONFIRMED_BYPASS_KINDS in core.param_semantics).
+    assert found[0]["confidence"] == "CONFIRMED"
 
 
 # ---- the open-redirect tester must keep working -----------------------

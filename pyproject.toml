@@ -18,53 +18,73 @@ dependencies = [
     "colorama>=0.4.0",
     "pyyaml>=6.0",
     "dnspython>=2.3.0",
+    "reportlab>=4.0",
+    "langgraph>=0.6.11",
 ]
 
 [project.optional-dependencies]
 browser = [
     "playwright>=1.40",
 ]
-experiments = [
-    "rich>=13.0",
-]
-# Agentic AI subsystem (ai_module/). Heavy, GPU-oriented; install explicitly:
+# Agentic AI subsystem (ai_module/). The LLM triage agent is OFF by default in
+# the scanner and is enabled per-run with ``--enable-ai-triaging``. Only the
+# lightweight client + structured-decoding layer is needed to *use* a remote
+# OpenAI-compatible inference endpoint:
 #   uv pip install -e ".[ai]"
-# Tuned for a single NVIDIA RTX 5090 (Blackwell / sm_120). As of early 2026 the
-# Blackwell wheels need CUDA 12.8+; install a matching torch build first, e.g.
-#   uv pip install torch --index-url https://download.pytorch.org/whl/cu128
 ai = [
+    "aiohttp>=3.8.0",
+    "pydantic>=2.0",
+]
+# Local constrained decoding / in-process transformers backend (heavy, GPU).
+# Includes bitsandbytes so int8/4-bit *inference* (not just training) works
+# from this extra alone -- ai_module/inference_client.py's local mode needs
+# it without pulling in the rest of `training`:
+#   uv pip install -e ".[ai,ai-local]"
+ai-local = [
     "torch>=2.6.0",
     "transformers>=4.48.0",
-    "datasets>=2.19.0",
-    "accelerate>=1.3.0",
-    "peft>=0.14.0",
-    # train_qlora.py filters kwargs against the installed SFTConfig/SFTTrainer
-    # signature, but keep an upper bound so a major TRL rewrite is an explicit
-    # opt-in rather than a surprise on the workstation.
-    "trl>=0.13.0,<0.24",
-    # >=0.45 ships the CUDA 12.4+ / Blackwell (sm_120) kernels the RTX 5090 needs.
+    "accelerate>=0.34.0",
+    "outlines>=0.1.0",
     "bitsandbytes>=0.45.0",
     "sentencepiece>=0.2.0",
     "safetensors>=0.4.5",
+]
+# QLoRA fine-tuning of the local triage/synthesis agent (ai_module/train_qlora.py),
+# heavy + GPU-only, not needed to run the scanner or serve the agent:
+#   uv pip install -e ".[ai,ai-local,training]"
+# TRL >=0.12 moved max_seq_length/packing/dataset_* to SFTConfig and renamed
+# tokenizer= to processing_class= (train_qlora.py already targets that API,
+# see _build_sft_config / _build_trainer); pin below <0.24 until that surface
+# is re-verified against a newer release.
+training = [
+    "trl>=0.13.0,<0.24",
+    "peft>=0.11.0",
+    "bitsandbytes>=0.45.0",
+    "datasets>=2.19.0",
     "tensorboard>=2.16",
 ]
-# Optional: Unsloth fused kernels (~2x throughput, lower VRAM). Kept separate
-# because its pinned deps can conflict; install alongside the `ai` extra:
-#   uv pip install -e ".[ai,ai-unsloth]"
+# Optional: Unsloth fused kernels (~2x throughput, lower VRAM) for `training`.
+# Kept separate because its pinned deps can conflict:
+#   uv pip install -e ".[ai,ai-local,training,ai-unsloth]"
 ai-unsloth = [
     "unsloth>=2025.1.1",
     "unsloth-zoo>=2025.1.1",
     "xformers>=0.0.29",
 ]
-# Optional: DeepSpeed ZeRO-2/3 CPU/RAM offload, for --full-finetune on a
-# small-VRAM card (e.g. a 6 GB RTX 4050) where LoRA/QLoRA is not the goal.
-# Separate from `ai` because DeepSpeed compiles CUDA extensions on install and
-# is Linux-only in practice (no supported Windows wheel):
-#   uv pip install -e ".[ai,ai-offload]"
+# Optional: DeepSpeed ZeRO-2/3 CPU/RAM offload, for `train_qlora.py
+# --full-finetune` on a small-VRAM card (e.g. a 6 GB RTX 4050) where
+# LoRA/QLoRA is not the goal. Separate from `training` because DeepSpeed
+# compiles CUDA extensions on install and is Linux-only in practice (no
+# supported Windows wheel):
+#   uv pip install -e ".[ai,ai-local,training,ai-offload]"
 ai-offload = [
     "deepspeed>=0.15.0",
 ]
-# Serving the fine-tuned adapter over an OpenAI-compatible local endpoint.
+# Serving the fine-tuned adapter over an OpenAI-compatible endpoint --
+# ai_module/inference_client.py's *web* mode talks to this (or any other
+# OpenAI-compatible remote deployment) over plain aiohttp, so installing
+# this extra is only needed to *host* that endpoint yourself:
+#   uv pip install -e ".[ai-serve]"
 ai-serve = [
     "vllm>=0.7.0",
     "aiohttp>=3.8.0",
@@ -72,6 +92,22 @@ ai-serve = [
     # enforcement). vLLM also enforces the same schema server-side via
     # guided_json, so this is only needed for the in-process transformers path.
     "outlines>=0.1.0",
+]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "black",
+    "mypy",
+    "ruff",
+    "bandit",
+    # bandit has no native SARIF writer (-f only accepts csv/custom/html/json/
+    # screen/txt/xml/yaml); this registers the "sarif" format bandit's CLI
+    # picks up via its formatter entry points.
+    "bandit-sarif-formatter",
+    "jsonschema>=4.20",
+    # ai_module.structured_inference imports pydantic at module scope, so the
+    # AI triage / curation test suites cannot even be collected without it.
     "pydantic>=2.0",
 ]
 
@@ -86,6 +122,7 @@ dev = [
     "mypy",
     "ruff",
     "bandit",
+    "bandit-sarif-formatter",
     "jsonschema>=4.20",
     # ai_module.structured_inference imports pydantic at module scope, so the
     # AI triage / curation test suites cannot even be collected without it.
@@ -110,7 +147,12 @@ include = ["web_security_scanner*", "ai_module*"]
 "ai_module.prompts" = ["*.md", "*.txt"]
 
 [tool.pytest.ini_options]
+# `auto` lets plain `async def test_*` run without a per-test
+# `@pytest.mark.asyncio`; pinning the fixture loop scope silences the
+# pytest-asyncio >=0.21 "unset default loop scope" warning and keeps async
+# fixtures on the same loop as the test that uses them.
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = [".", "tests"]
 
@@ -125,9 +167,28 @@ ignore = ["E501", "B008"]
 
 [tool.mypy]
 python_version = "3.10"
+# The AI subsystem ships in the wheel and is wired into the scan pipeline
+# (--enable-ai-triaging), so it is type-checked alongside the scanner.
 files = ["web_security_scanner", "ai_module"]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = false
 warn_redundant_casts = true
 no_implicit_optional = true
+# Also type-check the bodies of un-annotated functions (catches indexing /
+# attribute mistakes the default "skip untyped defs" would let through).
+check_untyped_defs = true
+
+# numpy is not imported anywhere in web_security_scanner/ai_module; it is
+# pulled in transitively by torch (ai_module's optional QLoRA training path).
+# numpy's own bundled __init__.pyi uses PEP 695 `type` statements, which is
+# valid stub syntax but only parseable when python_version >= 3.12. We pin
+# python_version to 3.10 above (the floor of the CI matrix, so we still catch
+# 3.10-incompatible constructs in *our* code) rather than bump it repo-wide
+# just to satisfy a stub we never read types from. "skip" tells mypy not to
+# parse numpy's stubs at all instead of failing the whole run on them.
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+ignore_errors = true

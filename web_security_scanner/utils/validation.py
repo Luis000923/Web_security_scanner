@@ -8,6 +8,7 @@ target-URL validation lives now.
 
 import ipaddress
 import re
+from typing import Any
 from urllib.parse import urlparse
 
 # Scheme + host must be present; only HTTP(S) targets are supported.
@@ -27,23 +28,25 @@ class InvalidTargetError(ValueError):
 # session cookie, a raw JWT). We must never persist those verbatim into a
 # JSON/HTML report that gets shared around. ``mask_secrets`` runs a handful of
 # cheap regex substitutions over any text just before it is written out.
+_MASK_REPL = r"\1***"
+
 _SECRET_PATTERNS = (
     # Authorization: Bearer <token>
-    (re.compile(r"(Authorization\s*:\s*Bearer\s+)[A-Za-z0-9\-._~+/]+=*", re.IGNORECASE),
-     r"\1***"),
+    (re.compile(r"(Authorization\s*:\s*Bearer\s+)[-A-Za-z0-9._~+/]+=*", re.IGNORECASE),
+     _MASK_REPL),
     # Authorization: Basic <base64>  (and any other single-token scheme)
     (re.compile(r"(Authorization\s*:\s*)(?!Bearer\b)\S+.*", re.IGNORECASE),
-     r"\1***"),
+     _MASK_REPL),
     # Cookie: / Set-Cookie: everything to end of line
-    (re.compile(r"(Set-Cookie\s*:\s*).*", re.IGNORECASE), r"\1***"),
-    (re.compile(r"(Cookie\s*:\s*).*", re.IGNORECASE), r"\1***"),
+    (re.compile(r"(Set-Cookie\s*:\s*).*", re.IGNORECASE), _MASK_REPL),
+    (re.compile(r"(Cookie\s*:\s*).*", re.IGNORECASE), _MASK_REPL),
     # Bare JWT anywhere in the text (header.payload.signature)
     (re.compile(r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"),
      "***JWT***"),
 )
 
 
-def mask_secrets(text):
+def mask_secrets(text: Any) -> Any:
     """Redact common secrets (Bearer tokens, cookies, JWTs) from ``text``.
 
     Accepts any value; non-strings are returned untouched (callers that want a

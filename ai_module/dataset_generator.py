@@ -192,7 +192,7 @@ _INJECTION_MARKERS = (
     "../", "..\\", "%00", "%2e", "\\x", "`", "$(", "()", "=", "\n", "\r",
     "select", "union", "sleep", "benchmark(", "waitfor", "pg_sleep", "script",
     "alert(", "confirm(", "prompt(", "onerror", "onload", "svg", "img",
-    "javascript:", "/etc/", "cmd", "nslookup", "curl ", "http://", "https://",
+    "javascript:", "/etc/", "cmd", "nslookup", "curl ", "http://", "https://",  # NOSONAR – injection marker strings, not live URLs
 )
 
 
@@ -227,8 +227,8 @@ _PAYLOAD_FAMILY_KEYS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("path-traversal", ("../", "..\\", "/etc/passwd", "%2e%2e", "c:\\", "file://")),
     ("cmd-injection", (";id", "|id", "&&", "`id`", "$(", "nslookup", "curl ",
                         "|nslookup", ";sleep")),
-    ("ssrf", ("http://169.254", "http://127.0.0.1", "http://localhost",
-               "gopher://", "dict://", "@")),
+    ("ssrf", ("http://169.254", "http://127.0.0.1", "http://localhost",  # NOSONAR – payload classification strings
+               "gopher://", "dict://", "@")),  # NOSONAR – payload classification strings
     ("open-redirect", ("//evil", "https://evil", "\\\\evil", "///")),
 )
 
@@ -467,7 +467,7 @@ def dedup(samples: list[Sample]) -> tuple[list[Sample], int]:
     seen: set[str] = set()
     out: list[Sample] = []
     for s in samples:
-        key = s.meta.get("_dedup") or hashlib.sha1(
+        key = s.meta.get("_dedup") or hashlib.sha256(
             (s.user + "\x00" + s.assistant).encode("utf-8")
         ).hexdigest()
         if key in seen:
@@ -1441,11 +1441,11 @@ def synthesize_triage_samples(
         attempts += 1
         # Drive toward balance: fill the currently-thinnest verdict.
         verdict = min(_VERDICTS, key=lambda v: (produced[v], _VERDICTS.index(v)))
-        sc = rng.choice(_SCENARIOS_BY_VERDICT[verdict])
+        sc = rng.choice(_SCENARIOS_BY_VERDICT[verdict])  # NOSONAR – seeded RNG for reproducible dataset generation
         candidates = [s for s in seeds if _scenario_applies(sc, s["vclass"])]
         if not candidates:
             continue
-        sd = rng.choice(candidates)
+        sd = rng.choice(candidates)  # NOSONAR – seeded RNG for reproducible dataset generation
         vclass = sd["vclass"]
         payload = sd["payload"]
 
@@ -1499,9 +1499,9 @@ def synthesize_triage_samples(
             "triage-synth", vclass, payload, sc.name, str(reflected),
             str(a["has_error"] or a["has_file"] or a["has_cmd_output"]),
             a["lat_bucket"], sd["apriori"], sd["scanner_conf"], injection_context,
-            hashlib.sha1(excerpt.encode("utf-8")).hexdigest()[:10],
+            hashlib.sha256(excerpt.encode("utf-8")).hexdigest()[:10],
         ])
-        key = hashlib.sha1(obs_key.encode("utf-8")).hexdigest()
+        key = hashlib.sha256(obs_key.encode("utf-8")).hexdigest()
         if key in emitted:
             continue
         emitted.add(key)
@@ -1701,7 +1701,7 @@ def build_triage_samples(
             meta={"endpoint": _GENERIC_ENDPOINT, "label": verdict,
                   "label_source": g["label_src"], "tester": sorted(g["testers"])[0],
                   "_url": sorted(g["urls"])[0], "conflicted": conflicted,
-                  "_dedup": hashlib.sha1(obs_key.encode("utf-8")).hexdigest()},
+                  "_dedup": hashlib.sha256(obs_key.encode("utf-8")).hexdigest()},
         )
 
 
@@ -1778,7 +1778,7 @@ def build_payload_samples(
             # Dedup + split key is the observable prompt itself: two trajectory
             # steps that present an identical history collapse to one row and
             # can never land on opposite sides of the split.
-            dedup_key = hashlib.sha1(user.encode("utf-8")).hexdigest()
+            dedup_key = hashlib.sha256(user.encode("utf-8")).hexdigest()
             yield Sample(
                 system, user, assistant,
                 meta={"endpoint": endpoint, "param": gparam, "label": vclass,
@@ -1786,9 +1786,160 @@ def build_payload_samples(
             )
 
 
+# --------------------------------------------------------------------------- #
+# discovery task — synthetic (Phase 4 / PLAN_DESARROLLO.md §4.1)
+# --------------------------------------------------------------------------- #
+#
+# Unlike ``triage``/``payload``, there is no telemetry equivalent of a
+# "discovery" row to mine (the feature is new), so these examples are
+# synthesized directly from hand-written scenarios -- each one exercises a
+# real gap pattern from the Google Gruyere assessment (vuldiplomado.md), but
+# is expressed strictly through the scanner's own fixed vuln taxonomy
+# (``sqli``/``xss``/``pathtraver``/``cmdi``), consistent with the Phase 3
+# decision to keep ``discover_attack_surface()`` schema-constrained rather
+# than free-text. A scenario whose *real* class (CSRF, XSSI, cookie content)
+# falls outside that taxonomy is deliberately not represented here: the
+# discovery model was never meant to speak for those classes, so training it
+# to hint at them would just reintroduce the free-text surface Phase 3
+# closed off.
+#
+# Every synthesized assistant output is validated against ``DiscoveryOut``
+# before being yielded, so a bug in a scenario definition fails the dataset
+# build immediately instead of quietly shipping a malformed training target.
+
+_DISCOVERY_SCENARIOS: list[dict[str, Any]] = [
+    {
+        # VUL-001/002-shaped: a uid-bearing endpoint crawled but never
+        # exercised for XSS by the heuristic pass (e.g. --target-list run,
+        # or the parameter only appears on a page the base crawler skipped).
+        "app_context": {
+            "technologies": {"language": ["Python 2.7"], "framework": ["webapp2"]},
+            "endpoints": ["/snippets.gtl", "/feed.gtl", "/newsnippet2"],
+        },
+        "findings_so_far": [],
+        "hypotheses": [
+            {"vuln_class": "xss", "endpoint": "/feed.gtl", "parameter": "uid",
+             "attack_vector": "reflected payload in the uid query parameter",
+             "rationale": "sibling endpoint /snippets.gtl?uid already reflects "
+                          "this parameter unescaped; the same parameter name on "
+                          "a second endpoint is worth the same probe",
+             "priority": 0.8},
+        ],
+    },
+    {
+        # VUL-003/004-shaped: a snippet/content field that gets rendered back
+        # on a *different* page than the one that accepted it -- worth an XSS
+        # pass specifically because the render page differs from the submit
+        # page (a plain reflected-XSS crawl of the submit response would miss it).
+        "app_context": {
+            "technologies": {"framework": ["webapp2"]},
+            "endpoints": ["/newsnippet2", "/saveprofile", "/snippets.gtl"],
+        },
+        "findings_so_far": [{"vuln_class": "xss", "url": "/feed.gtl", "parameter": "uid"}],
+        "hypotheses": [
+            {"vuln_class": "xss", "endpoint": "/newsnippet2", "parameter": "snippet",
+             "attack_vector": "submit a payload, then re-check the read-back "
+                              "page (/snippets.gtl) on a separate request",
+             "rationale": "a content-accepting endpoint whose output is "
+                          "rendered on another URL is a stored-XSS shape, "
+                          "distinct from the reflected uid finding already confirmed",
+             "priority": 0.9},
+        ],
+    },
+    {
+        # VUL-026-shaped: an upload endpoint whose filename field has never
+        # been probed for traversal.
+        "app_context": {
+            "technologies": {"framework": ["webapp2"]},
+            "endpoints": ["/upload2"],
+        },
+        "findings_so_far": [],
+        "hypotheses": [
+            {"vuln_class": "pathtraver", "endpoint": "/upload2", "parameter": "filename",
+             "attack_vector": "../ prefixed filename to escape the uploader's "
+                              "own storage directory",
+             "rationale": "file-upload endpoints commonly trust the client-"
+                          "supplied filename verbatim; untested here",
+             "priority": 0.7},
+        ],
+    },
+    {
+        # A confirmed sqli finding on one parameter of an endpoint whose stack
+        # also shells out (per fingerprinted technologies) is worth a cmdi
+        # pass on the same input-handling path.
+        "app_context": {
+            "technologies": {"language": ["PHP"], "server": ["Apache"]},
+            "endpoints": ["/report.php"],
+        },
+        "findings_so_far": [{"vuln_class": "sqli", "url": "/report.php", "parameter": "fmt"}],
+        "hypotheses": [
+            {"vuln_class": "cmdi", "endpoint": "/report.php", "parameter": "fmt",
+             "attack_vector": "shell metacharacters in the fmt parameter "
+                              "(e.g. `; sleep 5`)",
+             "rationale": "a confirmed sqli on a report-generation endpoint "
+                          "commonly shares the same unsanitized-input path "
+                          "with a shell-out to a report-rendering binary",
+             "priority": 0.5},
+        ],
+    },
+    {
+        # Nothing left to try: every discovered endpoint already has a
+        # confirmed finding of every plausible class for its shape. A valid,
+        # important training example -- the model must be able to say "stop".
+        "app_context": {
+            "technologies": {"framework": ["Django"]},
+            "endpoints": ["/search"],
+        },
+        "findings_so_far": [
+            {"vuln_class": "sqli", "url": "/search", "parameter": "q"},
+            {"vuln_class": "xss", "url": "/search", "parameter": "q"},
+        ],
+        "hypotheses": [],
+    },
+]
+
+
+def build_discovery_samples(
+    rows: list[dict[str, Any]], oracle: Oracle, *, weak: bool
+) -> Iterator[Sample]:
+    """Synthetic training samples for ``discover_attack_surface()``.
+
+    Ignores ``rows``/``oracle`` (kept only so this fits the ``BUILDERS``
+    signature the CLI dispatches on) -- see the module comment above for why
+    these examples are hand-written rather than mined from telemetry.
+    """
+    from ai_module.structured_inference import DiscoveryOut
+
+    system = load_prompt("discovery_system")
+    for scenario in _DISCOVERY_SCENARIOS:
+        app_context = scenario["app_context"]
+        findings_so_far = scenario["findings_so_far"]
+        confirmed_classes = sorted({f["vuln_class"] for f in findings_so_far})
+        user = (
+            "## Attack surface\n\n"
+            f"{json.dumps(app_context, ensure_ascii=False, indent=2)}\n\n"
+            "## Vulnerability classes already confirmed\n\n"
+            f"{json.dumps(confirmed_classes, ensure_ascii=False, indent=2)}\n\n"
+            "Propose up to 10 hypotheses, ordered by descending priority, as "
+            "the required structured JSON object."
+        )
+        assistant_obj = {"hypotheses": scenario["hypotheses"]}
+        # Fail loudly at build time (not silently at train time) if a
+        # scenario definition ever drifts from the schema.
+        DiscoveryOut.model_validate(assistant_obj)
+        assistant = json.dumps(assistant_obj, ensure_ascii=False)
+        dedup_key = hashlib.sha256(user.encode("utf-8")).hexdigest()
+        yield Sample(
+            system, user, assistant,
+            meta={"label": "discovery", "_dedup": dedup_key,
+                  "confirmed_classes": confirmed_classes},
+        )
+
+
 BUILDERS = {
     "triage": build_triage_samples,
     "payload": build_payload_samples,
+    "discovery": build_discovery_samples,
 }
 
 
@@ -1816,8 +1967,8 @@ def balance_classes(
     cap = max(smallest, int(round(smallest * ratio)))
     out: list[Sample] = []
     for grp in by_label.values():
-        out.extend(rng.sample(grp, cap) if len(grp) > cap else grp)
-    rng.shuffle(out)
+        out.extend(rng.sample(grp, cap) if len(grp) > cap else grp)  # NOSONAR – seeded RNG for reproducible dataset balancing
+    rng.shuffle(out)  # NOSONAR – seeded RNG for reproducible dataset balancing
     return out, before
 
 
@@ -1840,12 +1991,12 @@ def write_split(
     samples: list[Sample], out: Path, fmt: str, split: float, seed: int
 ) -> dict[str, int]:
     """Stratified train/val split (by ``meta['label']``); returns piece sizes."""
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # NOSONAR – seeded for deterministic train/val split reproducibility
     out.parent.mkdir(parents=True, exist_ok=True)
     to_rec = _to_record(fmt)
 
     if split >= 1.0:
-        rng.shuffle(samples)
+        rng.shuffle(samples)  # NOSONAR – seeded RNG for deterministic split
         _dump(out, samples, to_rec)
         return {"single": len(samples)}
 
@@ -1862,12 +2013,12 @@ def write_split(
     val: list[Sample] = []
     for _, grp in sorted(buckets.items()):
         grp.sort(key=lambda s: s.meta.get("_dedup", "") or (s.user + s.assistant))
-        rng.shuffle(grp)
+        rng.shuffle(grp)  # NOSONAR – seeded RNG for deterministic split
         cut = round(len(grp) * split)
         train.extend(grp[:cut])
         val.extend(grp[cut:])
-    rng.shuffle(train)
-    rng.shuffle(val)
+    rng.shuffle(train)  # NOSONAR – seeded RNG for deterministic split
+    rng.shuffle(val)  # NOSONAR – seeded RNG for deterministic split
 
     _dump(out.with_name(out.stem + ".train" + out.suffix), train, to_rec)
     _dump(out.with_name(out.stem + ".val" + out.suffix), val, to_rec)

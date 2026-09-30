@@ -1,7 +1,7 @@
 # ai_module — agentic AI subsystem
 
-The **default engine** of the async DAST scanner (disable with `--ai-no`).
-Two capabilities:
+An **opt-in stage** of the async DAST scanner (enable with
+`--enable-ai-triaging`). Two capabilities:
 
 1. **Finding triage** — classify scanner candidates as true / false positive.
 2. **Dynamic payload synthesis** — propose the next confirmation probes.
@@ -46,8 +46,9 @@ in the repo root:
   with the wrong owner) — override with `--allow-root`;
 - verifies the uv environment and, if the ML stack is only *missing*
   (`verify_uv_env.sh` exit 3), **auto-installs** it — `uv pip install torch
-  --index-url $TORCH_INDEX_URL` (default cu128) then `uv pip install -e ".[ai]"`
-  — aborting only if that fails (`--no-install` to opt out);
+  --index-url $TORCH_INDEX_URL` (default cu128) then `uv pip install -e
+  ".[ai,ai-local,training]"` — aborting only if that fails (`--no-install`
+  to opt out);
 - (optionally) regenerates the datasets (`--regen-data`, synthetic ×40);
 - pre-downloads the base model into the HF cache so the trainer never stalls
   mid-run (`ai_module/ensure_base_model.py`; `--skip-model-dl` to opt out).
@@ -145,9 +146,9 @@ uv run python -c "import torch; print(torch.__version__, torch.cuda.is_available
 ### 2. Project + ML stack
 
 ```bash
-uv pip install -e ".[ai]"              # transformers, peft, trl, bitsandbytes, datasets…
-uv pip install -e ".[ai,ai-unsloth]"   # optional: fused kernels (~2x, lower memory)
-uv pip install -e ".[ai,ai-serve]"     # optional: vLLM for the OpenAI-compatible endpoint
+uv pip install -e ".[ai,ai-local,training]"            # torch, transformers, peft, trl, bitsandbytes, datasets…
+uv pip install -e ".[ai,ai-local,training,ai-unsloth]" # optional: fused kernels (~2x, lower memory)
+uv pip install -e ".[ai-serve]"                        # optional: vLLM for the OpenAI-compatible endpoint
 ```
 
 Then confirm the environment is uv-managed and the critical deps are resolved:
@@ -343,7 +344,7 @@ less throughput. Prefer LoRA/QLoRA unless the goal specifically requires
 updating every weight.
 
 ```bash
-uv pip install -e ".[ai,ai-offload]"   # adds deepspeed
+uv pip install -e ".[ai,ai-local,training,ai-offload]"   # adds deepspeed
 
 uv run python -m ai_module.train_qlora \
     --base-model deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
@@ -391,10 +392,12 @@ uv run python -m vllm.entrypoints.openai.api_server \
 Or run in-process with no server: `--ai-backend transformers` and
 `AI_AGENT_HF_MODEL=runs/triage-qlora/merged`.
 
-### 7. Run the scanner — the AI agent is the default engine
+### 7. Run the scanner — the LLM triage agent is opt-in
 
-As of the `ai-agent` branch the LLM agent runs on **every** scan: no opt-in
-flag is needed.
+The deterministic heuristic engine is the default. The LLM triage
+stage is enabled **per run** with `--enable-ai-triaging`, so a scan with and
+without the agent can be compared directly (see `tools/run_experiments.py`
+conditions `baseline` vs `ai-triage`).
 
 ```bash
 export AI_AGENT_BACKEND=openai
@@ -402,36 +405,48 @@ export AI_AGENT_BASE_URL=http://127.0.0.1:8000/v1
 export AI_AGENT_MODEL=local-security-agent
 
 uv run python -m web_security_scanner.cli scan https://target.example \
+    --enable-ai-triaging \
     --ai-fp-threshold 0.75 \
     --telemetry-dir reports/telemetry
 ```
 
-On startup the orchestrator builds the `AgentClient` and runs
-`healthcheck()`. If it passes you get `AI engine active (backend=openai …)`;
-if the inference server is down (or `ai_module` isn't installed) you get one
-warning line and the scan falls back to the deterministic heuristics — it
-never fails because of the agent.
+On startup the orchestrator builds the `AgentClient` and runs `healthcheck()`.
+If it passes you get `AI triage active (backend=openai …)`; if the inference
+server is down (or `ai_module` isn't installed) you get one log line and the
+scan falls back to the deterministic heuristics — it never fails because of
+the agent (**transparent degradation**). Per-call failures mid-scan degrade
+the same way.
 
 During the scan:
 
-- **Triage** — every heuristic finding goes to `triage_finding()`; a confident
-  false positive (≥ `--ai-fp-threshold`) is dropped, the rest are annotated
-  with `ai_verdict` / `ai_confidence` / `ai_reasoning`.
-- **Synthesis** — when a parameter's static payload list is exhausted with no
-  hit, `synthesize_payloads()` proposes adapted vectors that are replayed
-  through the cheap checks (still gated by the destructive-payload filter).
-
-Opting out:
+- **Triage** — every heuristic candidate goes to `triage_finding()` *before*
+  the finding is emitted, decoded through the `TriageOut` structured schema.
+  A confident false positive (≥ `--ai-fp-threshold`) is dropped; the rest are
+  annotated with `ai_verdict` / `ai_confidence` / `ai_reasoning`. Every
+  keep/drop verdict is recorded in the report's `ai_triage` audit block.
+- **Synthesis** (`--ai-synthesize`) — when a parameter's static payload list is
+  exhausted with no hit, `synthesize_payloads()` proposes adapted vectors that
+  are replayed through the cheap checks (still gated by the destructive-payload
+  filter).
 
 | Flag | Effect |
 |------|--------|
-| `--ai-no` (`--no-ai`) | Disable the agent entirely; pure deterministic engine |
-| `--ai-no-verify` | Keep synthesis, skip LLM false-positive triage |
-| `--ai-no-synthesize` | Keep triage, never synthesise extra payloads |
+| `--enable-ai-triaging` | Turn on the LLM false-positive triage stage |
+| `--ai-synthesize` | Also enable agentic payload synthesis (implies the above) |
+| `--ai-no-verify` | With `--ai-synthesize`: synthesis only, skip triage |
+| `--ai-backend` / `--ai-base-url` / `--ai-model` / `--ai-fp-threshold` | `AgentClient` knobs |
+
+Measure the effect on the OWASP Benchmark:
+
+```bash
+python tools/run_experiments.py --budgets 50 --conditions baseline,ai-triage --force
+python tools/analyze_results.py            # TASK 2c — FP suppression vs FN cost
+```
 
 Quick offline check without a model server (in-process stub):
 
 ```bash
-uv run python -m web_security_scanner.cli scan https://target.example --ai-backend echo
+uv run python -m web_security_scanner.cli scan https://target.example \
+    --enable-ai-triaging --ai-backend echo
 uv run python -m ai_module.agent_inference   # echo-backend smoke test
 ```

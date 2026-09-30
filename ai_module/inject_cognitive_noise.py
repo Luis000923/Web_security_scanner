@@ -109,7 +109,10 @@ def _make_noise_row(rng: random.Random, security_system: str) -> dict[str, Any]:
         "instruction": system,
         "input": user,
         "output": REFUSAL_SENTINEL,   # forced, byte-for-byte
-        "meta": {"synthetic": "cognitive_noise", "label": "REFUSAL"},
+        # ``synthetic`` stays a bool to match the dataset generator's schema —
+        # a string here makes Arrow reject the merged file. The provenance goes
+        # in its own key.
+        "meta": {"synthetic": True, "source": "cognitive_noise", "label": "REFUSAL"},
     }
 
 
@@ -156,13 +159,13 @@ def inject(
     security_system = _load_security_system()
     stats: list[dict[str, Any]] = []
 
-    for src, dst in zip(inputs, outputs):
+    for src, dst in zip(inputs, outputs, strict=True):
         real = _read_jsonl(src)
         k = _noise_count(len(real), ratio, share_of_output)
         noise = [_make_noise_row(rng, security_system) for _ in range(k)]
         merged = real + noise
         if shuffle:
-            rng.shuffle(merged)
+            rng.shuffle(merged)  # NOSONAR – seeded RNG for reproducible noise injection
         _write_jsonl(dst, merged)
         stats.append({
             "input": str(src), "output": str(dst),

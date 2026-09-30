@@ -1,8 +1,8 @@
 {
-  "input_rows": 1110179,
-  "cleaned_rows": 1110179,
+  "input_rows": 2222001,
+  "cleaned_rows": 2222001,
   "clean_stats": {
-    "kept": 1110179
+    "kept": 2222001
   },
   "oracle": {
     "benchmark_entries": 2740,
@@ -13,7 +13,7 @@
     "format": "alpaca",
     "split": 0.9,
     "seed": 1337,
-    "balance": false,
+    "balance": true,
     "balance_ratio": 1.0,
     "dedup": true,
     "drop_noise": true,
@@ -25,7 +25,7 @@
   "tasks": [
     {
       "task": "triage",
-      "samples_built": 26,
+      "samples_built": 27,
       "synthetic": {
         "seeds": 44,
         "telemetry_seed_classes": {
@@ -72,24 +72,29 @@
           "cmd_injection_time_oracle": 78
         }
       },
-      "samples_with_synthetic": 1786,
+      "samples_with_synthetic": 1787,
       "deduped_removed": 0,
-      "after_dedup": 1786,
-      "class_counts": {
-        "FALSE_POSITIVE": 604,
+      "after_dedup": 1787,
+      "class_counts_before_balance": {
+        "FALSE_POSITIVE": 605,
         "UNCERTAIN": 593,
         "TRUE_POSITIVE": 589
       },
+      "class_counts": {
+        "UNCERTAIN": 589,
+        "FALSE_POSITIVE": 589,
+        "TRUE_POSITIVE": 589
+      },
       "split": {
-        "train": 1608,
-        "val": 178
+        "train": 1590,
+        "val": 177
       },
       "out": "data/sft.triage.jsonl"
     },
     {
       "task": "payload",
-      "samples_built": 777236,
-      "deduped_removed": 776061,
+      "samples_built": 1555881,
+      "deduped_removed": 1554706,
       "after_dedup": 1175,
       "class_counts": {
         "xss": 586,

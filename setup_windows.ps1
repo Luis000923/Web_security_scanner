@@ -1604,13 +1604,13 @@ function Invoke-PipelineNative {
     Write-Ok "venv: $venvPython"
 
     Write-Step 'AI stack'
-    # torch first and from its own index: installed as part of ".[ai]" it comes
-    # from PyPI, which on Windows means the CPU-only build.
+    # torch first and from its own index: installed as part of ".[ai-local]" it
+    # comes from PyPI, which on Windows means the CPU-only build.
     Invoke-WithRetry -Label 'uv pip install torch' -Attempts 3 -DelaySeconds 5 -ScriptBlock {
         Invoke-Native -Exe 'uv' -Arguments @('pip', 'install', $TorchSpec, '--index-url', $TorchIndex) -WorkingDirectory $Repo
     } | Out-Null
-    Invoke-WithRetry -Label 'uv pip install .[ai]' -Attempts 3 -DelaySeconds 5 -ScriptBlock {
-        Invoke-Native -Exe 'uv' -Arguments @('pip', 'install', '-e', '.[ai]') -WorkingDirectory $Repo
+    Invoke-WithRetry -Label 'uv pip install .[ai,ai-local,training]' -Attempts 3 -DelaySeconds 5 -ScriptBlock {
+        Invoke-Native -Exe 'uv' -Arguments @('pip', 'install', '-e', '.[ai,ai-local,training]') -WorkingDirectory $Repo
     } | Out-Null
     Write-Ok 'AI stack installed'
 

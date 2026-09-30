@@ -109,6 +109,11 @@ def test_registry_exposes_all_builtins():
         "hex_entity",
         "html_entity",
         "random_case",
+        "partial_percent_encode",
+        "whitespace_delimiter",
+        "fullwidth_unicode",
+        "sql_comment_injection",
+        "adaptive_entropy",
     }
     for name in available_transforms():
         assert isinstance(get_transform(name), BaseTransform)
