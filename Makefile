@@ -21,6 +21,14 @@ test: ## Run the complete pytest suite.
 	$(PYTHON) -m pytest
 
 evaluate: ## Run the paper's statistical analysis (tools/analyze_results.py), figures skipped.
+	@test -f tools/analyze_results.py || { \
+		echo "error: tools/analyze_results.py not found on this branch ($$(git rev-parse --abbrev-ref HEAD))." >&2; \
+		echo "  The statistical-analysis pipeline (tools/, testbed/, paper/) lives on" >&2; \
+		echo "  feat/ai-triage-mainline, not on main -- see AGENTS.md section 1.3." >&2; \
+		echo "  Run this from that branch/worktree, e.g.:" >&2; \
+		echo "    git worktree add ../wss-eval feat/ai-triage-mainline && make -C ../wss-eval evaluate" >&2; \
+		exit 1; \
+	}
 	$(PYTHON) tools/analyze_results.py --no-figures
 
 docker-build: ## Build the reproducible Artifact Evaluation Docker image.
