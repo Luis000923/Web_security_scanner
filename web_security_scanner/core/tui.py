@@ -35,13 +35,16 @@ imports it yet -- it is an opt-in entrypoint. Wire it up with:
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import shutil
 import signal
 import tempfile
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from rich.console import Console
@@ -180,6 +183,7 @@ _PACKAGE_NAMES: dict[str, dict[str, str]] = {
         "nmap": "nmap",
         "masscan": "masscan",
         "sqlmap": "sqlmap",
+        "z3": "z3",
     },
     "dnf": {
         "nmap": "nmap",
@@ -242,12 +246,21 @@ async def install_missing_tools(
     catalog = _PACKAGE_NAMES.get(manager.name, {})
     packages = [catalog[name] for name in tool_names if name in catalog]
     if not packages:
+        # Most of this registry's tools are Go/Java/Python projects with no
+        # mainstream distro package at all (AUR-only, or built from source) --
+        # naming them here is the difference between "nothing happened" and
+        # "here is exactly why, go install these yourself".
+        unresolved = ", ".join(tool_names)
         return ToolResult(
             tool=manager.name,
             command=(),
             returncode=None,
             stdout="",
-            stderr="no requested tool has a known package for this manager",
+            stderr=(
+                f"none of the requested tools have a {manager.name} package: "
+                f"{unresolved}. These are typically AUR-only, `go install`able, "
+                "or built from source -- see each tool's own docs."
+            ),
             duration_s=0.0,
             tool_missing=True,
         )
@@ -620,6 +633,59 @@ class TUI:
         )
         return results
 
+    # -- report ---------------------------------------------------------------
+
+    @staticmethod
+    def _default_report_path() -> str:
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        return f"webscanner_tui_report_{stamp}.json"
+
+    def save_report(
+        self,
+        target: SanitizedTarget,
+        profile: ScanProfile,
+        categories: list[str],
+        results: dict[str, dict[str, ToolResult]],
+        path: str,
+    ) -> Path:
+        """Serialize the run to ``path`` as JSON; return the resolved path.
+
+        Every :class:`ToolResult` this session produced (recon hits, crawl
+        output, findings) would otherwise exist only in the terminal's
+        scrollback once the process exits -- this is the one artifact that
+        survives it. Plain ``dataclasses.asdict`` is enough: ``ToolResult``
+        holds only JSON-safe fields already (str/int/float/bool/list/dict).
+        """
+        report = {
+            "target": {"raw": target.raw, "kind": target.kind, "value": target.value},
+            "profile": profile.key,
+            "categories": categories,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "results": {
+                category_key: {
+                    tool_name: asdict(result) for tool_name, result in tools.items()
+                }
+                for category_key, tools in results.items()
+            },
+        }
+        resolved = Path(path).expanduser()
+        resolved.parent.mkdir(parents=True, exist_ok=True)
+        resolved.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
+        return resolved
+
+    def prompt_report_path(self) -> str | None:
+        """Ask where to save the JSON report; empty input skips saving.
+
+        A default filename is offered rather than forced -- an operator who
+        wants to discard a throwaway run (or pipe results elsewhere already)
+        should not be required to name a file for output they don't want.
+        """
+        raw = Prompt.ask(
+            "Save JSON report to (empty to skip)",
+            default=self._default_report_path(),
+        )
+        return raw.strip() or None
+
     # -- main loop --------------------------------------------------------
 
     async def main_loop(self) -> None:
@@ -649,9 +715,14 @@ class TUI:
             pass
 
         try:
-            await task
+            results = await task
         except asyncio.CancelledError:
-            pass
+            return
+
+        path = self.prompt_report_path()
+        if path is not None:
+            resolved = self.save_report(target, profile, categories, results, path)
+            self.console.print(f"[green]Report saved to {resolved}[/]")
 
 
 def run_tui() -> None:
