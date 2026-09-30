@@ -123,7 +123,7 @@ class TelemetryWorker:
         try:
             await self._worker_task
         except asyncio.CancelledError:  # pragma: no cover - defensive
-            pass
+            raise
         except Exception as exc:  # pragma: no cover - defensive
             _LOG.warning("Telemetry writer exited with error: %s", exc)
 

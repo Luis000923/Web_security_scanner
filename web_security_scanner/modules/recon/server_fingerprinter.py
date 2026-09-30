@@ -39,7 +39,7 @@ _MAX_HEADER_VALUE = 512
 # "<product>/<version>" tokens, e.g. "Apache/2.4.49", "nginx/1.18.0",
 # "Microsoft-IIS/8.5", "PHP/7.2.24", "(Varnish/6.6)".
 _PRODUCT_VERSION_RE = re.compile(
-    r"([A-Za-z][A-Za-z0-9._-]*)\s*/\s*([0-9]+(?:\.[0-9]+){0,3}[A-Za-z0-9.-]*)"
+r"([A-Za-z][A-Za-z0-9._-]*)\s*/\s*(\d+(?:\.\d+){0,3}[A-Za-z0-9.-]*)"
 )
 
 _HEADERS_OF_INTEREST = ("server", "x-powered-by", "via")
@@ -215,7 +215,7 @@ class ServerFingerprinter:
             resp = await self.scanner.request(
                 "GET", base_url, headers={"Range": _MS15_034_RANGE_HEADER}, use_cache=False,
             )
-        except Exception as exc:  # noqa: BLE001 - probe failure is inconclusive, not an error
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - probe failure is inconclusive, not an error
             self._log.debug(f"MS15-034 active probe failed for {base_url}: {exc}")
             return None
 
@@ -274,7 +274,7 @@ class ServerFingerprinter:
         """
         try:
             resp = await self.scanner.request("GET", base_url)
-        except Exception as exc:  # noqa: BLE001 - defensive, must not abort recon
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - defensive, must not abort recon
             self._log.debug(f"Server fingerprinting request failed for {base_url}: {exc}")
             return ServerFingerprintResult(url=base_url)
 

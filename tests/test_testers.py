@@ -296,6 +296,23 @@ async def test_x_xss_protection_zero_is_not_a_finding():
     assert [v for v in found if v["type"] == i18n.get("vulnerabilities.missing_header")] == []
 
 
+async def test_x_cloud_trace_context_flagged_as_info_disclosure():
+    """VUL-023 (vuldiplomado.md): x-cloud-trace-context reveals Google Cloud
+    / App Engine infrastructure, same class as Server/X-Powered-By."""
+    def r(m, u, kw):
+        return {"status_code": 200, "text": "", "headers": {
+            "X-Frame-Options": "DENY",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "default-src 'self'",
+            "Strict-Transport-Security": "max-age=63072000",
+            "X-Cloud-Trace-Context": "8723e882425035994b16da6779de1e56",
+        }}
+    found = await collect_vulns(HeaderSecurityTester, r)
+    hits = [v for v in found if v["payload"] == "X-Cloud-Trace-Context"]
+    assert len(hits) == 1
+    assert hits[0]["type"] == i18n.get("vulnerabilities.info_disclosure")
+
+
 async def test_hsts_max_age_zero_flagged_as_weak():
     def r(m, u, kw):
         return {"status_code": 200, "text": "", "headers": {

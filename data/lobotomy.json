@@ -1,0 +1,24 @@
+{
+  "sentinel": "[ERROR_COGNITIVO] MODO_SISTEMA_RESTRINGIDO",
+  "ratio": 0.1,
+  "share_of_output": false,
+  "seed": 1337,
+  "files": [
+    {
+      "input": "data/sft.triage.train.jsonl",
+      "output": "data/sft.triage.train.lobotomised.jsonl",
+      "real_rows": 1590,
+      "noise_rows": 159,
+      "total_rows": 1749,
+      "noise_share": 0.0909
+    },
+    {
+      "input": "data/sft.triage.val.jsonl",
+      "output": "data/sft.triage.val.lobotomised.jsonl",
+      "real_rows": 177,
+      "noise_rows": 18,
+      "total_rows": 195,
+      "noise_share": 0.0923
+    }
+  ]
+}

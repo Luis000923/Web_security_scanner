@@ -106,7 +106,12 @@ async def test_crawler_prunes_cyclic_branch_before_visiting(monkeypatch):
         MockScanner(_cyclic_trap_responder), max_urls=10_000, crawl_delay=0
     )
 
-    await mapper.map_website("http://trap.test/a/b/a/b/a", max_depth=50)
+    # Seed at a non-cyclic-shaped path: WebMapperAsync strips the seed's own
+    # path prefix before the entropy/trap check (so a high-entropy instance ID
+    # in the base URL is never itself mistaken for a trap), and a seed that
+    # already looks like a partial a/b/a/b/... cycle would interact with that
+    # stripping instead of exercising the cyclic-descent heuristic below.
+    await mapper.map_website("http://trap.test/start", max_depth=50)
 
     # The heuristic pruned the cyclic branch long before the numeric cap.
     assert mapper.trap_branches_pruned >= 1
@@ -125,7 +130,7 @@ async def test_crawler_logs_warning_on_trap_branch(monkeypatch, caplog):
     )
 
     with caplog.at_level(logging.WARNING, logger="WebMapperAsync"):
-        await mapper.map_website("http://trap.test/a/b/a/b/a", max_depth=50)
+        await mapper.map_website("http://trap.test/start", max_depth=50)
 
     assert any("Spider-trap heuristic" in rec.message for rec in caplog.records)
 

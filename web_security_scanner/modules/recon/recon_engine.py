@@ -165,7 +165,7 @@ class ReconEngine:
             if finding.url not in candidate_pool:
                 candidate_pool.append(finding.url)
         prioritized_targets = self._correlate_surface(
-            base_url, candidate_pool, map_data, set(browser_endpoints)
+            candidate_pool, map_data, set(browser_endpoints)
         )
         targets = self._build_priority_queue(base_url, prioritized_targets)
         priority_summary = SurfaceCorrelator.summarize(prioritized_targets)
@@ -278,7 +278,7 @@ class ReconEngine:
             result = await detector.detect(
                 base_url, base_paths=self._discovered_base_paths(base_url)
             )
-        except Exception as exc:  # noqa: BLE001 - defensive, must not abort recon
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - defensive, must not abort recon
             self._log.warning("Sensitive-file detection failed: %s", exc)
             return []
         if result.findings:
@@ -297,7 +297,7 @@ class ReconEngine:
                 logger=self._log,
             )
             result = await fingerprinter.fingerprint(base_url)
-        except Exception as exc:  # noqa: BLE001 - defensive, must not abort recon
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - defensive, must not abort recon
             self._log.warning("Server fingerprinting failed: %s", exc)
             return None
         if result.findings:
@@ -309,7 +309,6 @@ class ReconEngine:
 
     def _correlate_surface(
         self,
-        base_url: str,
         targets: list[str],
         map_data: dict[str, Any],
         browser_endpoints: set[str],
@@ -329,7 +328,7 @@ class ReconEngine:
                 technologies=map_data.get("technologies", {}),
                 hidden_urls=set(self._mapper.js_endpoints) | browser_endpoints,
             )
-        except Exception as exc:  # noqa: BLE001 - defensive, must not abort recon
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - defensive, must not abort recon
             self._log.warning("Surface correlation failed: %s", exc)
             return [
                 PrioritizedTarget(url=u, categories=("generic",), score=0.0,
@@ -352,7 +351,7 @@ class ReconEngine:
             outcome = await browser.explore(
                 base_url, seed_params=dict(self._mapper.discovered_params)
             )
-        except Exception as exc:  # noqa: BLE001 - defensive, must not abort recon
+        except Exception as exc:  # noqa: BLE001  # NOSONAR  # NOSONAR - defensive, must not abort recon
             self._log.warning("Browser recon pass errored: %s", exc)
             return [], []
         endpoints = sorted(outcome.discovered_urls)

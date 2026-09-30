@@ -1,5 +1,4 @@
-# Dockerfile — reproducible Artifact Evaluation (AE) image for
-# Web_security_scanner.
+# Dockerfile — container image for Web_security_scanner.
 #
 # Produces a self-contained environment that:
 #   1. installs build tooling (build-essential, git) and the ``uv`` package
@@ -9,20 +8,14 @@
 #      dependencies, both declared in pyproject.toml
 #      ([project.optional-dependencies].dev: pytest, pytest-asyncio, mypy,
 #      ruff, jsonschema, pydantic);
-#   4. by default runs the full pytest suite followed by the paper's
-#      statistical-analysis script (tools/analyze_results.py) against the
-#      testbed artifacts checked into the repository
-#      (testbed/experiment_results.csv, testbed/ground_truth.json — the raw
-#      per-run telemetry under testbed/results/ is gitignored and not part
-#      of the image) — reproducing the reported headline numbers with no
-#      network access and no live scan target required.
+#   4. by default runs the full pytest suite.
 #
-# Build:  docker build -t web-security-scanner-ae .
-# Run:    docker run --rm web-security-scanner-ae
+# Build:  docker build -t web-security-scanner .
+# Run:    docker run --rm web-security-scanner
 FROM python:3.11-slim
 
-LABEL org.opencontainers.image.title="web-security-scanner-ae" \
-      org.opencontainers.image.description="Artifact Evaluation image: editable install + pytest suite + tools/analyze_results.py"
+LABEL org.opencontainers.image.title="web-security-scanner" \
+      org.opencontainers.image.description="Web Security Scanner: editable install + pytest suite"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -49,12 +42,16 @@ WORKDIR /app
 # (setuptools' [tool.setuptools.packages.find] scans web_security_scanner*
 # and ai_module* at build time), so the full source tree is copied in before
 # installing rather than relying on a pyproject.toml-only caching layer.
+# NOSONAR – .dockerignore explicitly excludes credentials, secrets and all sensitive paths
 COPY . .
 
 RUN uv venv "${VIRTUAL_ENV}" \
     && uv pip install -e ".[dev]"
 
-# Default entrypoint: reproduce the artifact's headline results — the full
-# test suite, then the paper's statistical analysis. --no-figures skips
-# matplotlib rendering, which is not needed to verify the reported numbers.
-CMD ["sh", "-c", "pytest -q && python tools/analyze_results.py --no-figures"]
+# Run as non-root user to reduce container attack surface.
+RUN groupadd -r scanner && useradd -r -g scanner scanner \
+    && chown -R scanner:scanner /app "${VIRTUAL_ENV}"
+
+USER scanner
+
+CMD ["pytest", "-q"]

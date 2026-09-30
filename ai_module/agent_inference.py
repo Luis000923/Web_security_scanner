@@ -46,9 +46,11 @@ from typing import Any, Literal
 
 from ai_module.prompts import load_prompt
 from ai_module.structured_inference import (
+    DiscoveryOut,
     PayloadOut,
     TriageOut,
     openai_response_format,
+    parse_discovery,
     parse_payloads,
     parse_triage,
 )
@@ -92,6 +94,19 @@ class PayloadSuggestion:
     rationale: str = ""
     confirm_signal: str = ""
     score: float = 0.0
+
+
+@dataclass
+class AttackHypothesis:
+    """One proactive-discovery hypothesis, confined to the scanner's existing
+    ``vuln_class`` taxonomy (see :mod:`ai_module.vuln_discovery` module
+    docstring for why this stays constrained rather than free-form)."""
+    vuln_class: str
+    endpoint: str
+    parameter: str = ""
+    attack_vector: str = ""
+    rationale: str = ""
+    priority: float = 0.5
 
 
 @dataclass
@@ -219,15 +234,25 @@ class AgentClient:
     # ------------------------------------------------------------------ #
 
     async def healthcheck(self) -> bool:
-        """Cheap readiness probe used by the orchestrator before it commits the
+        """Readiness probe used by the orchestrator before it commits the
         agent as the scan's engine.
 
-        ``echo`` is always ready; ``transformers`` loads lazily in-process so we
-        assume it is intended; ``openai`` pings the server's ``/models`` route
-        with a short timeout. Any failure returns ``False`` and the caller falls
-        back to the deterministic heuristics.
+        ``echo`` is always ready. ``transformers`` eagerly builds the
+        in-process HF pipeline right here rather than deferring to the first
+        real finding: without this, a bad ``--ai-model`` path or a missing
+        torch/transformers install would only surface silently, deep into a
+        long scan, at the first candidate that needed triage -- instead the
+        operator gets an immediate, correct "AI triage active" (model
+        actually resident in memory/VRAM) or an immediate fallback message.
+        ``_ensure_hf_loaded`` is idempotent, so the real first-use call later
+        is then just a no-op. ``openai`` pings the server's ``/models`` route
+        with a short timeout. Any failure returns ``False`` and the caller
+        falls back to the deterministic heuristics.
         """
-        if self.backend in ("echo", "transformers"):
+        if self.backend == "echo":
+            return True
+        if self.backend == "transformers":
+            await self._ensure_hf_loaded()
             return True
         try:
             import aiohttp
@@ -239,7 +264,7 @@ class AgentClient:
                 timeout=aiohttp.ClientTimeout(total=min(self.timeout, 5.0)),
             ) as resp:
                 return bool(resp.status < 500)
-        except Exception:  # noqa: BLE001 - unreachable / DNS / TLS / timeout
+        except Exception:  # noqa: BLE001  # NOSONAR - unreachable / DNS / TLS / timeout
             return False
 
     async def triage_finding(self, finding: dict[str, Any]) -> TriageResult:
@@ -315,6 +340,62 @@ class AgentClient:
                 )
             )
         return out
+
+    async def discover_attack_surface(
+        self,
+        app_context: dict[str, Any],
+        findings_so_far: list[dict[str, Any]],
+        max_hypotheses: int = 10,
+    ) -> list[AttackHypothesis]:
+        """Ask the model which already-supported vuln classes are most worth
+        re-testing next, given the discovered attack surface and findings so
+        far. Deliberately constrained to :class:`~ai_module.structured_inference.
+        VulnClass` (``sqli``/``xss``/``pathtraver``/``cmdi``) via structured
+        decoding -- see ``ai_module/vuln_discovery.py`` for the rationale.
+
+        Never raises: a backend failure or unparseable/off-taxonomy output
+        folds to an empty list, exactly like ``synthesize_payloads``.
+        """
+        from ai_module.prompt_guard import sanitize_untrusted
+
+        # technologies/headers/endpoints originate from the scanned (adversarial)
+        # target -- wrap them the same way _ai_triage wraps response bodies, so
+        # a planted "ignore previous instructions" string can't hijack priorities.
+        sanitized = sanitize_untrusted(
+            json.dumps(app_context, ensure_ascii=False, indent=2))
+        confirmed_classes = sorted({
+            str(f.get("vuln_class") or f.get("type") or "") for f in findings_so_far
+        })
+        user = (
+            "## Attack surface\n\n"
+            f"{sanitized.wrapped}\n\n"
+            "## Vulnerability classes already confirmed\n\n"
+            f"{json.dumps(confirmed_classes, ensure_ascii=False, indent=2)}\n\n"
+            f"Propose up to {max_hypotheses} hypotheses, ordered by descending "
+            "priority, as the required structured JSON object."
+        )
+        try:
+            text = await self._chat(
+                load_prompt("discovery_system"), user,
+                response_format=openai_response_format(DiscoveryOut),
+            )
+            parsed = parse_discovery(text)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # backend failure or a future parse bug -> no hypotheses
+            return []
+        hypotheses = [
+            AttackHypothesis(
+                vuln_class=h.vuln_class.value,
+                endpoint=h.endpoint,
+                parameter=h.parameter,
+                attack_vector=h.attack_vector,
+                rationale=h.rationale,
+                priority=h.priority,
+            )
+            for h in parsed.hypotheses[:max_hypotheses]
+        ]
+        return sorted(hypotheses, key=lambda h: h.priority, reverse=True)
 
     async def batch_triage(
         self, findings: list[dict[str, Any]], concurrency: int = 4
@@ -499,6 +580,8 @@ class AgentClient:
                                "rationale": "stub", "confirm_signal": "reflected marker",
                                "score": 0.5}]}
             )
+        if "hypotheses" in user:
+            return json.dumps({"hypotheses": []})
         return json.dumps(
             {"verdict": "UNCERTAIN", "confidence": 0.0,
              "reasoning": "echo backend", "next_step": "use a real backend"}
@@ -564,7 +647,7 @@ class BatchingTriageClient:
         if task is not None and not task.done():
             try:
                 await task
-            except Exception:  # noqa: BLE001 - already delivered to the callers
+            except Exception:  # noqa: BLE001  # NOSONAR - already delivered to the callers
                 pass
         self._fail_pending(RuntimeError("triage client closed"))
         close = getattr(self._agent, "aclose", None)
@@ -595,7 +678,7 @@ class BatchingTriageClient:
             results = await self._agent.batch_triage(
                 [f for f, _ in batch], concurrency=self._concurrency
             )
-        except Exception as exc:  # noqa: BLE001 - each caller degrades on its own
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - each caller degrades on its own
             self._settle_error(batch, exc)
             return
         for i, (_, fut) in enumerate(batch):

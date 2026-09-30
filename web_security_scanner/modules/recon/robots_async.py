@@ -53,7 +53,7 @@ class AsyncRobotsPolicy:
             else:
                 body = (resp.get("text") or "")[:_MAX_ROBOTS_BYTES]
                 parser.parse(body.splitlines())
-        except Exception as exc:  # noqa: BLE001 - fail open on any fetch error
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - fail open on any fetch error
             self._log.debug("robots.txt for %s unavailable: %s", origin, exc)
             result = None
 
@@ -68,7 +68,7 @@ class AsyncRobotsPolicy:
             return True
         try:
             return parser.can_fetch(self._user_agent, url)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001  # NOSONAR
             return True
 
     async def crawl_delay(self, url: str) -> float | None:
@@ -79,6 +79,6 @@ class AsyncRobotsPolicy:
             return None
         try:
             value = parser.crawl_delay(self._user_agent)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001  # NOSONAR
             return None
         return float(value) if value is not None else None

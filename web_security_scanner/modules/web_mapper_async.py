@@ -74,6 +74,10 @@ class WebMapperAsync:
         # paths / repeated segments / high-entropy tokens / repetitive query
         # params) - proactive, unlike the reactive numeric caps above.
         self.trap_branches_pruned = 0
+        # Path prefix of the user-supplied seed URL (e.g. "/instance-id").
+        # Stripped before the spider-trap entropy check so that a high-entropy
+        # instance ID in the base URL is never mistaken for a dynamic token.
+        self._base_path: str = ""
         self._signature_counts: dict[Any, int] = {}
         self.base_domain: str = ""
         self._scope: ScopeEngine | None = None
@@ -158,7 +162,7 @@ class WebMapperAsync:
             return True
         try:
             await assert_public(url)
-        except Exception as exc:  # noqa: BLE001 - SSRFRedirectError and friends
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - SSRFRedirectError and friends
             self.logger.debug(f"SSRF guard blocked discovered URL {url}: {exc}")
             return False
         return True
@@ -175,6 +179,7 @@ class WebMapperAsync:
         )
         parsed = urlparse(base_url)
         self.base_domain = parsed.netloc
+        self._base_path = parsed.path.rstrip('/') or ''
         root_host = parsed.hostname or parsed.netloc.split(':')[0]
         self._scope = ScopeEngine(
             root_host, include_subdomains=self.include_subdomains
@@ -284,7 +289,7 @@ class WebMapperAsync:
         sitemap_url = urljoin(base_url, "/sitemap.xml")
         try:
             resp = await self.scanner.request("GET", sitemap_url)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001  # NOSONAR
             self.logger.debug(f"sitemap.xml fetch failed: {e}")
             return
         if resp.get("status_code") != 200 or not resp.get("text"):
@@ -310,7 +315,7 @@ class WebMapperAsync:
         if self._robots is not None:
             try:
                 robots_delay = await self._robots.crawl_delay(url)
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001  # NOSONAR
                 robots_delay = None
             if robots_delay is not None and robots_delay > delay:
                 delay = robots_delay
@@ -336,7 +341,7 @@ class WebMapperAsync:
         if "javascript" in ctype or "ecmascript" in ctype:
             return True
         path = urlparse(url).path.lower()
-        return path.endswith(".js") or path.endswith(".mjs")
+        return path.endswith((".js", ".mjs"))
 
     async def _crawl_structure(self, url: str, depth: int, max_depth: int):
         url_clean = self._normalize_url(url)
@@ -350,7 +355,14 @@ class WebMapperAsync:
         if not self._is_internal(urlparse(url_clean).netloc):
             return
 
-        trap = evaluate_url_for_trap(url_clean)
+        # Strip the seed URL's path prefix before entropy check — a high-entropy
+        # instance ID in the base URL is a static app constant, not a trap.
+        _parsed_clean = urlparse(url_clean)
+        _path_for_trap = _parsed_clean.path
+        if self._base_path and _path_for_trap.startswith(self._base_path):
+            _path_for_trap = _path_for_trap[len(self._base_path):] or '/'
+        _url_for_trap = urlunparse(_parsed_clean._replace(path=_path_for_trap))
+        trap = evaluate_url_for_trap(_url_for_trap)
         if trap.is_trap:
             self.trap_branches_pruned += 1
             self.logger.warning(
@@ -373,7 +385,7 @@ class WebMapperAsync:
         if self.respect_robots and self._robots is not None:
             try:
                 allowed = await self._robots.can_fetch(url_clean)
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001  # NOSONAR
                 allowed = True
             if not allowed:
                 self.logger.debug(f"robots.txt disallows {url_clean}; skipping")

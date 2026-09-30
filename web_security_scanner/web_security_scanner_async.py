@@ -292,6 +292,9 @@ class WebSecurityScanner:
                 self.core.telemetry_engine.set_phase("exploitation")
                 await self._run_exploit_engine(technologies, prioritized_targets)
 
+            # --- AI-driven proactive re-prioritization (opt-in) -------------
+            await self._run_ai_discovery(technologies, scan_targets)
+
         except asyncio.CancelledError:
             # KeyboardInterrupt / external cancellation. Testers were already
             # cancelled + awaited by the worker pool; just clean up below and
@@ -515,12 +518,13 @@ class WebSecurityScanner:
             return
         try:
             from ai_module.agent_inference import AgentClient, BatchingTriageClient
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001  # NOSONAR
             await self.event_emitter.emit(
                 ScanEventType.LOG_MESSAGE,
-                message=(f"AI triage unavailable ({exc}); falling back to "
-                         f"deterministic heuristics. Install with "
-                         f"`pip install -e \".[ai]\"`."),
+                always=True, ai_status="error",
+                message=(f"[IA] ERROR: modelo NO cargado -- ai_module no disponible "
+                         f"({exc}). Instala con `pip install -e \".[ai]\"`. "
+                         f"Continuando con el motor heurístico determinístico."),
             )
             return
         kwargs: dict[str, Any] = {}
@@ -544,26 +548,38 @@ class WebSecurityScanner:
             kwargs["load_in_8bit"] = True
         try:
             client = AgentClient(**kwargs)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001  # NOSONAR
             await self.event_emitter.emit(
                 ScanEventType.LOG_MESSAGE,
-                message=(f"Could not build the AI AgentClient ({exc}); falling "
-                         f"back to deterministic heuristics."),
+                always=True, ai_status="error",
+                message=(f"[IA] ERROR: modelo NO cargado -- no se pudo construir "
+                         f"el AgentClient ({exc}). Continuando con el motor "
+                         f"heurístico determinístico."),
             )
             return
 
         try:
             healthy = await client.healthcheck()
-        except Exception as exc:  # noqa: BLE001 - defensive
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - defensive
             healthy = False
             self._logger.debug("AI healthcheck raised: %s", exc)
+            await self.event_emitter.emit(
+                ScanEventType.LOG_MESSAGE,
+                always=True, ai_status="error",
+                message=(f"[IA] ERROR: modelo NO cargado -- fallo durante la "
+                         f"carga/healthcheck (backend={client.backend} "
+                         f"modelo={getattr(client, 'model', 'n/a')}): {exc}. "
+                         f"Continuando con el motor heurístico determinístico."),
+            )
+            return
         if not healthy:
             await self.event_emitter.emit(
                 ScanEventType.LOG_MESSAGE,
-                message=(f"AI inference backend not reachable "
-                         f"(backend={client.backend} "
-                         f"url={getattr(client, 'base_url', 'n/a')}); falling "
-                         f"back to deterministic heuristics."),
+                always=True, ai_status="error",
+                message=(f"[IA] ERROR: modelo NO cargado -- backend de inferencia "
+                         f"no alcanzable (backend={client.backend} "
+                         f"url={getattr(client, 'base_url', 'n/a')}). "
+                         f"Continuando con el motor heurístico determinístico."),
             )
             return
 
@@ -582,7 +598,10 @@ class WebSecurityScanner:
             tester.ai_client = batched
         await self.event_emitter.emit(
             ScanEventType.LOG_MESSAGE,
-            message=(f"AI triage active (backend={client.backend} "
+            always=True, ai_status="ready",
+            message=(f"[IA] Modelo cargado correctamente. Listo para usarse "
+                     f"(backend={client.backend} "
+                     f"modelo={getattr(client, 'model', 'n/a')} "
                      f"verify={bool(tcfg.get('ai_verify', True))} "
                      f"synthesize={bool(tcfg.get('ai_synthesize', False))} "
                      f"batch={batched._max_batch} "
@@ -628,8 +647,87 @@ class WebSecurityScanner:
                 message=(f"Exploit engine: {len(attempts)} Proof-of-Impact attempt(s), "
                          f"{confirmed} confirmed exploitable."),
             )
-        except Exception as exc:  # noqa: BLE001 - PoC pass must never abort the scan
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - PoC pass must never abort the scan
             self._logger.warning("Exploit engine pass failed: %s", exc)
+
+    async def _run_ai_discovery(
+        self, technologies: dict[str, list[str]], scan_targets: list[dict[str, Any]],
+    ) -> None:
+        """Proactive re-prioritization pass (opt-in via ``--enable-ai-discovery``).
+
+        Asks the attached AI agent which already-supported vuln classes
+        (``sqli``/``xss``/``pathtraver``/``cmdi`` -- see
+        ``ai_module/vuln_discovery.py`` for why it stays confined to this
+        taxonomy) are most worth re-testing given the crawl state and
+        findings so far, then re-runs the matching tester against each
+        proposed endpoint/parameter for a few rounds. A no-op without
+        ``--enable-ai-triaging`` (no ``ai_client`` attached) or without this
+        flag; any failure here is logged and swallowed, exactly like the
+        exploit engine pass.
+        """
+        tcfg = self.config.get("testers", {}) or {}
+        if not tcfg.get("ai_discovery", False):
+            return
+        if self.ai_client is None:
+            self._logger.info(
+                "AI discovery requested (--enable-ai-discovery) but no AI backend "
+                "is attached (needs --enable-ai-triaging too); skipping."
+            )
+            return
+        try:
+            from ai_module.vuln_discovery import iterative_discovery_loop
+
+            from .modules.ai_discovery import (
+                VULN_CLASS_TO_TESTER,
+                build_app_context,
+                hypothesis_target_url,
+            )
+
+            testers_by_class = {
+                vuln_class: next(
+                    (t for t in self.testers if isinstance(t, cls)), None)
+                for vuln_class, cls in VULN_CLASS_TO_TESTER.items()
+            }
+
+            async def _build_context(findings_so_far: list[dict[str, Any]]) -> dict[str, Any]:
+                return build_app_context(self.mapper, technologies, scan_targets)
+
+            async def _run_hypothesis(hypothesis: Any) -> list[dict[str, Any]]:
+                tester = testers_by_class.get(hypothesis.vuln_class)
+                if tester is None:
+                    return []
+                url = hypothesis_target_url(hypothesis)
+                before = len(self.vulnerabilities)
+                try:
+                    await tester.run_test(url)
+                except Exception as exc:  # noqa: BLE001  # NOSONAR - one bad re-test must not abort the loop
+                    self._logger.warning(
+                        "AI-discovery re-test failed (%s on %s): %s",
+                        hypothesis.vuln_class, url, exc,
+                    )
+                    return []
+                return self.vulnerabilities[before:]
+
+            max_rounds = int(tcfg.get("ai_discovery_rounds", 3))
+            max_hypotheses = int(tcfg.get("ai_discovery_max_hypotheses", 10))
+            await self.event_emitter.emit(
+                ScanEventType.PROGRESS_UPDATE,
+                message="AI discovery: proactive re-prioritization...",
+            )
+            new_findings = await iterative_discovery_loop(
+                self.ai_client,
+                build_context=_build_context,
+                run_hypothesis=_run_hypothesis,
+                max_rounds=max_rounds,
+                max_hypotheses_per_round=max_hypotheses,
+            )
+            await self.event_emitter.emit(
+                ScanEventType.LOG_MESSAGE,
+                message=(f"AI discovery: {len(new_findings)} additional finding(s) "
+                         f"across up to {max_rounds} round(s)."),
+            )
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - discovery pass must never abort the scan
+            self._logger.warning("AI discovery pass failed: %s", exc)
 
     async def _stop_ai_agent(self) -> None:
         """Drain any queued triage batch and release the agent's HTTP session.
@@ -642,7 +740,7 @@ class WebSecurityScanner:
             return
         try:
             await close()
-        except Exception as exc:  # noqa: BLE001 - teardown must never fail a scan
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - teardown must never fail a scan
             self._logger.debug("Error closing the AI triage client: %s", exc)
 
     async def _emit_session_event(self, message: str) -> None:
@@ -665,7 +763,7 @@ class WebSecurityScanner:
 
         try:
             sm.apply_static(self.core, target_url)
-        except Exception as exc:  # noqa: BLE001 - never abort on a bad jar file
+        except Exception as exc:  # noqa: BLE001  # NOSONAR - never abort on a bad jar file
             self._logger.error("Failed to apply static session material: %s", exc)
             await self.event_emitter.emit(
                 ScanEventType.ERROR, error=f"session setup failed: {exc}")
@@ -980,7 +1078,7 @@ class WebSecurityScanner:
                 raise
             except SSRFRedirectError:
                 self._logger.warning("warm-up skipped for %s (SSRF guard)", url)
-            except Exception as exc:  # noqa: BLE001 - warm-up is best-effort
+            except Exception as exc:  # noqa: BLE001  # NOSONAR - warm-up is best-effort
                 self._logger.debug("warm-up failed for %s: %s", url, exc)
         await self.event_emitter.emit(
             ScanEventType.LOG_MESSAGE,

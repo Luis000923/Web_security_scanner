@@ -68,6 +68,9 @@ def _slugify(value: str) -> str:
 # report_generator._VULN_KB's matching strategy so the two stay consistent).
 # ---------------------------------------------------------------------------
 
+_OWASP_INJECTION = "A03:2021 - Injection"
+_OWASP_BROKEN_ACCESS = "A01:2021 - Broken Access Control"
+
 _DEFAULT_TAXONOMY = {"cwe": "CWE-693", "owasp_category": "A04:2021 - Insecure Design"}
 
 _TAXONOMY: list[tuple[tuple[str, ...], dict[str, str]]] = [
@@ -76,25 +79,25 @@ _TAXONOMY: list[tuple[tuple[str, ...], dict[str, str]]] = [
     (("vulnerable server component", "cve"),
      {"cwe": "CWE-1104", "owasp_category": "A06:2021 - Vulnerable and Outdated Components"}),
     (("dom-based xss", "dom xss"),
-     {"cwe": "CWE-79", "owasp_category": "A03:2021 - Injection"}),
-    (("nosql",), {"cwe": "CWE-943", "owasp_category": "A03:2021 - Injection"}),
-    (("sql injection", "sqli"), {"cwe": "CWE-89", "owasp_category": "A03:2021 - Injection"}),
+     {"cwe": "CWE-79", "owasp_category": _OWASP_INJECTION}),
+    (("nosql",), {"cwe": "CWE-943", "owasp_category": _OWASP_INJECTION}),
+    (("sql injection", "sqli"), {"cwe": "CWE-89", "owasp_category": _OWASP_INJECTION}),
     (("cross-site scripting", "xss"),
-     {"cwe": "CWE-79", "owasp_category": "A03:2021 - Injection"}),
+     {"cwe": "CWE-79", "owasp_category": _OWASP_INJECTION}),
     (("server-side request forgery", "ssrf"),
      {"cwe": "CWE-918", "owasp_category": "A10:2021 - Server-Side Request Forgery"}),
-    (("command injection",), {"cwe": "CWE-78", "owasp_category": "A03:2021 - Injection"}),
+    (("command injection",), {"cwe": "CWE-78", "owasp_category": _OWASP_INJECTION}),
     (("path traversal", "lfi", "local file inclusion"),
-     {"cwe": "CWE-22", "owasp_category": "A01:2021 - Broken Access Control"}),
+     {"cwe": "CWE-22", "owasp_category": _OWASP_BROKEN_ACCESS}),
     (("xml external entity", "xxe"),
      {"cwe": "CWE-611", "owasp_category": "A05:2021 - Security Misconfiguration"}),
     (("template injection", "ssti"),
-     {"cwe": "CWE-1336", "owasp_category": "A03:2021 - Injection"}),
+     {"cwe": "CWE-1336", "owasp_category": _OWASP_INJECTION}),
     (("cross-site request forgery", "csrf"),
-     {"cwe": "CWE-352", "owasp_category": "A01:2021 - Broken Access Control"}),
+     {"cwe": "CWE-352", "owasp_category": _OWASP_BROKEN_ACCESS}),
     (("insecure direct object reference", "idor"),
-     {"cwe": "CWE-639", "owasp_category": "A01:2021 - Broken Access Control"}),
-    (("open redirect",), {"cwe": "CWE-601", "owasp_category": "A01:2021 - Broken Access Control"}),
+     {"cwe": "CWE-639", "owasp_category": _OWASP_BROKEN_ACCESS}),
+    (("open redirect",), {"cwe": "CWE-601", "owasp_category": _OWASP_BROKEN_ACCESS}),
 ]
 
 

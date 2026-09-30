@@ -22,7 +22,8 @@ web sobre objetivos HTTP/HTTPS. En una unica ejecucion:
   analitica, CDN/WAF) mediante firmas.
 - Ejecuta un conjunto de testers de vulnerabilidades contra los parametros
   descubiertos, cada uno con un nivel de confianza asociado.
-- Genera informes reproducibles en formato JSON y HTML.
+- Genera informes reproducibles en formato JSON (estructurado, machine-readable)
+  y PDF (ejecutivo/tecnico, con matriz de riesgo y desglose por hallazgo).
 
 El motor esta endurecido frente a objetivos hostiles: proteccion anti-SSRF en
 las redirecciones, limites de memoria en las respuestas, timeouts de socket
@@ -52,7 +53,7 @@ flowchart TD
 
     ORCH -- eventos --> BUS["ScanEventEmitter"]
     BUS --> CLIOUT["Salida CLI (progreso, hallazgos, errores)"]
-    BUS --> REP["Reporters (JSON / HTML)"]
+    BUS --> REP["Reporters (JSON / PDF)"]
 ```
 
 | Componente | Responsabilidad |
@@ -62,10 +63,10 @@ flowchart TD
 | `core/scanner_core_async.py` | Cliente HTTP asincrono: pool de conexiones, rate limiting, cache de respuestas, rotacion de User-Agent, guarda anti-SSRF, limites de tamano y timeouts. |
 | `modules/registry.py` | Descubrimiento y registro automatico de los testers. |
 | `modules/vulnerability_testers/` | Plugins derivados de `VulnerabilityTester`. Un archivo por familia de vulnerabilidad. |
-| `modules/web_mapper_async.py` | Rastreo del sitio, descubrimiento de subdominios y generacion del mapa HTML. |
+| `modules/web_mapper_async.py` | Rastreo del sitio y descubrimiento de subdominios. |
 | `modules/technology_detector.py` | Fingerprinting por firmas de servidor, CMS, frameworks y analitica. |
 | `events/event_emitter.py` | Bus de eventos que desacopla el motor de la salida. |
-| `reports.py` | Serializacion de resultados a JSON y HTML, con sanitizacion de secretos. |
+| `report_generator.py` | Motor dual de informes JSON (estructurado) y PDF (ejecutivo/tecnico, ReportLab), con matriz de riesgo, estado de confirmacion por hallazgo y sanitizacion de secretos. |
 | `utils/i18n.py` | Textos en ingles (`en`) y espanol (`es`). |
 
 ---
@@ -155,8 +156,10 @@ Cada hallazgo lleva un nivel de confianza: `LOW`, `MEDIUM`, `HIGH` o
 Antes de escribir cualquier informe, los campos que pueden contener fragmentos
 de peticion o respuesta se procesan con `mask_secrets`, que redacta tokens
 `Authorization: Bearer`, credenciales `Basic`, cabeceras `Cookie` /
-`Set-Cookie` y JWT en texto plano. Todos los valores del informe HTML se
-escapan con `html.escape`.
+`Set-Cookie` y JWT en texto plano (el payload/probe exacto de cada hallazgo
+nunca se redacta, para que siga siendo reproducible). Todo el texto dinamico
+embebido en el PDF se escapa antes de insertarse en el marcado de ReportLab,
+igual que antes se escapaba con `html.escape` en el informe HTML.
 
 ---
 
@@ -213,7 +216,8 @@ python -m web_security_scanner.cli scan <URL> [opciones]
 | `--proxy` | Canaliza el trafico por un proxy `http://` o `socks5://`. | sin proxy |
 | `--ua-file` | Archivo con un `User-Agent` por linea; rotacion por peticion. | pool interno |
 | `-o, --output` | Directorio de salida para los informes. | `reports` |
-| `-f, --format` | Formatos de informe, separados por comas: `json`, `html`. | `json,html` |
+| `--output-json` / `--no-output-json` | Genera (u omite) el informe JSON estructurado. | activado |
+| `--output-pdf` / `--no-output-pdf` | Genera (u omite) el informe PDF ejecutivo/tecnico. | activado |
 | `--lang` | Idioma de la salida: `en` o `es`. | `en` |
 | `-v, --verbose` | Registro detallado. | desactivado |
 
@@ -234,10 +238,10 @@ Escaneo basico con el perfil por defecto:
 uv run webscanner scan https://example.com
 ```
 
-Escaneo intensivo con concurrencia elevada y ambos informes:
+Escaneo intensivo con concurrencia elevada (JSON + PDF se generan por defecto):
 
 ```bash
-uv run webscanner scan https://example.com -p intense --threads 50 -f json,html
+uv run webscanner scan https://example.com -p intense --threads 50
 ```
 
 Escaneo conservador con limitacion de peticiones y tope de duracion:
@@ -267,11 +271,12 @@ Los informes se escriben en el directorio indicado por `-o` con nombre
 
 | Formato | Contenido |
 |---------|-----------|
-| `json` | Estructura completa: objetivo, perfil, lista de vulnerabilidades (ordenadas por severidad y confianza), tecnologias detectadas y estadisticas. Apto para integracion y post-proceso. |
-| `html` | Informe legible con las mismas secciones, con todos los campos escapados y los secretos redactados. |
+| `json` | Estructura completa machine-readable: metadatos del engagement, resumen ejecutivo con matriz de riesgo (Critical/High/Medium/Low/Informational), arbol de superficie priorizada, archivos sensibles, huella de servidor, y la lista de hallazgos (payload/probe exacto, mecanismo tecnico, impacto de negocio, remediacion y estado de confirmacion: `CONFIRMED` / `BANNER_ONLY` / `UNCONFIRMED`). Apto para integracion y post-proceso. |
+| `pdf` | Informe ejecutivo/tecnico tipografiado (ReportLab): portada, resumen ejecutivo + matriz de riesgo, y un desglose detallado por hallazgo con los mismos campos que el JSON. Todo el texto dinamico se escapa antes de insertarse en el documento. |
 
-Cuando el rastreo esta activo se genera ademas un mapa web en HTML como archivo
-independiente, cuya ruta se indica al final de la ejecucion.
+Los datos de reconocimiento (superficie priorizada, archivos sensibles,
+huella de servidor) viajan dentro de ambos informes en vez de generarse como
+un mapa HTML independiente.
 
 ---
 
@@ -298,13 +303,14 @@ verdadero positivo y la ausencia de los falsos positivos historicos.
 web_security_scanner/
     cli.py                     Punto de entrada de la CLI
     web_security_scanner_async.py   Orquestador
+    report_generator.py        Motor dual de informes JSON / PDF
     banner.py                  Banner de arranque
     core/                      Cliente HTTP asincrono y configuracion
     events/                    Bus de eventos
     modules/
         registry.py            Registro de testers
         technology_detector.py Fingerprinting de tecnologias
-        web_mapper_async.py    Rastreador y mapa web
+        web_mapper_async.py    Rastreador del sitio
         vulnerability_testers/ Plugins de deteccion
     utils/                     i18n y validacion
     languages.yaml             Cadenas traducidas

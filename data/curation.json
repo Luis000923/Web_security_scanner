@@ -1,0 +1,110 @@
+{
+  "input_rows": 2222001,
+  "cleaned_rows": 2222001,
+  "clean_stats": {
+    "kept": 2222001
+  },
+  "oracle": {
+    "benchmark_entries": 2740,
+    "ground_truth_sinks": 0,
+    "weak_labels": false
+  },
+  "params": {
+    "format": "alpaca",
+    "split": 0.9,
+    "seed": 1337,
+    "balance": true,
+    "balance_ratio": 1.0,
+    "dedup": true,
+    "drop_noise": true,
+    "max_body_bytes": 2048,
+    "synthetic_multiplier": 40,
+    "standalone_seeds": true,
+    "standalone_all_seeds": false
+  },
+  "tasks": [
+    {
+      "task": "triage",
+      "samples_built": 27,
+      "synthetic": {
+        "seeds": 44,
+        "telemetry_seed_classes": {
+          "sqli": 17,
+          "xss": 3
+        },
+        "seed_classes": {
+          "sqli": 17,
+          "xss": 3,
+          "pathtraver": 12,
+          "cmdi": 12
+        },
+        "standalone_seeds": 24,
+        "multiplier": 40,
+        "built": 1760,
+        "class_counts": {
+          "TRUE_POSITIVE": 587,
+          "FALSE_POSITIVE": 587,
+          "UNCERTAIN": 586
+        },
+        "suspected_class_counts": {
+          "sqli": 505,
+          "cmdi": 535,
+          "xss": 322,
+          "pathtraver": 398
+        },
+        "scenario_counts": {
+          "sql_time_oracle": 113,
+          "waf_block_page": 100,
+          "cmd_injection_echoed_arg": 110,
+          "xss_output_encoded": 86,
+          "weak_boolean_differential": 119,
+          "path_traversal_file_read": 91,
+          "generic_500_page": 107,
+          "xss_verbatim_reflection": 104,
+          "cmd_injection_output": 96,
+          "reflection_irrelevant_to_class": 116,
+          "cmd_injection_filtered": 121,
+          "xss_partial_filter": 123,
+          "sql_error_disclosure": 105,
+          "path_traversal_blocked": 92,
+          "path_traversal_within_root": 118,
+          "blank_response": 81,
+          "cmd_injection_time_oracle": 78
+        }
+      },
+      "samples_with_synthetic": 1787,
+      "deduped_removed": 0,
+      "after_dedup": 1787,
+      "class_counts_before_balance": {
+        "FALSE_POSITIVE": 605,
+        "UNCERTAIN": 593,
+        "TRUE_POSITIVE": 589
+      },
+      "class_counts": {
+        "UNCERTAIN": 589,
+        "FALSE_POSITIVE": 589,
+        "TRUE_POSITIVE": 589
+      },
+      "split": {
+        "train": 1590,
+        "val": 177
+      },
+      "out": "data/sft.triage.jsonl"
+    },
+    {
+      "task": "payload",
+      "samples_built": 1555881,
+      "deduped_removed": 1554706,
+      "after_dedup": 1175,
+      "class_counts": {
+        "xss": 586,
+        "sqli": 589
+      },
+      "split": {
+        "train": 1057,
+        "val": 118
+      },
+      "out": "data/sft.payload.jsonl"
+    }
+  ]
+}

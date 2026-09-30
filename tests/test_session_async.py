@@ -59,6 +59,21 @@ def test_looks_logged_out():
     assert not sm.looks_logged_out({"status_code": 200, "url": "http://h/x", "text": "ok"})
 
 
+def test_looks_logged_out_direct_login_page_visit_not_flagged():
+    """A crawler discovering and visiting the login page itself (a normal,
+    legitimate link almost every app has) must not be mistaken for a lost
+    session -- only a *redirect back* to it (extra query string) counts."""
+    sm = SessionManager(SessionConfig(
+        login_url="http://h/accounts/login/", username="u", password="p"))
+    assert not sm.looks_logged_out(
+        {"status_code": 200, "url": "http://h/accounts/login/", "text": "login form"})
+    assert not sm.looks_logged_out(
+        {"status_code": 200, "url": "http://h/accounts/login", "text": "login form"})
+    # Still flagged: redirected *back* to login with a continuation param.
+    assert sm.looks_logged_out(
+        {"status_code": 200, "url": "http://h/accounts/login/?next=/x", "text": ""})
+
+
 def test_session_config_identities_rejects_primary_role_key():
     with pytest.raises(ValueError, match="reserved primary role"):
         SessionConfig(identities={PRIMARY_ROLE: {"login_url": "http://h/login"}})
@@ -212,6 +227,17 @@ async def auth_app():
         return web.Response(
             text=f"email {owner}@corp.com username {owner} profile data {padding}")
 
+    async def get_login(request):
+        # Gruyere-style GET-based login: credentials ride in the query
+        # string, not a request body.
+        key = (request.query.get("user"), request.query.get("pw"))
+        cookie = creds.get(key)
+        if cookie:
+            resp = web.Response(text="welcome")
+            resp.set_cookie("JSESSIONID", cookie)
+            return resp
+        return web.Response(status=403, text="bad creds")
+
     async def jwt_login(request):
         return web.json_response({"data": {"access_token": "JWT-123"}})
 
@@ -227,6 +253,7 @@ async def auth_app():
 
     app = web.Application()
     app.router.add_post("/login", login)
+    app.router.add_get("/get-login", get_login)
     app.router.add_get("/protected", protected)
     app.router.add_post("/jwt-login", jwt_login)
     app.router.add_get("/needs-bearer", needs_bearer)
@@ -265,6 +292,62 @@ async def test_form_login_persists_session_cookie(auth_app):
         assert post["status_code"] == 200 and "secret area" in post["text"]
     finally:
         await core.close()
+
+
+async def test_get_login_sends_credentials_as_query_params(auth_app):
+    """A GET-method login form (e.g. Gruyere's ``/login?uid=...&pw=...``) must
+    carry credentials in the query string, not a request body -- most
+    servers never read a GET body, so the old ``data=`` behavior would look
+    like a successful login (200) while never actually authenticating."""
+    base, _ = auth_app
+    core = _core()
+    await core.start()
+    try:
+        pre = await core.request("GET", f"{base}/protected", use_cache=False)
+        assert pre["status_code"] == 401
+
+        sm = SessionManager(SessionConfig(
+            login_url=f"{base}/get-login", username="admin", password="hunter2",
+            username_field="user", password_field="pw", method="GET"))
+        assert await sm.authenticate(core, force=True) is True
+
+        post = await core.request("GET", f"{base}/protected", use_cache=False)
+        assert post["status_code"] == 200 and "secret area" in post["text"]
+    finally:
+        await core.close()
+
+
+async def test_get_login_wrong_credentials_fails():
+    """Guards against the bug this fixes silently masking a failed login:
+    wrong creds via GET must be rejected, not accepted as data= was."""
+    async def get_login(request):
+        key = (request.query.get("user"), request.query.get("pw"))
+        if key == ("admin", "hunter2"):
+            resp = web.Response(text="welcome")
+            resp.set_cookie("JSESSIONID", "SESSION-OK")
+            return resp
+        return web.Response(status=403, text="bad creds")
+
+    app = web.Application()
+    app.router.add_get("/get-login", get_login)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    port = runner.addresses[0][1]
+    try:
+        base = f"http://127.0.0.1:{port}"
+        core = _core()
+        await core.start()
+        try:
+            sm = SessionManager(SessionConfig(
+                login_url=f"{base}/get-login", username="admin", password="WRONG",
+                username_field="user", password_field="pw", method="GET"))
+            assert await sm.authenticate(core, force=True) is False
+        finally:
+            await core.close()
+    finally:
+        await runner.cleanup()
 
 
 async def test_jwt_token_extracted_and_attached(auth_app):

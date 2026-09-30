@@ -66,7 +66,7 @@ class TechnologyDetector:
         self._detect_from_scripts(html_content)
         self._detect_from_meta_tags(html_content)
         self._detect_from_cookies(headers)
-        self._detect_cms(html_content, headers)
+        self._detect_cms(html_content)
         self._detect_js_frameworks(html_content)
         self._detect_analytics(html_content)
         self._detect_security_headers(headers)
@@ -74,7 +74,7 @@ class TechnologyDetector:
 
         # Convert sets to sorted lists
         result = {
-            category: sorted(list(techs))
+            category: sorted(techs)
             for category, techs in self.detected.items()
             if techs
         }
@@ -220,7 +220,7 @@ class TechnologyDetector:
         if 'cfid' in set_cookie or 'cftoken' in set_cookie:
             self.detected['languages'].add('ColdFusion')
 
-    def _detect_cms(self, html_content: str, headers: dict):
+    def _detect_cms(self, html_content: str):
         """CMS detection over body content. cms_signatures is {pattern: name}."""
         for pattern, name in self.cms_signatures.items():
             if self._matches(pattern, html_content):

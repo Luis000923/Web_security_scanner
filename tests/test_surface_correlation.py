@@ -283,7 +283,7 @@ def test_prioritized_target_survives_correlation_failure(monkeypatch):
     engine = _RE.__new__(_RE)
     engine._log = __import__("logging").getLogger("test")
     result = engine._correlate_surface(
-        BASE, ["http://target.test/a", "http://target.test/b"], {}, set()
+        ["http://target.test/a", "http://target.test/b"], {}, set()
     )
     assert all(isinstance(r, PrioritizedTarget) for r in result)
     assert all(r.priority == "INFO" for r in result)

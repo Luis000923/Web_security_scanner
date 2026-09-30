@@ -27,6 +27,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from xml.sax.saxutils import escape as _xml_escape
 
 from reportlab.lib import colors
@@ -43,6 +44,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from .utils.i18n import i18n
 from .utils.validation import mask_secrets
 
 SCANNER_NAME = "Web Security Scanner"
@@ -112,6 +114,46 @@ def _sorted_vulns(vulns: list[dict[str, Any]]) -> list[dict[str, Any]]:
             CONFIDENCE_ORDER.get(_confidence_of(v).lower(), 4),
         ),
     )
+
+
+def _dedup_key(v: dict[str, Any]) -> tuple:
+    """Fingerprint for deduplication.
+
+    Site-wide checks (missing headers, info disclosure) key on (type, payload)
+    so the same missing header reported across 16 crawled URLs collapses to 1.
+    Endpoint-specific checks key on (type, url_path, parameter, payload).
+    """
+    vtype = v.get("type", "")
+    payload = v.get("payload", "")
+    _site_wide = {
+        i18n.get("vulnerabilities.missing_header"),
+        i18n.get("vulnerabilities.info_disclosure"),
+    }
+    if vtype in _site_wide:
+        return (vtype, payload)
+    try:
+        url_path = urlparse(v.get("url", "")).path
+    except Exception:
+        url_path = v.get("url", "")
+    parameter = v.get("parameter", "")
+    return (vtype, url_path, parameter, payload)
+
+
+def _deduplicate_findings(vulns: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Remove duplicate findings before enrichment and sorting.
+
+    Preserves the first (highest-severity-sorted) occurrence of each unique
+    finding fingerprint; subsequent copies from re-testing the same issue
+    across different crawled URLs are discarded.
+    """
+    seen: set[tuple] = set()
+    result: list[dict[str, Any]] = []
+    for v in vulns:
+        key = _dedup_key(v)
+        if key not in seen:
+            seen.add(key)
+            result.append(v)
+    return result
 
 
 def _confirmation_status(v: dict[str, Any]) -> str:
@@ -644,7 +686,7 @@ def build_structured_report(scan_data: dict[str, Any]) -> dict[str, Any]:
     """Build the full machine-readable engagement report from ``scan_data``
     (the dict returned by :meth:`WebSecurityScanner.run_scan`).
     """
-    vulns = [_enrich_finding(v) for v in _sorted_vulns(scan_data.get("vulnerabilities", []))]
+    vulns = [_enrich_finding(v) for v in _sorted_vulns(_deduplicate_findings(scan_data.get("vulnerabilities", [])))]
     recon = scan_data.get("recon") or {}
     risk_matrix = _risk_matrix(vulns)
 

@@ -65,7 +65,7 @@ def _walk_dotted(obj: Any, path: str) -> Any:
     for seg in path.split("."):
         if isinstance(cur, dict):
             cur = cur.get(seg)
-        elif isinstance(cur, list) and (seg.isdigit() or (seg[:1] == "-" and seg[1:].isdigit())):
+        elif isinstance(cur, list) and (seg.isdigit() or (seg.startswith("-") and seg[1:].isdigit())):
             idx = int(seg)
             cur = cur[idx] if -len(cur) <= idx < len(cur) else None
         else:
@@ -262,7 +262,7 @@ class SessionManager:
                 dom = c.get("domain") or ""
                 by_domain.setdefault(dom, {})[str(c["name"])] = str(c.get("value", ""))
             for dom, cookies in by_domain.items():
-                scope = URL(f"http://{dom.lstrip('.')}/") if dom else response_url
+                scope = URL(f"http://{dom.lstrip('.')}/") if dom else response_url  # NOSONAR – cookie scope URL; scheme is irrelevant, only domain matters
                 jar.update_cookies(cookies, scope)
             return
         if isinstance(data, dict):  # {name: value}
@@ -276,7 +276,7 @@ class SessionManager:
         for c in cj:
             by_domain2.setdefault(c.domain, {})[c.name] = c.value or ""
         for dom, cookies in by_domain2.items():
-            scope = URL(f"http://{dom.lstrip('.')}/") if dom else response_url
+            scope = URL(f"http://{dom.lstrip('.')}/") if dom else response_url  # NOSONAR – cookie scope URL; scheme is irrelevant, only domain matters
             jar.update_cookies(cookies, scope)
         if not by_domain2:
             _LOG.warning("cookie jar file %s yielded no cookies", path)
@@ -289,6 +289,13 @@ class SessionManager:
             body[self.cfg.username_field] = self.cfg.username
         if self.cfg.password is not None:
             body[self.cfg.password_field] = self.cfg.password
+        if self.cfg.method == "GET":
+            # A GET login form (e.g. Gruyere-style `/login?uid=...&pw=...`)
+            # has no body -- the credentials ride in the query string instead.
+            # ``data=`` on a GET request either gets silently dropped or sent
+            # as a body most servers never read, so the login would appear to
+            # "succeed" (200) while never actually authenticating.
+            return {"params": body}
         return {"json": body} if self.cfg.submit_type == "json" else {"data": body}
 
     @staticmethod
@@ -339,7 +346,7 @@ class SessionManager:
                     _reauth_retry=True,  # never recurse the re-auth hook on the login call
                     **kwargs,
                 )
-            except Exception as exc:  # noqa: BLE001 - login failure must not crash the scan
+            except Exception as exc:  # noqa: BLE001  # NOSONAR - login failure must not crash the scan
                 await self._emit(f"Authentication request failed: {exc}")
                 self._authenticated = False
                 return False
@@ -407,7 +414,14 @@ class SessionManager:
             return True
         final_url = str(result.get("url", "") or "")
         if self.cfg.reauth_url_contains and self.cfg.reauth_url_contains in final_url:
-            return True
+            # Exception: the login page itself is a normal, legitimate crawl
+            # target (almost every app links to it) -- a *direct* visit to
+            # exactly the login URL is not evidence of a lost session, only
+            # a *redirect back* to it (query string added, e.g. "?next=/x")
+            # is. Without this, the crawler discovering its own login link
+            # triggers a spurious, request-wasting reauth on every visit.
+            if final_url.rstrip("/") != (self.cfg.login_url or "").rstrip("/"):
+                return True
         text = result.get("text", "") or ""
         return any(marker and marker in text for marker in self.cfg.logged_out_markers)
 
@@ -523,8 +537,8 @@ class IdentityPool:
         manager = SessionManager(cfg, on_event=self._on_event)
         try:
             manager.apply_static(core, target_url)
-        except Exception as exc:  # noqa: BLE001 - a bad jar file must not abort the scan
-            _LOG.error("identity %r: failed to apply static session material: %s", role, exc)
+        except Exception:  # noqa: BLE001  # NOSONAR - a bad jar file must not abort the scan
+            _LOG.exception("identity %r: failed to apply static session material", role)
         if cfg.does_form_login:
             await manager.authenticate(core, force=True)
         core.attach_session_manager(manager)
@@ -560,5 +574,5 @@ class IdentityPool:
         for ctx in self._secondary.values():
             try:
                 await ctx.close()
-            except Exception as exc:  # noqa: BLE001 - best-effort teardown
+            except Exception as exc:  # noqa: BLE001  # NOSONAR - best-effort teardown
                 _LOG.debug("identity %r: error closing session: %s", ctx.role, exc)

@@ -1,3 +1,5 @@
+_NODEJS = 'Node.js'
+
 TECNOLOGIAS = {
             # Servidores web
             'servers': {
@@ -6,7 +8,7 @@ TECNOLOGIAS = {
                 'IIS': ['Microsoft-IIS', 'IIS'],
                 'LiteSpeed': ['LiteSpeed'],
                 'Tomcat': ['Apache-Coyote', 'Tomcat'],
-                'Node.js': ['Node.js', 'Express', 'nodejsExpress'],
+                _NODEJS: [_NODEJS, 'Express', 'nodejsExpress'],
                 'Cloudflare': ['cloudflare', 'cloudflare-nginx'],
                 'Caddy': ['Caddy'],
                 'OpenResty': ['OpenResty'],
@@ -33,7 +35,7 @@ TECNOLOGIAS = {
                 'Ruby': ['Ruby', 'Ruby on Rails', 'Sinatra', 'Passenger', 'Hanami'],
                 'Perl': ['Perl', 'CGI-Perl', 'Dancer', 'Catalyst'],
                 'Go': ['Go', 'Golang', 'Gin', 'Beego', 'Echo'],
-                'Node.js': ['Node.js', 'Express', 'Koa', 'Sails', 'NestJS'],
+                _NODEJS: [_NODEJS, 'Express', 'Koa', 'Sails', 'NestJS'],
                 'Scala': ['Scala', 'Play Framework', 'Akka'],
                 'Elixir': ['Elixir', 'Phoenix'],
                 'Clojure': ['Clojure', 'Ring', 'Compojure']

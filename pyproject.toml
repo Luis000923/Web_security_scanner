@@ -19,6 +19,7 @@ dependencies = [
     "pyyaml>=6.0",
     "dnspython>=2.3.0",
     "reportlab>=4.0",
+    "langgraph>=0.6.11",
 ]
 
 [project.optional-dependencies]
@@ -39,7 +40,21 @@ ai = [
 ai-local = [
     "torch>=2.6.0",
     "transformers>=4.48.0",
+    "accelerate>=0.34.0",
     "outlines>=0.1.0",
+]
+# QLoRA fine-tuning of the local triage/synthesis agent (ai_module/train_qlora.py),
+# heavy + GPU-only, not needed to run the scanner or serve the agent:
+#   uv pip install -e ".[ai,ai-local,training]"
+# TRL >=0.12 moved max_seq_length/packing/dataset_* to SFTConfig and renamed
+# tokenizer= to processing_class= (train_qlora.py already targets that API,
+# see _build_sft_config / _build_trainer); pin below <0.24 until that surface
+# is re-verified against a newer release.
+training = [
+    "trl>=0.13.0,<0.24",
+    "peft>=0.11.0",
+    "bitsandbytes>=0.45.0",
+    "datasets>=2.19.0",
 ]
 dev = [
     "pytest",
@@ -55,7 +70,7 @@ dev = [
     "bandit-sarif-formatter",
     "jsonschema>=4.20",
     # ai_module.structured_inference imports pydantic at module scope, so the
-    # AI triage test suites cannot even be collected without it.
+    # AI triage / curation test suites cannot even be collected without it.
     "pydantic>=2.0",
 ]
 
@@ -70,6 +85,8 @@ dev = [
     "bandit",
     "bandit-sarif-formatter",
     "jsonschema>=4.20",
+    # ai_module.structured_inference imports pydantic at module scope, so the
+    # AI triage / curation test suites cannot even be collected without it.
     "pydantic>=2.0",
 ]
 
@@ -85,6 +102,10 @@ include = ["web_security_scanner*", "ai_module*"]
 "ai_module.prompts" = ["*.md", "*.txt"]
 
 [tool.pytest.ini_options]
+# `auto` lets plain `async def test_*` run without a per-test
+# `@pytest.mark.asyncio`; pinning the fixture loop scope silences the
+# pytest-asyncio >=0.21 "unset default loop scope" warning and keeps async
+# fixtures on the same loop as the test that uses them.
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
@@ -101,10 +122,14 @@ ignore = ["E501", "B008"]
 
 [tool.mypy]
 python_version = "3.10"
+# The AI subsystem ships in the wheel and is wired into the scan pipeline
+# (--enable-ai-triaging), so it is type-checked alongside the scanner.
 files = ["web_security_scanner", "ai_module"]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = false
 warn_redundant_casts = true
 no_implicit_optional = true
+# Also type-check the bodies of un-annotated functions (catches indexing /
+# attribute mistakes the default "skip untyped defs" would let through).
 check_untyped_defs = true
