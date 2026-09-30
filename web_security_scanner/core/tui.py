@@ -35,9 +35,11 @@ imports it yet -- it is an opt-in entrypoint. Wire it up with:
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 import shutil
 import signal
+import tempfile
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -332,17 +334,66 @@ CATEGORIES: dict[str, tuple[str, tuple[str, ...]]] = {
 }
 
 
+#: Materialized ffuf wordlist path, built once per process and reused; ``""``
+#: is the cached "materialization already failed" sentinel so a target that
+#: can't build it doesn't retry the disk I/O on every category run.
+_ffuf_wordlist_cache: str | None = None
+
+
+def _ffuf_wordlist_path() -> str | None:
+    """Return a plain-text, one-entry-per-line wordlist for ffuf's ``-w``.
+
+    ffuf reads a flat text file; the bundled wordlist ships as the JSON array
+    in ``wordlists/directories.json`` (see ``wordlists/README.md``), so it is
+    materialized to a temp file the first time this runs. Returns ``None``
+    when the bundled wordlist can't be loaded, which the caller must read as
+    "skip ffuf" -- there is no other default to fall back to here, and
+    guessing a system wordlist path (``/usr/share/wordlists/...``) would
+    silently vary this module's behaviour by distro.
+    """
+    global _ffuf_wordlist_cache
+    if _ffuf_wordlist_cache:
+        return _ffuf_wordlist_cache
+    if _ffuf_wordlist_cache == "":
+        return None
+    try:
+        from ..wordlists import load_wordlist
+        labels = load_wordlist("directories")
+    except Exception:
+        labels = []
+    if not labels:
+        _ffuf_wordlist_cache = ""
+        return None
+    fd, path = tempfile.mkstemp(prefix="wss_ffuf_wordlist_", suffix=".txt")
+    with os.fdopen(fd, "w") as fh:
+        fh.write("\n".join(labels))
+    _ffuf_wordlist_cache = path
+    return path
+
+
 def _adapter_kwargs(target: SanitizedTarget, tool_name: str, profile: ScanProfile) -> dict[str, Any]:
     """Map a profile's abstract knobs onto one adapter's concrete build_command kwargs.
 
     Kept centralized and defensive: an adapter this doesn't have a case for
     still runs with just the target, since every ``build_command`` accepts
     the target positionally and everything else is keyword-optional.
+
+    Raises :class:`TargetValidationError` for a tool this profile/target
+    combination cannot run at all (currently: ffuf with no wordlist
+    available) -- the caller already has a skip path for that exception from
+    the target-kind checks, so a missing *argument* reuses it rather than
+    needing a second one.
     """
     if tool_name in ("katana", "gospider"):
         return {"depth": profile.crawl_depth}
     if tool_name == "ffuf":
-        return {}  # requires a wordlist path the operator must supply separately
+        wordlist = _ffuf_wordlist_path()
+        if wordlist is None:
+            raise TargetValidationError(
+                "ffuf requires a wordlist and the bundled one could not be "
+                "loaded; skipping (pass one via a future --ffuf-wordlist flag)"
+            )
+        return {"wordlist": wordlist}
     if tool_name == "nuclei":
         severity = {"low": "info,low", "medium": "medium,high", "high": "high,critical"}[
             profile.intensity
@@ -375,9 +426,9 @@ async def run_category(
     async def _run_one(tool_name: str) -> tuple[str, ToolResult]:
         adapter_cls = ADAPTER_REGISTRY[tool_name]
         adapter: AsyncToolAdapter = adapter_cls()
-        kwargs = _adapter_kwargs(target, tool_name, profile)
         async with semaphore:
             try:
+                kwargs = _adapter_kwargs(target, tool_name, profile)
                 if category_key == "recon":
                     if target.kind != "host":
                         raise TargetValidationError("recon adapters require a bare host, not a URL")
@@ -387,7 +438,14 @@ async def run_category(
                         raise TargetValidationError(
                             f"{tool_name} requires an http(s):// URL target"
                         )
-                    result = await adapter.run(target.value, **kwargs)
+                    url = target.value
+                    if tool_name == "ffuf" and "FUZZ" not in url:
+                        # ffuf fuzzes literal text, not a named parameter -- it
+                        # needs the placeholder spelled out in the URL. Content
+                        # discovery on a target with no placeholder of its own
+                        # means "probe paths under this one", so append it.
+                        url = url.rstrip("/") + "/FUZZ"
+                    result = await adapter.run(url, **kwargs)
             except TargetValidationError as exc:
                 result = ToolResult(
                     tool=tool_name,
