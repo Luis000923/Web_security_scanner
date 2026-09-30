@@ -24,7 +24,7 @@ from web_security_scanner.core.scanner_core_async import (
 class FakeResponse:
     """Stands in for aiohttp's request context manager + response."""
 
-    def __init__(self, status=200, headers=None, text=""):
+    def __init__(self, status=200, headers=None, text="", delay=0.0):
         self.status = status
         self.headers = headers or {}
         self._text = text
@@ -32,6 +32,13 @@ class FakeResponse:
         self.content = _FakeContent(text.encode() if isinstance(text, str) else text)
         self.closed = False
         self.released = False
+        # Simulated per-hop latency. Real aiohttp enforces ClientTimeout
+        # against wall-clock time spent inside `session.request(...)`, which
+        # this fake stack doesn't otherwise reproduce; sleeping here (awaited
+        # under `async with`, i.e. genuine event-loop time) is what lets a
+        # test exercise the *real* `asyncio.wait_for` deadline wrapped around
+        # the redirect loop without needing a real socket.
+        self._delay = delay
 
     async def text(self, errors="ignore"):
         return self._text
@@ -46,6 +53,8 @@ class FakeResponse:
         self.released = True
 
     async def __aenter__(self):
+        if self._delay:
+            await asyncio.sleep(self._delay)
         return self
 
     async def __aexit__(self, *exc):
@@ -133,6 +142,54 @@ async def test_private_redirect_allowed_when_opted_in():
     res = await core.request("GET", "http://target.example/")
     assert res["status_code"] == 200
     assert res["text"] == "internal ok"
+
+
+# --- overall deadline across the whole redirect chain -------------------
+#
+# `config.timeout` is documented as the budget for one *logical* request.
+# Because redirects are followed by hand (one session.request(..., allow_
+# redirects=False) call per hop, so the SSRF guard can vet each hop), a plain
+# `aiohttp.ClientTimeout(total=config.timeout)` only ever bounds a single hop
+# -- it's rebuilt identically for every iteration of the loop. These pin the
+# `asyncio.wait_for` wrapper in _request_following that makes the whole chain
+# respect the budget, not just each hop in isolation.
+
+async def test_redirect_chain_exceeding_total_timeout_is_aborted():
+    """3 hops at ~90ms each blow a 150ms total budget, even though no single
+    hop is anywhere near 150ms on its own."""
+    # Redirect targets are real public *IP literals* (not a hostname) so the
+    # per-hop SSRF re-check (_assert_public_url) never needs live DNS -- same
+    # trick test_redirect_to_public_host_is_followed uses above.
+    def handler(method, url, kwargs):
+        if url.endswith("/final"):
+            return FakeResponse(200, {}, "final page", delay=0.09)
+        if url.endswith("/hop2"):
+            return FakeResponse(
+                302, {"Location": "http://93.184.216.34/final"}, delay=0.09
+            )
+        return FakeResponse(302, {"Location": "http://93.184.216.34/hop2"}, delay=0.09)
+
+    core = make_core(handler, timeout=0.15, max_redirects=5)
+    res = await core.request("GET", "http://target.example/start")
+    # Same shape _request_with_resilience already produces for any hard
+    # transport failure -- a timed-out chain is just another one.
+    assert res["status_code"] == 0
+    assert "error" in res
+
+
+async def test_redirect_chain_within_total_timeout_still_succeeds():
+    """The same shape of chain, comfortably inside its budget, is unaffected."""
+    def handler(method, url, kwargs):
+        if url.endswith("/final"):
+            return FakeResponse(200, {}, "final page", delay=0.01)
+        return FakeResponse(
+            302, {"Location": "http://93.184.216.34/final"}, delay=0.01
+        )
+
+    core = make_core(handler, timeout=2.0, max_redirects=5)
+    res = await core.request("GET", "http://target.example/start")
+    assert res["status_code"] == 200
+    assert res["text"] == "final page"
 
 
 async def test_cross_host_redirect_drops_injected_headers_and_cookies():
@@ -670,3 +727,25 @@ async def test_request_following_without_session_raises_runtimeerror():
         await core._request_following(
             "GET", "http://target.example/", False, None, {}
         )
+
+
+# --- connector hardening ---------------------------------------------------
+
+def test_build_connector_enables_cleanup_of_half_closed_ssl_transports(monkeypatch):
+    """Some servers never complete a clean SSL shutdown; without
+    enable_cleanup_closed=True, asyncio leaks the transport instead of
+    freeing its socket -- slow FD exhaustion over a long HTTPS-heavy scan."""
+    import aiohttp as aiohttp_module
+
+    captured = {}
+
+    def fake_tcp_connector(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(aiohttp_module, "TCPConnector", fake_tcp_connector)
+
+    core = AsyncScannerCore(ScanConfig())
+    core._build_connector()
+
+    assert captured.get("enable_cleanup_closed") is True

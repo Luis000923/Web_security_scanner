@@ -29,7 +29,7 @@ async def test_ssti_detected_when_expression_is_evaluated():
 
     found = await collect_vulns(SSTITester, responder)
     assert found
-    assert any(v["confidence"] == "HIGH" and PRODUCT not in v["payload"] for v in found)
+    assert any(v["confidence"] == "CONFIRMED" and PRODUCT not in v["payload"] for v in found)
 
 
 async def test_ssti_not_flagged_when_expression_is_reflected_literally():
@@ -82,7 +82,7 @@ async def test_ldap_injection_detected_via_error_signature():
 
     found = await collect_vulns(LDAPInjectionTester, responder)
     assert found
-    assert any(v["confidence"] == "HIGH" for v in found)
+    assert any(v["confidence"] == "CONFIRMED" for v in found)
 
 
 async def test_ldap_injection_quiet_on_clean_target():

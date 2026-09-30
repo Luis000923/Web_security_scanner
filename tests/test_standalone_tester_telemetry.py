@@ -11,6 +11,7 @@ tests lock in the fix: each tester must record one telemetry row per probe,
 independent of whether that probe found anything.
 """
 import asyncio
+import urllib.parse
 
 from conftest import MockScanner
 
@@ -84,10 +85,29 @@ def test_command_injection_emits_telemetry_on_miss():
 
 
 def test_command_injection_emits_telemetry_on_hit():
+    # Ambient responder: every request (including the double-oracle's benign
+    # baseline) returns the same command-output signature, so the oracle
+    # correctly caps confidence at MEDIUM instead of trusting the single-shot
+    # signature at face value.
     rows = asyncio.run(_run_with_telemetry(
         CommandInjectionTester, lambda m, u, k: {"text": "uid=0(root) gid=0(root)"}))
     assert rows and rows[-1]["decision"] is True
-    assert rows[-1]["confidence_final"] == "HIGH"
+    assert rows[-1]["confidence_final"] == "MEDIUM"
+
+
+def test_command_injection_confirmed_when_baseline_is_clean():
+    # Only requests carrying an actual (non-benign) injection payload leak;
+    # the benign-baseline probe (the double oracle's causal control, using
+    # BENIGN_MARKER) and the original request value come back clean.
+    def responder(method, url, kwargs):
+        query = urllib.parse.urlsplit(url).query
+        value = urllib.parse.parse_qs(query).get("id", [""])[0]
+        if value not in ("1", "benign_baseline_123"):
+            return {"text": "uid=0(root) gid=0(root)"}
+        return {"text": "a perfectly normal page"}
+    rows = asyncio.run(_run_with_telemetry(CommandInjectionTester, responder))
+    hits = [r for r in rows if r["decision"] is True]
+    assert hits and hits[-1]["confidence_final"] == "CONFIRMED"
 
 
 def test_ssrf_emits_telemetry_on_miss():
@@ -99,7 +119,22 @@ def test_ssrf_emits_telemetry_on_miss():
 
 
 def test_ssrf_emits_telemetry_on_hit():
+    # Ambient responder: every request (including the double-oracle's benign
+    # baseline) leaks the same indicator, so confidence is correctly capped at
+    # MEDIUM rather than trusting the single-shot signature at face value.
     rows = asyncio.run(_run_with_telemetry(
         SSRFTester, lambda m, u, k: {"text": "ami-id leaked from metadata service"}))
     assert rows and rows[-1]["decision"] is True
-    assert rows[-1]["confidence_final"] == "CRITICAL"
+    assert rows[-1]["confidence_final"] == "MEDIUM"
+
+
+def test_ssrf_confirmed_when_baseline_is_clean():
+    def responder(method, url, kwargs):
+        query = urllib.parse.urlsplit(url).query
+        value = urllib.parse.parse_qs(query).get("id", [""])[0]
+        if value not in ("1", "benign_baseline_123"):
+            return {"text": "ami-id leaked from metadata service"}
+        return {"text": "a perfectly normal page"}
+    rows = asyncio.run(_run_with_telemetry(SSRFTester, responder))
+    hits = [r for r in rows if r["decision"] is True]
+    assert hits and hits[-1]["confidence_final"] == "CONFIRMED"

@@ -588,6 +588,13 @@ class AsyncScannerCore:
             # a long TTL here just avoids the redundant round trip through the
             # resolver without weakening the SSRF pinning at all.
             ttl_dns_cache=300,
+            # Some servers (and plenty of the deliberately-broken TLS targets a
+            # security scanner probes) never complete a clean SSL shutdown.
+            # Without this, asyncio leaks the underlying transport instead of
+            # freeing its socket, and a long fuzzing run against many HTTPS
+            # endpoints slowly exhausts file descriptors. aiohttp's own fix is
+            # to forcibly abort such half-closed transports ~2s after release.
+            enable_cleanup_closed=True,
         )
 
     async def start(self):
@@ -633,6 +640,17 @@ class AsyncScannerCore:
         Replaces the previous pattern of the orchestrator reassigning
         ``core._semaphore`` directly, which would silently downgrade an
         adaptive-concurrency scan back to a fixed ``asyncio.Semaphore``.
+
+        Note: this resizes the *gate*, not the underlying TCP connection pool.
+        aiohttp's ``TCPConnector.limit`` is fixed at construction (see
+        :meth:`_build_connector`/:meth:`start`) and has no public setter, so
+        raising the ceiling here after :meth:`start` has already run would let
+        more requests past the semaphore than the connector has room to open
+        sockets for — they'd just queue inside aiohttp instead. Every current
+        caller applies this before :meth:`start` (profile selection happens
+        pre-connect), so the connector is always built with the final value;
+        a future caller that wants to raise the ceiling *mid-scan* would need
+        to rebuild the connector (and session) here too.
         """
         value = max(1, int(value))
         self.config.max_concurrency = value
@@ -1074,7 +1092,39 @@ class AsyncScannerCore:
         self, method: str, url: str, follow_redirects: bool,
         caller_headers: dict[str, str] | None, kwargs: dict[str, Any],
     ) -> dict[str, Any]:
-        """Issue the request, manually following redirects with SSRF checks."""
+        """Issue the request, manually following redirects with SSRF checks.
+
+        Wraps the whole redirect chain in one hard wall-clock deadline
+        (``config.timeout``). Redirects are followed manually — one
+        ``session.request(..., allow_redirects=False)`` call per hop, so each
+        hop can be vetted by the SSRF guard before it's taken — which means
+        aiohttp's own ``ClientTimeout(total=...)`` only ever bounds a *single*
+        hop: it's rebuilt fresh (same value) for every iteration of the loop
+        below, so it never actually enforces a ceiling on the chain as a
+        whole. A target chaining ``max_redirects`` hops that each dawdle just
+        under that per-hop budget would otherwise take up to
+        ``max_redirects * config.timeout`` seconds — turning the very
+        `sock_connect`/`sock_read` tarpit defenses documented on
+        :class:`ScanConfig` into a redirect-shaped bypass of the timeout they
+        were meant to enforce. ``asyncio.wait_for`` here is the actual
+        enforcement point for "one logical request completes within
+        ``config.timeout``, full stop" — a plain `TimeoutError` out of it is
+        just another transport failure to the caller, which already turns any
+        `Exception` here into ``status_code=0`` (see
+        :meth:`_request_with_resilience`), so it composes for free with the
+        existing retry/backoff and telemetry paths.
+        """
+        return await asyncio.wait_for(
+            self._follow_redirects(method, url, follow_redirects, caller_headers, kwargs),
+            timeout=self.config.timeout,
+        )
+
+    async def _follow_redirects(
+        self, method: str, url: str, follow_redirects: bool,
+        caller_headers: dict[str, str] | None, kwargs: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Redirect-following loop; see :meth:`_request_following` for the
+        overall-deadline wrapper this always runs under."""
         timeout = aiohttp.ClientTimeout(
             total=self.config.timeout,
             sock_connect=self.config.sock_connect_timeout,
