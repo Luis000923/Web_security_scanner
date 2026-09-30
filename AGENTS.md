@@ -12,7 +12,8 @@
 
 **Web Security Scanner v5.2.0** — DAST asíncrono (asyncio + aiohttp) con sistema de
 plugins, bus de eventos y motor dual de informes JSON/PDF. 25 testers de
-vulnerabilidad, ~2.300 payloads curados, 938 tests.
+vulnerabilidad, ~2.300 payloads curados, 1294 tests (verificado 2026-09-30,
+`.venv/bin/python -m pytest -q`).
 
 **Investigación IEEE en curso desde hace ~2 meses.** Objetivo: publicar sobre
 eficiencia y exactitud del escáner (recall por request vs. coste).
@@ -77,9 +78,14 @@ Estás trabajando sobre `main`, que **no contiene** `paper/`, `tools/` ni
 escritura, necesitas cambiar de rama o crear un worktree desde
 `feat/ai-triage-mainline`.
 
-> ⚠️ **Bug conocido:** el `Makefile` en `main` (líneas 23-24) invoca
-> `tools/analyze_results.py`, que no existe en esta rama → `make evaluate`
-> falla. No es un fallo tuyo.
+> ✅ **Ya no es un bug silencioso (corregido, verificado 2026-09-30):** el
+> target `evaluate` del `Makefile` en `main` hace un `test -f
+> tools/analyze_results.py` antes de invocarlo. Si falta (como en `main`),
+> imprime un diagnóstico explicativo a stderr — qué rama tiene el pipeline y
+> el comando exacto de `git worktree add` para correrlo desde ahí — y sale
+> con código 1 en vez de un traceback crudo de Python. Sigue fallando en
+> `main` porque el pipeline vive en `feat/ai-triage-mainline` (esto es
+> esperado, no un defecto), pero ahora falla informativamente.
 
 ### 1.4 La instrumentación del experimento de evasión ya existe y está MUERTA
 
@@ -326,7 +332,7 @@ publicado del paper):
 ## 5. Reglas de la casa
 
 ```bash
-# Suite completa (938 tests, ~55s)
+# Suite completa (1294 tests, ~55s)
 .venv/bin/python -m pytest -q
 
 # Solo los tests de tu track
@@ -337,9 +343,13 @@ publicado del paper):
 .venv/bin/python -m mypy
 ```
 
-- **938 tests pasan** en `main` a 2026-09-29. Si rompes ese número, es tu bug.
-  Antes eran 909: un refactor en curso (§6) añadió 29. El número sube solo;
-  si *baja*, es tuyo.
+- **1294 tests pasan** en `main` a 2026-09-30. Si rompes ese número, es tu bug.
+  Historial: 909 → 938 → 1294 a medida que el refactor de §6 se consolidó
+  (5 módulos nuevos en `core/`) y se integraron los componentes de métricas
+  (`differential_stats`, `benchmark_ground_truth`, `ieee_metrics`,
+  `evasion_ab`, `vuln_classes`) con sus propios arneses de test
+  (`tests/differential/`, `tests/test_evasion_ab.py`,
+  `tests/unit/test_ieee_metrics.py`). El número sube solo; si *baja*, es tuyo.
 - CI corre en Python 3.10, 3.11 y 3.12. `pyproject.toml` declara `>= 3.9`, pero
   la imagen de desarrollo es 3.12. No introduzcas sintaxis 3.12+.
 - El CI también corre Bandit + Semgrep (`.semgrep.yml`, `bandit.yaml`). No
@@ -354,10 +364,10 @@ publicado del paper):
 
 | Trampa | Detalle |
 |---|---|
-| **Refactor en curso (2026-09-29)** | `base_tester_async.py` y 4 testers se están modificando **sin commitear**, con 5 módulos nuevos extraídos (`core/http_client.py`, `differential_analyzer.py`, `dom_xss_analyzer.py`, `injection_point.py`, `response_filter.py`) + `tests/test_refactor_verification.py`. El archivo bajó de 1.991 a 1.924 líneas y **todos los números de línea de §4 quedaron obsoletos al escribirlos**. No commitees, no reviertas y no edites ese trabajo. Corre `git status` antes de asumir que el árbol está limpio. |
+| **Refactor consolidado (commit `7cba5e5`, verificado 2026-09-30)** | Los 5 módulos extraídos (`core/http_client.py`, `differential_analyzer.py`, `dom_xss_analyzer.py`, `injection_point.py`, `response_filter.py`) ya están integrados y commiteados en `base_tester_async.py`. El archivo ahora tiene **2.043 líneas** — subió respecto a la cifra intermedia de 1.924 porque se sumó código de integración, no porque el refactor se revirtiera. `response_filter.py` tiene cambios locales sin commitear de otro track (déjalo, no es tuyo). **Los números de línea de §4 siguen obsoletos** — localiza siempre por nombre de función. |
 | **Números de línea son inestables** | Nunca edites `base_tester_async.py` por número de línea. Localiza por nombre de función (§4) y confirma con `grep -n` justo antes de editar. |
 | `testbed/THREATS_TO_VALIDITY.md` | **No existe.** Los docstrings de `base_tester_async.py` lo citan. Crear o quitar referencias. |
-| `Makefile` en `main` | `make evaluate` falla: apunta a `tools/` inexistente. |
+| `Makefile` en `main` | **Corregido** (verificado 2026-09-30): `make evaluate` ya no da traceback crudo. Ahora hace `test -f tools/analyze_results.py` y, si falta, imprime a stderr qué rama tiene el pipeline y el comando `git worktree add` para correrlo, saliendo con código 1. Sigue "fallando" en `main` por diseño — el pipeline vive en `feat/ai-triage-mainline`. |
 | `_datos.tex` vs `experiment_results.csv` | **Discrepancia de recall (70.6 % vs 64.4 %).** Ver §1.5 antes de citar cifras. |
 | `EvasionCounters` | Sin callers en producción. Muerto desde siempre. |
 | `param_semantics` | Sin flag, sin tests, 2/25 testers la activan. |
