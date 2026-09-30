@@ -1,12 +1,18 @@
 """Interactive console TUI: dependency check -> profile -> target -> scan.
 
-An Airgeddon-style menu layer over :mod:`web_security_scanner.core.external_tools`.
-It is deliberately a thin orchestrator: every actual scan action is one
-``AsyncToolAdapter.run()`` call from that package (see
-:data:`web_security_scanner.core.external_tools.ADAPTER_REGISTRY`); this
-module's job is menu navigation, dependency bootstrapping, target
+An Airgeddon-style menu layer over two otherwise-separate systems this
+package ships: the external-tool adapters in
+:mod:`web_security_scanner.core.external_tools` (nmap/ffuf/nuclei/sqlmap/...,
+see :data:`~.external_tools.ADAPTER_REGISTRY`) and the scanner's own async
+engine (25 vulnerability testers, crawler, optional AI triage / exploit
+engine) that :mod:`web_security_scanner.cli` drives from the command line.
+This module's job is menu navigation, dependency bootstrapping, target
 sanitization, profile composition, and rendering a live dashboard while
-adapters run concurrently.
+adapters run concurrently -- then, for URL targets, handing the same choices
+to :mod:`web_security_scanner.cli`'s own parser (see
+:meth:`TUI.configure_core_engine` / :meth:`TUI.run_core_engine`) so the core
+engine runs too, without the operator ever typing a ``webscanner scan``
+command by hand.
 
 Security posture (same as the adapter layer it drives)
 --------------------------------------------------------
@@ -37,6 +43,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import random
 import re
 import shutil
 import signal
@@ -590,6 +597,139 @@ class TUI:
                 self.console.print("[yellow]Could not parse selection; running all categories.[/]")
         return list(profile.categories)
 
+    # -- core engine (25 testers / AI triage / exploit engine) ---------------
+
+    def configure_core_engine(self) -> list[str] | None:
+        """Menu-driven equivalent of every ``webscanner scan`` flag this TUI
+        offers a knob for. Returns the argv this session should hand to
+        :func:`web_security_scanner.cli._build_parser` (everything after the
+        target URL), or ``None`` if the operator declines the core engine
+        entirely.
+
+        Deliberately not every one of the CLI's ~90 flags gets a menu entry --
+        auth/session, proxy, UA rotation and the fine payload-scheduling knobs
+        keep their CLI defaults here. What *is* exposed is exactly the surface
+        this module's own docstring and the earlier conversation about "the
+        most powerful command" walked through by hand: profile, AI triage,
+        the exploit engine and its containment gate, and destructive payloads.
+        Building an argv and handing it to the real parser (rather than
+        hand-assembling an ``argparse.Namespace``) means every default this
+        menu *doesn't* ask about still comes from the one place that owns
+        them, and stays correct as the CLI grows new flags.
+        """
+        if not Confirm.ask(
+            "Also run the core scanning engine (25 vulnerability testers, "
+            "crawler, optional AI triage / exploit engine)?", default=True,
+        ):
+            return None
+
+        from .. import cli as core_cli
+
+        argv: list[str] = []
+        profile = Prompt.ask(
+            "Core engine profile", choices=core_cli.PROFILES, default="balanced"
+        )
+        argv += ["--profile", profile]
+
+        if Confirm.ask(
+            "[red]Allow destructive payloads[/] (only for systems you own/are "
+            "explicitly authorized to test)?", default=False,
+        ):
+            argv.append("--allow-destructive")
+
+        if Confirm.ask("Run headless-browser recon (SPA/DOM-XSS)?", default=True):
+            argv.append("--browser")
+        if Confirm.ask("Probe for exposed sensitive files (.env, .git/HEAD, ...)?",
+                       default=True):
+            argv.append("--detect-sensitive-files")
+        if Confirm.ask("Fingerprint server/framework versions?", default=True):
+            argv.append("--fingerprint-server")
+
+        if Confirm.ask("Enable the LLM triage agent (ai_module)?", default=False):
+            argv.append("--enable-ai-triaging")
+            if Confirm.ask("  Also let it synthesize new payloads?", default=False):
+                argv.append("--ai-synthesize")
+            if Confirm.ask("  Also run post-scan AI-guided re-discovery?",
+                           default=False):
+                argv.append("--enable-ai-discovery")
+            backend = Prompt.ask(
+                "  AI backend", choices=["openai", "transformers", "echo"],
+                default="openai",
+            )
+            argv += ["--ai-backend", backend]
+            if backend == "transformers":
+                model = Prompt.ask(
+                    "  Local model path (merged checkpoint directory)",
+                    default="runs/triage-qlora/merged",
+                )
+                argv += ["--ai-model", model, "--ai-load-in-4bit"]
+            elif backend == "openai":
+                base_url = Prompt.ask(
+                    "  OpenAI-compatible endpoint",
+                    default="http://127.0.0.1:8000/v1",
+                )
+                argv += ["--ai-base-url", base_url]
+
+        if Confirm.ask(
+            "Enable the adaptive exploit engine (Proof-of-Impact)?", default=False,
+        ):
+            argv.append("--enable-exploit-engine")
+            if Confirm.ask("  Also enable adaptive WAF-evasion retries?",
+                           default=False):
+                argv.append("--enable-waf-evasion")
+            gate = Prompt.ask(
+                "  Containment: 'lab' (RFC1918/loopback/localhost only), a "
+                "domain you're authorized to test, or 'ack' (take "
+                "responsibility, forces simulation profile)",
+                default="lab",
+            )
+            if gate not in ("lab", ""):
+                if gate == "ack":
+                    argv.append("--acknowledge-offensive-payloads")
+                else:
+                    argv += ["--containment-allowed-domain", gate]
+
+        if Confirm.ask("Pin a reproducibility seed (--global-seed)?", default=True):
+            seed = IntPrompt.ask("  Seed", default=42)
+            argv += ["--global-seed", str(seed)]
+
+        argv += ["-o", Prompt.ask("Report output directory", default="reports")]
+        return argv
+
+    async def run_core_engine(self, target: SanitizedTarget, argv: list[str]) -> int:
+        """Run ``webscanner scan`` in-process against ``argv`` (built by
+        :meth:`configure_core_engine`), reusing :mod:`web_security_scanner.cli`
+        verbatim -- same parser, same validation, same
+        :func:`~web_security_scanner.cli._run_scan` the real CLI runs, so this
+        can never drift from what typing the command by hand would do.
+
+        Returns the same exit code ``webscanner scan`` would (0 = clean,
+        1 = findings, 2 = invalid args/auth failure); this method never raises
+        for an operator-facing reason -- an invalid flag combination prints
+        the parser's own error and returns 2 instead of tearing down the TUI.
+        """
+        from .. import cli as core_cli
+
+        parser = core_cli._build_parser()
+        try:
+            args = parser.parse_args(["scan", target.value, *argv])
+            core_cli._validate_args(args, parser)
+        except SystemExit as exc:
+            self.console.print(f"[red]Core engine argument error (exit {exc.code}).[/]")
+            return int(exc.code or 2)
+
+        core_cli.i18n.load_languages(str(core_cli.LANGUAGES_FILE))
+        core_cli.i18n.set_language(getattr(args, "lang", "en"))
+        seed = getattr(args, "global_seed", None)
+        if seed is not None:
+            random.seed(seed)
+
+        try:
+            return await core_cli._run_scan(args)
+        except asyncio.CancelledError:
+            self.console.print("[yellow]Core engine scan cancelled.[/]")
+            raise
+
     # -- execution dashboard --------------------------------------------------
 
     async def run_scan(
@@ -723,6 +863,34 @@ class TUI:
         if path is not None:
             resolved = self.save_report(target, profile, categories, results, path)
             self.console.print(f"[green]Report saved to {resolved}[/]")
+
+        if target.kind != "url":
+            self.console.print(
+                "[yellow]Core engine skipped: it scans http(s):// URLs only, "
+                f"and this target ({target.value!r}) validated as a bare "
+                "host/CIDR for the recon-only adapters above.[/]"
+            )
+            return
+
+        core_argv = self.configure_core_engine()
+        if core_argv is None:
+            return
+
+        core_task = asyncio.ensure_future(self.run_core_engine(target, core_argv))
+
+        def _handle_sigint_core() -> None:
+            if not core_task.done():
+                core_task.cancel()
+
+        try:
+            loop.add_signal_handler(signal.SIGINT, _handle_sigint_core)
+        except (NotImplementedError, RuntimeError):
+            pass
+
+        try:
+            await core_task
+        except asyncio.CancelledError:
+            self.console.print("[yellow]Core engine scan cancelled by operator.[/]")
 
 
 def run_tui() -> None:
