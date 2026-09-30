@@ -35,6 +35,7 @@ imports it yet -- it is an opt-in entrypoint. Wire it up with:
 from __future__ import annotations
 
 import asyncio
+import re
 import shutil
 import signal
 import time
@@ -119,9 +120,20 @@ def sanitize_target(raw: str) -> SanitizedTarget:
     try:
         return SanitizedTarget(raw=raw, kind="host", value=sanitize_host(candidate))
     except ValueError as exc:
+        # The common way to land here: a bare "host/path" with no scheme.
+        # sanitize_host then reads the first "/" as a CIDR separator and
+        # reports "invalid CIDR suffix" against the URL path -- true, but not
+        # what the operator needs to hear. Flag the likely cause explicitly
+        # rather than let a correct-but-opaque low-level error stand alone.
+        hint = ""
+        if "/" in candidate and not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", candidate):
+            hint = (
+                " -- looks like a URL missing its scheme; scanning always needs "
+                f"one explicitly (try 'https://{candidate}' or 'http://{candidate}')."
+            )
         raise TargetValidationError(
             f"{candidate!r} is neither a valid http(s):// URL nor a valid "
-            f"hostname/IPv4[/CIDR]: {exc}"
+            f"hostname/IPv4[/CIDR]: {exc}{hint}"
         ) from None
 
 
