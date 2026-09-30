@@ -319,6 +319,20 @@ class AsyncToolAdapter(ABC):
                 await proc.wait()
             if strict:
                 raise ToolTimeoutError(self.binary, effective_timeout) from None
+        except asyncio.CancelledError:
+            # The caller's own task was cancelled (SIGINT via a TUI/CLI
+            # cancelling its scan task, a task group shutting down, ...).
+            # Without this, the child process is orphaned: asyncio.wait_for
+            # raising CancelledError does not touch the subprocess it was
+            # awaiting on. Kill it, drain the reader tasks so they don't
+            # outlive this coroutine, and re-raise -- cancellation must still
+            # propagate to the caller.
+            for task in (stdout_task, stderr_task):
+                task.cancel()
+            with _suppress_process_lookup():
+                proc.kill()
+                await proc.wait()
+            raise
 
         duration = time.monotonic() - start
         stdout_bytes = b"".join(stdout_sink)
