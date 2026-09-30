@@ -24,7 +24,7 @@ URL/injection point with a small closure and gets adaptive retry for free::
     engine = WafEvasionEngine()
 
     async def _send(vector: str) -> dict:
-        response, _elapsed = await tester.probe(point, vector, base_url=url)
+        response, _elapsed, _url = await tester.probe(point, vector, base_url=url)
         return response
 
     result = await engine.send_with_evasion(_send, payload.vector, category="sql_injection")
