@@ -331,6 +331,54 @@ Output:
 
 Repeat step 3–5 with `--task payload` for the payload-synthesis adapter.
 
+### 5b. Full fine-tune on a small-VRAM card (DeepSpeed ZeRO CPU/RAM offload)
+
+`--full-finetune` trains every base-model weight instead of a LoRA adapter,
+via [DeepSpeed](https://www.deepspeed.ai/) ZeRO-2/3 with the optimiser state
+(and, at stage 3, the parameters themselves) offloaded to **CPU RAM** —
+the escape hatch for a card too small even for bf16 LoRA (a 6 GB RTX 4050
+running a 1.5B base, say). It is **much slower** than the LoRA path: every
+optimiser step round-trips through CPU RAM, so expect an order of magnitude
+less throughput. Prefer LoRA/QLoRA unless the goal specifically requires
+updating every weight.
+
+```bash
+uv pip install -e ".[ai,ai-offload]"   # adds deepspeed
+
+uv run python -m ai_module.train_qlora \
+    --base-model deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+    --dataset data/sft.triage.train.jsonl --eval data/sft.triage.val.jsonl \
+    --output-dir runs/triage-full \
+    --full-finetune --zero-stage 3 \
+    --epochs 3 --batch-size 1 --grad-accum 16 --max-seq-len 1024
+```
+
+| Flag | Effect |
+|------|--------|
+| `--full-finetune` | Train every weight, no LoRA adapter. Mutually exclusive with `--load-in-4bit` (nothing to quantize a frozen base against) and `--use-unsloth` (always attaches a LoRA adapter). |
+| `--zero-stage {2,3}` | 2: offload only the optimiser state (needs the model to fit in VRAM). **3** (default): also shard + offload the parameters — the mode an 8 GB-or-smaller card needs. |
+| `--no-offload-optimizer` / `--no-offload-params` | Keep that piece on the GPU instead of CPU RAM (more VRAM, less RAM traffic). |
+| `--deepspeed-config PATH` | Use a hand-written DeepSpeed JSON verbatim instead of the generated one. |
+
+Output: `runs/triage-full/model/` — a single consolidated checkpoint (ZeRO-3
+shards are gathered on save), ready for `--merge-adapter`-free serving
+(`--ai-backend transformers` or a plain `vllm` deploy, no `--enable-lora`).
+
+**DeepSpeed CUDA-toolkit / torch mismatch.** `cpu_adam` (the offloaded
+optimiser) JIT-compiles a CUDA extension the first time it runs, and
+DeepSpeed hard-refuses a toolkit whose version doesn't exactly match the one
+`torch` was built against — including a harmless minor-version drift (a
+rolling-release distro's system CUDA is often newer than the wheel `torch`
+shipped with). If `train_qlora.py` aborts with `CUDAMismatchException`, set
+`export CUDA_HOME=/path/to/your/cuda/toolkit` (needed for `nvcc` regardless)
+and, only once you've confirmed the mismatch is cosmetic (same major
+version), `export DS_SKIP_CUDA_CHECK=1` to proceed anyway — this combination
+was verified end-to-end (real ZeRO-2 *and* ZeRO-3, CPU-offloaded optimiser
+*and* parameters, actual forward/backward/optimizer steps) on an RTX 4050
+Laptop GPU with CUDA 13.3 installed against a `torch+cu130` wheel.
+
+Verified only on Linux; DeepSpeed has no supported Windows wheel.
+
 ### 6. Serve the adapter (OpenAI-compatible)
 
 ```bash

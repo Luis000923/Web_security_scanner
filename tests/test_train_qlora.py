@@ -316,3 +316,122 @@ def test_oom_advice_leads_with_the_biggest_saving():
     # once already quantised, it stops suggesting it
     advice = tq._oom_advice(tq.TrainConfig(batch_size=1, grad_accum=16, load_in_4bit=True))
     assert "--load-in-4bit" not in advice
+
+
+# --------------------------------------------------------------------------- #
+# --full-finetune: DeepSpeed ZeRO CPU/RAM offload (no LoRA adapter)
+# --------------------------------------------------------------------------- #
+
+def test_full_finetune_is_off_by_default():
+    cfg = tq.TrainConfig()
+    assert cfg.full_finetune is False
+    assert cfg.zero_stage == 3
+    assert cfg.offload_optimizer is True
+    assert cfg.offload_params is True
+
+
+def test_zero_stage_rejects_anything_but_2_or_3():
+    with pytest.raises(ValueError):
+        tq.TrainConfig(zero_stage=1)
+
+
+def test_deepspeed_config_has_no_unresolved_auto_fields():
+    """Regression guard: a raw "auto" string reaching deepspeed.zero.Init()
+    (the manual, non-Trainer path _build_model_hf_full uses) crashes with
+    ``TypeError: can't multiply sequence by non-int`` — confirmed against a
+    real ZeRO-3 run. Every field this function emits must already be a
+    concrete value.
+    """
+    cfg = tq.TrainConfig(full_finetune=True, batch_size=4, grad_accum=3)
+    ds = tq._build_deepspeed_config(cfg)
+    assert ds["train_micro_batch_size_per_gpu"] == 4
+    assert ds["gradient_accumulation_steps"] == 3
+    assert ds["train_batch_size"] == 12
+    assert isinstance(ds["gradient_clipping"], float)
+    assert isinstance(ds["bf16"]["enabled"], bool)
+    assert isinstance(ds["fp16"]["enabled"], bool)
+    for value in ds.values():
+        if isinstance(value, dict):
+            assert "auto" not in value.values()
+        else:
+            assert value != "auto"
+
+
+def test_deepspeed_config_stage2_offloads_optimizer_only():
+    cfg = tq.TrainConfig(full_finetune=True, zero_stage=2)
+    ds = tq._build_deepspeed_config(cfg)["zero_optimization"]
+    assert ds["stage"] == 2
+    assert "offload_optimizer" in ds
+    assert "offload_param" not in ds
+
+
+def test_deepspeed_config_stage3_offloads_params_too():
+    cfg = tq.TrainConfig(full_finetune=True, zero_stage=3)
+    ds = tq._build_deepspeed_config(cfg)["zero_optimization"]
+    assert ds["stage"] == 3
+    assert "offload_optimizer" in ds
+    assert "offload_param" in ds
+    assert ds["stage3_gather_16bit_weights_on_model_save"] is True
+
+
+def test_deepspeed_config_no_offload_drops_the_device_blocks():
+    cfg = tq.TrainConfig(full_finetune=True, zero_stage=3,
+                          offload_optimizer=False, offload_params=False)
+    ds = tq._build_deepspeed_config(cfg)["zero_optimization"]
+    assert "offload_optimizer" not in ds
+    assert "offload_param" not in ds
+
+
+def test_write_deepspeed_config_writes_next_to_the_run(tmp_path):
+    cfg = tq.TrainConfig(full_finetune=True, output_dir=tmp_path / "run")
+    path = tq._write_deepspeed_config(cfg)
+    assert path == tmp_path / "run" / "deepspeed_config.json"
+    saved = json.loads(path.read_text())
+    assert saved["zero_optimization"]["stage"] == 3
+
+
+def test_write_deepspeed_config_honours_an_explicit_override(tmp_path):
+    custom = tmp_path / "custom.json"
+    custom.write_text("{}")
+    cfg = tq.TrainConfig(full_finetune=True, deepspeed_config=custom,
+                          output_dir=tmp_path / "run")
+    assert tq._write_deepspeed_config(cfg) == custom
+
+
+def test_cli_full_finetune_rejects_4bit(capsys):
+    rc = tq.main(["--dataset", "d.jsonl", "--full-finetune", "--load-in-4bit", "--dry-run"])
+    assert rc == 2
+    assert "mutually exclusive" in capsys.readouterr().out
+
+
+def test_cli_full_finetune_rejects_unsloth(capsys):
+    rc = tq.main(["--dataset", "d.jsonl", "--full-finetune", "--use-unsloth", "--dry-run"])
+    assert rc == 2
+    assert "mutually exclusive" in capsys.readouterr().out
+
+
+def test_cli_full_finetune_dry_run_also_writes_deepspeed_json(tmp_path):
+    out = tmp_path / "run"
+    rc = tq.main(["--dataset", "d.jsonl", "--output-dir", str(out),
+                  "--full-finetune", "--dry-run"])
+    assert rc == 0
+    assert (out / "deepspeed_config.json").exists()
+    saved = json.loads((out / "train_config.json").read_text())
+    assert saved["full_finetune"] == "True"
+
+
+def test_cli_full_finetune_zero_stage_and_offload_flags(tmp_path):
+    out = tmp_path / "run"
+    tq.main(["--dataset", "d.jsonl", "--output-dir", str(out),
+              "--full-finetune", "--zero-stage", "2",
+              "--no-offload-params", "--dry-run"])
+    ds = json.loads((out / "deepspeed_config.json").read_text())
+    assert ds["zero_optimization"]["stage"] == 2
+    saved = json.loads((out / "train_config.json").read_text())
+    assert saved["offload_params"] == "False"
+
+
+def test_cli_non_full_finetune_does_not_write_deepspeed_json(tmp_path):
+    out = tmp_path / "run"
+    tq.main(["--dataset", "d.jsonl", "--output-dir", str(out), "--dry-run"])
+    assert not (out / "deepspeed_config.json").exists()

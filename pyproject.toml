@@ -56,6 +56,14 @@ ai-unsloth = [
     "unsloth-zoo>=2025.1.1",
     "xformers>=0.0.29",
 ]
+# Optional: DeepSpeed ZeRO-2/3 CPU/RAM offload, for --full-finetune on a
+# small-VRAM card (e.g. a 6 GB RTX 4050) where LoRA/QLoRA is not the goal.
+# Separate from `ai` because DeepSpeed compiles CUDA extensions on install and
+# is Linux-only in practice (no supported Windows wheel):
+#   uv pip install -e ".[ai,ai-offload]"
+ai-offload = [
+    "deepspeed>=0.15.0",
+]
 # Serving the fine-tuned adapter over an OpenAI-compatible local endpoint.
 ai-serve = [
     "vllm>=0.7.0",

