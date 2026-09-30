@@ -51,10 +51,28 @@ def test_path_traversal_emits_telemetry_on_miss():
 
 
 def test_path_traversal_emits_telemetry_on_hit():
+    # This responder leaks the same signature for *every* request, including
+    # the double-oracle's benign baseline probe -- an "ambient" leak the
+    # payload didn't cause, so the oracle correctly caps confidence at
+    # MEDIUM rather than trusting the single-shot signature at face value.
     rows = asyncio.run(_run_with_telemetry(
         PathTraversalTester, lambda m, u, k: {"text": "root:x:0:0:root:/root:/bin/bash"}))
     assert rows and rows[-1]["decision"] is True
-    assert rows[-1]["confidence_final"] == "HIGH"
+    assert rows[-1]["confidence_final"] == "MEDIUM"
+
+
+def test_path_traversal_confirmed_when_baseline_is_clean():
+    # Only a request carrying an actual traversal payload in the query
+    # string leaks; the benign baseline value and any non-payload probe
+    # come back clean -> both double-oracle checks pass -> CONFIRMED.
+    def responder(method, url, kwargs):
+        if "etc%2fpasswd" in url.lower() or "etc/passwd" in url.lower() \
+                or "win.ini" in url.lower() or "boot.ini" in url.lower():
+            return {"text": "root:x:0:0:root:/root:/bin/bash"}
+        return {"text": "nothing interesting here"}
+    rows = asyncio.run(_run_with_telemetry(PathTraversalTester, responder))
+    hits = [r for r in rows if r["decision"] is True]
+    assert hits and hits[-1]["confidence_final"] == "CONFIRMED"
 
 
 def test_command_injection_emits_telemetry_on_miss():
