@@ -582,6 +582,12 @@ class AsyncScannerCore:
             limit=self.config.max_concurrency,
             ssl=self._ssl_param(),
             resolver=resolver,
+            # aiohttp's own DNS cache defaults to a 10s TTL and would otherwise
+            # re-invoke PinnedResolver that often; our _resolve_cache already
+            # holds each vetted host for the whole scan (see _resolve_host), so
+            # a long TTL here just avoids the redundant round trip through the
+            # resolver without weakening the SSRF pinning at all.
+            ttl_dns_cache=300,
         )
 
     async def start(self):
@@ -1107,7 +1113,13 @@ class AsyncScannerCore:
                 if (follow_redirects and status in REDIRECT_STATUSES
                         and location and redirects < self.config.max_redirects):
                     text, truncated = "", False
-                    response.close()
+                    # release(), not close(): a 30x body is normally empty (or
+                    # already at EOF), so this hands the connection back to the
+                    # pool for reuse by the next hop / next request to this
+                    # host instead of forcing a brand-new TCP+TLS handshake.
+                    # aiohttp still closes it under the hood if unread data
+                    # remains, so this is never less safe than close().
+                    response.release()
                 else:
                     text, truncated, _ = await self._safe_read(response)
 

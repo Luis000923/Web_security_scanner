@@ -31,6 +31,7 @@ class FakeResponse:
         self.url = "http://target.example/"
         self.content = _FakeContent(text.encode() if isinstance(text, str) else text)
         self.closed = False
+        self.released = False
 
     async def text(self, errors="ignore"):
         return self._text
@@ -40,6 +41,9 @@ class FakeResponse:
 
     def close(self):
         self.closed = True
+
+    def release(self):
+        self.released = True
 
     async def __aenter__(self):
         return self
