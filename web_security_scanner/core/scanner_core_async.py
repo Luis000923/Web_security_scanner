@@ -14,6 +14,7 @@ from typing import Any
 import aiohttp
 from aiohttp.abc import AbstractResolver, ResolveResult
 
+from .http_client import AsyncHTTPClient, HTTPClientConfig, TokenBucket
 from .telemetry_engine import AdaptiveConcurrencyController, TelemetryEngine
 
 # Small pool of legitimate, current desktop User-Agents. One is picked at
@@ -200,42 +201,6 @@ class ScanConfig:
     adaptive_concurrency_window: int = 20
     adaptive_concurrency_high_watermark: float = 0.2
     adaptive_concurrency_low_watermark: float = 0.02
-
-
-class TokenBucket:
-    """
-    Async token bucket rate limiter.
-
-    Tokens refill continuously at ``rate`` per second up to ``capacity``.
-    ``acquire`` computes the wait under a short-lived lock but **sleeps
-    outside** it, so waiting for a token never occupies a concurrency slot and
-    several callers can have requests in flight at a pace consistent with the
-    configured rate (instead of the old lock-during-sleep that forced
-    concurrency down to 1).
-    """
-
-    def __init__(self, rate: float, capacity: float = 1.0):
-        self._rate = max(rate, 1e-6)
-        self._capacity = max(float(capacity), 1.0)
-        self._tokens = self._capacity
-        self._updated = time.monotonic()
-        self._lock = asyncio.Lock()
-
-    async def acquire(self, amount: float = 1.0) -> None:
-        amount = min(amount, self._capacity)
-        while True:
-            async with self._lock:
-                now = time.monotonic()
-                self._tokens = min(
-                    self._capacity,
-                    self._tokens + (now - self._updated) * self._rate,
-                )
-                self._updated = now
-                if self._tokens >= amount:
-                    self._tokens -= amount
-                    return
-                wait = (amount - self._tokens) / self._rate
-            await asyncio.sleep(wait)
 
 
 class HostBackoff:
@@ -517,6 +482,28 @@ class AsyncScannerCore:
         # once per scanner, not once per connector rebuild.
         self._ssl_notice_emitted = False
 
+        # Decoupled network client managing pool, semaphore, rate limit, and retries
+        http_config = HTTPClientConfig(
+            max_concurrency=config.max_concurrency,
+            timeout=config.timeout,
+            rate_limit=config.rate_limit,
+            rate_burst=config.rate_burst,
+            max_retries=config.max_retries,
+            retry_backoff_base=config.retry_backoff_base,
+            retry_backoff_max=config.retry_backoff_max,
+            verify_ssl=config.verify_ssl,
+            proxy=config.proxy,
+            user_agent=config.user_agent,
+            headers=config.headers,
+            cookie_jar_unsafe=config.cookie_jar_unsafe,
+            max_response_size=config.max_response_size,
+        )
+        self.http_client = AsyncHTTPClient(
+            http_config,
+            resolver=PinnedResolver(self) if not config.proxy else None,
+            custom_semaphore=self._semaphore,
+        )
+
     def _is_socks_proxy(self) -> bool:
         proxy = (self.config.proxy or "").lower()
         return proxy.startswith(_SOCKS_SCHEMES)
@@ -660,6 +647,8 @@ class AsyncScannerCore:
             self._semaphore = self._concurrency_controller.semaphore
         else:
             self._semaphore = asyncio.Semaphore(value)
+        if hasattr(self, "http_client") and self.http_client is not None:
+            self.http_client.set_concurrency(value)
 
     # ---- worker pool passthrough ---------------------------------------
 
