@@ -103,6 +103,14 @@ class SanitizedTarget:
     value: str
 
 
+#: No scheme at all -- not even a foreign one (``ftp://``, ``ssh://``) that
+#: this module should refuse rather than silently reinterpret. Only the
+#: *absence* of a scheme triggers auto-prefixing; a target that already names
+#: one it doesn't support still fails with its own error instead of being
+#: rewritten into something the operator didn't type.
+_HAS_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*://")
+
+
 def sanitize_target(raw: str) -> SanitizedTarget:
     """Validate operator input as either an ``http(s)://`` URL or a bare host/CIDR.
 
@@ -111,6 +119,14 @@ def sanitize_target(raw: str) -> SanitizedTarget:
     (nmap/naabu/masscan take a bare address, not a URL). Both paths reuse
     :mod:`core.external_tools`'s own sanitizers, so nothing is duplicated
     and nothing can accept here what an adapter would reject downstream.
+
+    A target with no scheme that also fails host/CIDR validation -- the
+    common case is a bare ``host/path`` (``example.com/admin``), which the
+    host validator reads as a CIDR suffix and rejects -- is retried with
+    ``https://`` prepended, then ``http://``. A bare host with *no* path
+    (``example.com``) is left as ``kind="host"``: recon tools need exactly
+    that form, and this module has no way to know the operator meant it for
+    the web-facing categories instead, so it does not guess there.
     """
     candidate = raw.strip()
     if not candidate:
@@ -122,20 +138,23 @@ def sanitize_target(raw: str) -> SanitizedTarget:
     try:
         return SanitizedTarget(raw=raw, kind="host", value=sanitize_host(candidate))
     except ValueError as exc:
-        # The common way to land here: a bare "host/path" with no scheme.
-        # sanitize_host then reads the first "/" as a CIDR separator and
-        # reports "invalid CIDR suffix" against the URL path -- true, but not
-        # what the operator needs to hear. Flag the likely cause explicitly
-        # rather than let a correct-but-opaque low-level error stand alone.
-        hint = ""
-        if "/" in candidate and not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", candidate):
-            hint = (
-                " -- looks like a URL missing its scheme; scanning always needs "
-                f"one explicitly (try 'https://{candidate}' or 'http://{candidate}')."
-            )
+        # Auto-prefixing must never be the thing that launders a rejected
+        # input into an accepted one: "--data-binary=@/etc/passwd" prepended
+        # with "https://" no longer starts with "-" and would sail past
+        # sanitize_arg's flag-injection guard even though the operator typed
+        # exactly what that guard exists to catch. Refuse to retry anything
+        # that already failed *because* of that guard.
+        if not candidate.startswith("-") and not _HAS_SCHEME_RE.match(candidate):
+            for scheme in ("https://", "http://"):
+                try:
+                    return SanitizedTarget(
+                        raw=raw, kind="url", value=sanitize_url(scheme + candidate)
+                    )
+                except ValueError:
+                    continue
         raise TargetValidationError(
             f"{candidate!r} is neither a valid http(s):// URL nor a valid "
-            f"hostname/IPv4[/CIDR]: {exc}{hint}"
+            f"hostname/IPv4[/CIDR]: {exc}"
         ) from None
 
 
