@@ -94,3 +94,22 @@ demás mutated retries fueron bloqueados.
 - 2026-09-29 — Fase 0 completada. `EvasionCounters` deja de ser código muerto:
   por primera vez se construye en producción y `effectiveness()` se calcula
   desde un scan real.
+- 2026-09-30 — **Tarea ajena a los tracks, avisada por el principio de no pisar.**
+  El humano me asignó un trabajo distinto (motor de decisión: llevar
+  P/R/F1 del escáner a ≥ 0.90 sobre OWASP Benchmark y exportar las métricas).
+  Archivos que toqué, **ninguno** de las regiones que este claim reserva:
+
+  ```
+  web_security_scanner/core/ieee_metrics.py            (nuevo, motor de métricas)
+  web_security_scanner/core/vuln_classes.py           (nuevo, vocabulario de clases)
+  web_security_scanner/core/benchmark_ground_truth.py (nuevo, cargadores de labels)
+  web_security_scanner/core/response_filter.py
+  web_security_scanner/modules/vulnerability_testers/{path_traversal,sql_injection,nosql_injection,ldap_injection}_async.py
+  scripts/evaluate.py
+  tests/differential/  tests/unit/
+  ```
+
+  Los únicos cambios en `cli.py` y `core/telemetry_engine.py` son los de este
+  claim (Track A), de la fase anterior — no los toqué en esta tarea. Resultado
+  y cifras en `research/notes/metrics-class-conditional-detection.md`.
+  **No commiteado** — el árbol tiene trabajo de los tres agentes mezclado.

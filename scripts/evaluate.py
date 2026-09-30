@@ -73,10 +73,15 @@ _GT_TEMPLATE = {
         "table. Instances the scanner never reports become TN (if benign) or",
         "FN (if vulnerable), so label the negatives too -- without them the",
         "specificity and FPR figures are undefined.",
+        "'expected_class' is the vulnerability class the instance should yield",
+        "(sqli, xss, pathtraver, cmdi, ldapi, nosqli, ...). With it the run also",
+        "reports class agreement -- a detection counts only if the reported",
+        "class is the one named here. Omit it and those rates come back n/a,",
+        "with every detection on any class counted as a hit.",
     ],
     "instances": [
         {"url": "/example/search?q=1", "parameter": "q", "vulnerable": True,
-         "category": "sqli"},
+         "category": "sqli", "expected_class": "sqli"},
         {"url": "/example/about", "parameter": "", "vulnerable": False,
          "category": "info"},
     ],
@@ -172,14 +177,29 @@ def _synthetic_findings(gt: GroundTruth) -> list:
     on a benign one, so the arithmetic can be exercised end to end without a
     target. Deliberately includes an unlabelled finding to keep the
     FP-outside-ground-truth path covered.
+
+    When the table carries expected classes, the canned findings are typed with
+    them -- and one in eight is deliberately typed with the wrong class. That
+    keeps the class-agreement path covered by the smoke test instead of only by
+    the unit tests: a mode whose whole purpose is checking that a metric
+    engine reports the right thing must exercise the metric that was just added.
     """
     from web_security_scanner.core.ieee_metrics import Finding
 
-    vulnerable = [key for key, flag, _ in gt.instances if flag]
-    benign = [key for key, flag, _ in gt.instances if not flag]
+    labels = dict(gt.expected_class)
+    # Sorted for determinism: dict ordering of a Mapping is not guaranteed, and
+    # a smoke test that reports a different number on a second run is useless.
+    vulnerable = sorted(key for key, flag, _ in gt.instances if flag)
+    benign = sorted(key for key, flag, _ in gt.instances if not flag)
 
-    findings = [Finding(url=u, parameter=p, vulnerability_type="synthetic")
-                for u, p in vulnerable[: max(1, len(vulnerable) * 7 // 10)]]
+    reported = vulnerable[: max(1, len(vulnerable) * 7 // 10)]
+    findings = []
+    for i, (u, p) in enumerate(reported):
+        expected = labels.get((u, p))
+        if expected and i % 8 == 7:
+            expected = "pathtraver" if expected != "pathtraver" else "sqli"
+        findings.append(Finding(url=u, parameter=p,
+                                vulnerability_type=expected or "synthetic"))
     if benign:
         findings.append(Finding(url=benign[0][0], parameter=benign[0][1],
                                 vulnerability_type="synthetic-false-positive"))
