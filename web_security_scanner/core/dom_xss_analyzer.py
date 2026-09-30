@@ -184,24 +184,27 @@ class DOMContextInspector:
                 return cls._analyze_script_context(text, script_text, payload)
 
         # C. Check inside RCDATA tags (<textarea>, <title>, etc.)
-        for rc_tag in soup.find_all(list(_RCDATA_TAGS)):
-            rc_text = rc_tag.string or rc_tag.get_text()
+        # Named rc_element, not rc_tag, so mypy doesn't unify it with the
+        # plain tag-*name* string bound to rc_tag in the raw-text scan above
+        # (same function scope, otherwise a str/Tag type clash).
+        for rc_element in soup.find_all(list(_RCDATA_TAGS)):
+            rc_text = rc_element.string or rc_element.get_text()
             if rc_text and payload in rc_text:
-                closing_tag = f"</{rc_tag.name}"
+                closing_tag = f"</{rc_element.name}"
                 if closing_tag.lower() in payload.lower():
                     return XSSContextAnalysis(
                         is_executable=True,
                         context="rcdata_breakout",
                         confidence="HIGH",
-                        reason=f"Payload breaks out of non-executable <{rc_tag.name}> tag using unescaped closing tag.",
-                        tag_name=rc_tag.name,
+                        reason=f"Payload breaks out of non-executable <{rc_element.name}> tag using unescaped closing tag.",
+                        tag_name=rc_element.name,
                     )
                 return XSSContextAnalysis(
                     is_executable=False,
                     context="rcdata_enclosed",
                     confidence=None,
-                    reason=f"Payload safely enclosed inside non-executable <{rc_tag.name}> tag without breakout.",
-                    tag_name=rc_tag.name,
+                    reason=f"Payload safely enclosed inside non-executable <{rc_element.name}> tag without breakout.",
+                    tag_name=rc_element.name,
                 )
 
         # D. Check inside element attributes

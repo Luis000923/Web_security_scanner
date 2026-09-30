@@ -322,7 +322,7 @@ class InjectionPoint:
                     f"multipart part could not be serialised: {exc2}",
                     param=self.param, vector=self.vector,
                 ) from exc2
-            form._wss_aborted_reason = (  # noqa: SLF001  (telemetry carrier)
+            form._wss_aborted_reason = (  # type: ignore[attr-defined]  # noqa: SLF001 (telemetry carrier)
                 f"payload sanitised before send ({type(exc).__name__}: {exc}); "
                 "the wire form differs from the payload, so the response is not "
                 "evidence about this payload"

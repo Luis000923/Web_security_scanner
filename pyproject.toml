@@ -133,3 +133,17 @@ no_implicit_optional = true
 # Also type-check the bodies of un-annotated functions (catches indexing /
 # attribute mistakes the default "skip untyped defs" would let through).
 check_untyped_defs = true
+
+# numpy is not imported anywhere in web_security_scanner/ai_module; it is
+# pulled in transitively by torch (ai_module's optional QLoRA training path).
+# numpy's own bundled __init__.pyi uses PEP 695 `type` statements, which is
+# valid stub syntax but only parseable when python_version >= 3.12. We pin
+# python_version to 3.10 above (the floor of the CI matrix, so we still catch
+# 3.10-incompatible constructs in *our* code) rather than bump it repo-wide
+# just to satisfy a stub we never read types from. "skip" tells mypy not to
+# parse numpy's stubs at all instead of failing the whole run on them.
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+ignore_errors = true
