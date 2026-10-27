@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "Luis", email = "luis@example.com"},
+    {name = "Luis", email = "cruncron@gmail.com"},
 ]
 dependencies = [
     "aiohttp>=3.8.0",
