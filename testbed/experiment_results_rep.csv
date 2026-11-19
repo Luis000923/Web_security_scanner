@@ -1,0 +1,11 @@
+budget,condition,TP,FP,FN,Precision,Recall,F1,FPR,AI_Triaged,AI_Suppressed,AI_FP_Suppressed,AI_FN_Introduced,AI_Recall_NoAgent,run_dir,status,timestamp
+10,baseline,131,73,63,0.6422,0.6753,0.6583,0.0208,,,,,,testbed/results_rep/budget10_baseline,ok,2026-11-19T10:08:13+00:00
+10,no-interleave,131,73,63,0.6422,0.6753,0.6583,0.0208,,,,,,testbed/results_rep/budget10_nointerleave,ok,2026-11-19T10:14:12+00:00
+10,no-priority,131,73,63,0.6422,0.6753,0.6583,0.0208,,,,,,testbed/results_rep/budget10_nopriority,ok,2026-11-19T10:20:14+00:00
+10,no-runtime-confirm,131,73,63,0.6422,0.6753,0.6583,0.0208,,,,,,testbed/results_rep/budget10_noruntimeconfirm,ok,2026-11-19T10:26:18+00:00
+10,no-adaptive-sorting,131,72,63,0.6453,0.6753,0.6599,0.0139,,,,,,testbed/results_rep/budget10_noadaptivesorting,ok,2026-11-19T10:32:25+00:00
+20,baseline,137,77,57,0.6402,0.7062,0.6716,0.0139,,,,,,testbed/results_rep/budget20_baseline,ok,2026-11-19T10:39:22+00:00
+20,no-interleave,137,78,57,0.6372,0.7062,0.6699,0.0208,,,,,,testbed/results_rep/budget20_nointerleave,ok,2026-11-19T10:45:43+00:00
+20,no-priority,131,94,63,0.5822,0.6753,0.6253,0.0208,,,,,,testbed/results_rep/budget20_nopriority,ok,2026-11-19T10:52:22+00:00
+20,no-runtime-confirm,137,78,57,0.6372,0.7062,0.6699,0.0208,,,,,,testbed/results_rep/budget20_noruntimeconfirm,ok,2026-11-19T10:58:52+00:00
+20,no-adaptive-sorting,137,77,57,0.6402,0.7062,0.6716,0.0139,,,,,,testbed/results_rep/budget20_noadaptivesorting,ok,2026-11-19T11:05:48+00:00

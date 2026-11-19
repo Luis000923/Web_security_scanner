@@ -1,0 +1,962 @@
+[2026-11-19T06:05:38Z] wait for smoke runs to finish
+[2026-11-19T06:09:38Z] PHASE 1 grid (20 runs)
+[run_experiments] target-list: 338 endpoint(s), 338 with an injectable param -> /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json
+[run_experiments] grid: budgets=[10, 20, 50, 0] x conditions=['baseline', 'no-interleave', 'no-priority', 'no-runtime-confirm', 'no-adaptive-sorting'] => 20 run(s)
+[run_experiments] ==> Corrida 1/20 · budget=10 · baseline
+[0/20] [run_experiments] RUN  budget10_baseline
+[0/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget10_baseline --output /home/luis/Documentos/wss-paper/testbed/results/budget10_baseline/report --output-format json --lang en --global-seed 42 --warmup 20
+[2026-11-19T06:10:02Z] wait for any running sweep to finish
+[0/20] [run_experiments]      telemetry OK: 16345 rows, request_index 1..16345, 12 payload families
+[0/20] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 2/20 · budget=10 · no-interleave
+[1/20] [run_experiments] RUN  budget10_nointerleave
+[1/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget10_nointerleave --output /home/luis/Documentos/wss-paper/testbed/results/budget10_nointerleave/report --output-format json --lang en --no-interleave --global-seed 42 --warmup 20
+[1/20] [run_experiments]      telemetry OK: 16359 rows, request_index 1..16359, 8 payload families
+[1/20] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 3/20 · budget=10 · no-priority
+[2/20] [run_experiments] RUN  budget10_nopriority
+[2/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget10_nopriority --output /home/luis/Documentos/wss-paper/testbed/results/budget10_nopriority/report --output-format json --lang en --no-priority --global-seed 42 --warmup 20
+[2/20] [run_experiments]      telemetry OK: 16089 rows, request_index 1..16089, 15 payload families
+[2/20] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 4/20 · budget=10 · no-runtime-confirm
+[3/20] [run_experiments] RUN  budget10_noruntimeconfirm
+[3/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget10_noruntimeconfirm --output /home/luis/Documentos/wss-paper/testbed/results/budget10_noruntimeconfirm/report --output-format json --lang en --no-runtime-confirm --global-seed 42 --warmup 20
+[3/20] [run_experiments]      telemetry OK: 16351 rows, request_index 1..16351, 12 payload families
+[3/20] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 5/20 · budget=10 · no-adaptive-sorting
+[4/20] [run_experiments] RUN  budget10_noadaptivesorting
+[4/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget10_noadaptivesorting --output /home/luis/Documentos/wss-paper/testbed/results/budget10_noadaptivesorting/report --output-format json --lang en --no-adaptive-sorting --global-seed 42 --warmup 20
+[4/20] [run_experiments]      telemetry OK: 16094 rows, request_index 1..16094, 12 payload families
+[4/20] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 6/20 · budget=20 · baseline
+[5/20] [run_experiments] RUN  budget20_baseline
+[5/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget20_baseline --output /home/luis/Documentos/wss-paper/testbed/results/budget20_baseline/report --output-format json --lang en --global-seed 42 --warmup 20
+[5/20] [run_experiments]      telemetry OK: 31144 rows, request_index 1..31144, 15 payload families
+[5/20] [run_experiments]      TP=137 FP=78 FN=57 P=0.6372093023255814 R=0.7061855670103093 F1=0.6699266503667481 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 7/20 · budget=20 · no-interleave
+[6/20] [run_experiments] RUN  budget20_nointerleave
+[6/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget20_nointerleave --output /home/luis/Documentos/wss-paper/testbed/results/budget20_nointerleave/report --output-format json --lang en --no-interleave --global-seed 42 --warmup 20
+[6/20] [run_experiments]      telemetry OK: 31158 rows, request_index 1..31158, 13 payload families
+[6/20] [run_experiments]      TP=137 FP=78 FN=57 P=0.6372093023255814 R=0.7061855670103093 F1=0.6699266503667481 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 8/20 · budget=20 · no-priority
+[7/20] [run_experiments] RUN  budget20_nopriority
+[7/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget20_nopriority --output /home/luis/Documentos/wss-paper/testbed/results/budget20_nopriority/report --output-format json --lang en --no-priority --global-seed 42 --warmup 20
+[7/20] [run_experiments]      telemetry OK: 30857 rows, request_index 1..30857, 15 payload families
+[7/20] [run_experiments]      TP=131 FP=94 FN=63 P=0.5822222222222222 R=0.6752577319587629 F1=0.6252983293556086 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 9/20 · budget=20 · no-runtime-confirm
+[8/20] [run_experiments] RUN  budget20_noruntimeconfirm
+[8/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget20_noruntimeconfirm --output /home/luis/Documentos/wss-paper/testbed/results/budget20_noruntimeconfirm/report --output-format json --lang en --no-runtime-confirm --global-seed 42 --warmup 20
+[8/20] [run_experiments]      telemetry OK: 31144 rows, request_index 1..31144, 15 payload families
+[8/20] [run_experiments]      TP=137 FP=78 FN=57 P=0.6372093023255814 R=0.7061855670103093 F1=0.6699266503667481 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 10/20 · budget=20 · no-adaptive-sorting
+[9/20] [run_experiments] RUN  budget20_noadaptivesorting
+[9/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget20_noadaptivesorting --output /home/luis/Documentos/wss-paper/testbed/results/budget20_noadaptivesorting/report --output-format json --lang en --no-adaptive-sorting --global-seed 42 --warmup 20
+[9/20] [run_experiments]      telemetry OK: 30890 rows, request_index 1..30890, 15 payload families
+[9/20] [run_experiments]      TP=137 FP=78 FN=57 P=0.6372093023255814 R=0.7061855670103093 F1=0.6699266503667481 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 11/20 · budget=50 · baseline
+[10/20] [run_experiments] RUN  budget50_baseline
+[10/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 50 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget50_baseline --output /home/luis/Documentos/wss-paper/testbed/results/budget50_baseline/report --output-format json --lang en --global-seed 42 --warmup 20
+[10/20] [run_experiments]      telemetry OK: 75144 rows, request_index 1..75144, 15 payload families
+[10/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 12/20 · budget=50 · no-interleave
+[11/20] [run_experiments] RUN  budget50_nointerleave
+[11/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 50 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget50_nointerleave --output /home/luis/Documentos/wss-paper/testbed/results/budget50_nointerleave/report --output-format json --lang en --no-interleave --global-seed 42 --warmup 20
+[11/20] [run_experiments]      telemetry OK: 75073 rows, request_index 1..75073, 15 payload families
+[11/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 13/20 · budget=50 · no-priority
+[12/20] [run_experiments] RUN  budget50_nopriority
+[12/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 50 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget50_nopriority --output /home/luis/Documentos/wss-paper/testbed/results/budget50_nopriority/report --output-format json --lang en --no-priority --global-seed 42 --warmup 20
+[12/20] [run_experiments]      telemetry OK: 74793 rows, request_index 1..74793, 15 payload families
+[12/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 14/20 · budget=50 · no-runtime-confirm
+[13/20] [run_experiments] RUN  budget50_noruntimeconfirm
+[13/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 50 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget50_noruntimeconfirm --output /home/luis/Documentos/wss-paper/testbed/results/budget50_noruntimeconfirm/report --output-format json --lang en --no-runtime-confirm --global-seed 42 --warmup 20
+[13/20] [run_experiments]      telemetry OK: 75167 rows, request_index 1..75167, 15 payload families
+[13/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 15/20 · budget=50 · no-adaptive-sorting
+[14/20] [run_experiments] RUN  budget50_noadaptivesorting
+[14/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 50 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget50_noadaptivesorting --output /home/luis/Documentos/wss-paper/testbed/results/budget50_noadaptivesorting/report --output-format json --lang en --no-adaptive-sorting --global-seed 42 --warmup 20
+[14/20] [run_experiments]      telemetry OK: 74774 rows, request_index 1..74774, 15 payload families
+[14/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 16/20 · budget=unlimited · baseline
+[15/20] [run_experiments] RUN  budget0_baseline
+[15/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 0 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget0_baseline --output /home/luis/Documentos/wss-paper/testbed/results/budget0_baseline/report --output-format json --lang en --global-seed 42 --warmup 20
+[15/20] [run_experiments]      telemetry OK: 345216 rows, request_index 1..345216, 15 payload families
+[15/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 17/20 · budget=unlimited · no-interleave
+[16/20] [run_experiments] RUN  budget0_nointerleave
+[16/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 0 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget0_nointerleave --output /home/luis/Documentos/wss-paper/testbed/results/budget0_nointerleave/report --output-format json --lang en --no-interleave --global-seed 42 --warmup 20
+[16/20] [run_experiments]      telemetry OK: 344778 rows, request_index 1..344778, 15 payload families
+[16/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 18/20 · budget=unlimited · no-priority
+[17/20] [run_experiments] RUN  budget0_nopriority
+[17/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 0 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget0_nopriority --output /home/luis/Documentos/wss-paper/testbed/results/budget0_nopriority/report --output-format json --lang en --no-priority --global-seed 42 --warmup 20
+[17/20] [run_experiments]      telemetry OK: 344506 rows, request_index 1..344506, 15 payload families
+[17/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 19/20 · budget=unlimited · no-runtime-confirm
+[18/20] [run_experiments] RUN  budget0_noruntimeconfirm
+[18/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 0 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget0_noruntimeconfirm --output /home/luis/Documentos/wss-paper/testbed/results/budget0_noruntimeconfirm/report --output-format json --lang en --no-runtime-confirm --global-seed 42 --warmup 20
+[18/20] [run_experiments]      telemetry OK: 345346 rows, request_index 1..345346, 15 payload families
+[18/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 20/20 · budget=unlimited · no-adaptive-sorting
+[19/20] [run_experiments] RUN  budget0_noadaptivesorting
+[19/20] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 0 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget0_noadaptivesorting --output /home/luis/Documentos/wss-paper/testbed/results/budget0_noadaptivesorting/report --output-format json --lang en --no-adaptive-sorting --global-seed 42 --warmup 20
+[19/20] [run_experiments]      telemetry OK: 343894 rows, request_index 1..343894, 15 payload families
+[19/20] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+
+==============================================================
+ Experiment sweep complete — 20 run(s) in 232m07s
+==============================================================
+    budget │ condition            │      F1 │ status
+ ──────────┼──────────────────────┼─────────┼───────
+        10 │ baseline             │  0.6583 │ ok
+        10 │ no-interleave        │  0.6583 │ ok
+        10 │ no-priority          │  0.6583 │ ok
+        10 │ no-runtime-confirm   │  0.6583 │ ok
+        10 │ no-adaptive-sorting  │  0.6583 │ ok
+        20 │ baseline             │  0.6699 │ ok
+        20 │ no-interleave        │  0.6699 │ ok
+        20 │ no-priority          │  0.6253 │ ok
+        20 │ no-runtime-confirm   │  0.6699 │ ok
+        20 │ no-adaptive-sorting  │  0.6699 │ ok
+        50 │ baseline             │  0.6432 │ ok
+        50 │ no-interleave        │  0.6432 │ ok
+        50 │ no-priority          │  0.6432 │ ok
+        50 │ no-runtime-confirm   │  0.6432 │ ok
+        50 │ no-adaptive-sorting  │  0.6432 │ ok
+ unlimited │ baseline             │  0.6432 │ ok
+ unlimited │ no-interleave        │  0.6432 │ ok
+ unlimited │ no-priority          │  0.6432 │ ok
+ unlimited │ no-runtime-confirm   │  0.6432 │ ok
+ unlimited │ no-adaptive-sorting  │  0.6432 │ ok
+==============================================================
+ ✓  every run completed with status=ok
+ ✓  CSV written to testbed/experiment_results_rev.csv
+==============================================================
+[2026-11-19T10:02:14Z] PHASE 1 grid (20 runs)
+[run_experiments] target-list: 338 endpoint(s), 338 with an injectable param -> /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json
+[run_experiments] grid: budgets=[10, 20, 50, 0] x conditions=['baseline', 'no-interleave', 'no-priority', 'no-runtime-confirm', 'no-adaptive-sorting'] => 20 run(s)
+[run_experiments] ==> Corrida 1/20 · budget=10 · baseline
+[0/20] [run_experiments] SKIP budget10_baseline (dir exists; --force to redo)
+[run_experiments] ==> Corrida 2/20 · budget=10 · no-interleave
+[1/20] [run_experiments] SKIP budget10_nointerleave (dir exists; --force to redo)
+[run_experiments] ==> Corrida 3/20 · budget=10 · no-priority
+[2/20] [run_experiments] SKIP budget10_nopriority (dir exists; --force to redo)
+[run_experiments] ==> Corrida 4/20 · budget=10 · no-runtime-confirm
+[3/20] [run_experiments] SKIP budget10_noruntimeconfirm (dir exists; --force to redo)
+[run_experiments] ==> Corrida 5/20 · budget=10 · no-adaptive-sorting
+[4/20] [run_experiments] SKIP budget10_noadaptivesorting (dir exists; --force to redo)
+[run_experiments] ==> Corrida 6/20 · budget=20 · baseline
+[5/20] [run_experiments] SKIP budget20_baseline (dir exists; --force to redo)
+[run_experiments] ==> Corrida 7/20 · budget=20 · no-interleave
+[6/20] [run_experiments] SKIP budget20_nointerleave (dir exists; --force to redo)
+[run_experiments] ==> Corrida 8/20 · budget=20 · no-priority
+[7/20] [run_experiments] SKIP budget20_nopriority (dir exists; --force to redo)
+[run_experiments] ==> Corrida 9/20 · budget=20 · no-runtime-confirm
+[8/20] [run_experiments] SKIP budget20_noruntimeconfirm (dir exists; --force to redo)
+[run_experiments] ==> Corrida 10/20 · budget=20 · no-adaptive-sorting
+[9/20] [run_experiments] SKIP budget20_noadaptivesorting (dir exists; --force to redo)
+[run_experiments] ==> Corrida 11/20 · budget=50 · baseline
+[10/20] [run_experiments] SKIP budget50_baseline (dir exists; --force to redo)
+[run_experiments] ==> Corrida 12/20 · budget=50 · no-interleave
+[11/20] [run_experiments] SKIP budget50_nointerleave (dir exists; --force to redo)
+[run_experiments] ==> Corrida 13/20 · budget=50 · no-priority
+[12/20] [run_experiments] SKIP budget50_nopriority (dir exists; --force to redo)
+[run_experiments] ==> Corrida 14/20 · budget=50 · no-runtime-confirm
+[13/20] [run_experiments] SKIP budget50_noruntimeconfirm (dir exists; --force to redo)
+[run_experiments] ==> Corrida 15/20 · budget=50 · no-adaptive-sorting
+[14/20] [run_experiments] SKIP budget50_noadaptivesorting (dir exists; --force to redo)
+[run_experiments] ==> Corrida 16/20 · budget=unlimited · baseline
+[15/20] [run_experiments] SKIP budget0_baseline (dir exists; --force to redo)
+[run_experiments] ==> Corrida 17/20 · budget=unlimited · no-interleave
+[16/20] [run_experiments] SKIP budget0_nointerleave (dir exists; --force to redo)
+[run_experiments] ==> Corrida 18/20 · budget=unlimited · no-priority
+[17/20] [run_experiments] SKIP budget0_nopriority (dir exists; --force to redo)
+[run_experiments] ==> Corrida 19/20 · budget=unlimited · no-runtime-confirm
+[18/20] [run_experiments] SKIP budget0_noruntimeconfirm (dir exists; --force to redo)
+[run_experiments] ==> Corrida 20/20 · budget=unlimited · no-adaptive-sorting
+[19/20] [run_experiments] SKIP budget0_noadaptivesorting (dir exists; --force to redo)
+
+==============================================================
+ Experiment sweep complete — 0 run(s) in 0m00s
+==============================================================
+    budget │ condition            │      F1 │ status
+ ──────────┼──────────────────────┼─────────┼───────
+==============================================================
+ ✓  every run completed with status=ok
+ ✓  CSV written to testbed/experiment_results_rev.csv
+==============================================================
+[2026-11-19T10:02:14Z] PHASE 2 replicate B10,B20 (10 runs)
+[run_experiments] target-list: 338 endpoint(s), 338 with an injectable param -> /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json
+[run_experiments] grid: budgets=[10, 20] x conditions=['baseline', 'no-interleave', 'no-priority', 'no-runtime-confirm', 'no-adaptive-sorting'] => 10 run(s)
+[run_experiments] ==> Corrida 1/10 · budget=10 · baseline
+[0/10] [run_experiments] RUN  budget10_baseline
+[0/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_baseline --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_baseline/report --output-format json --lang en --global-seed 42 --warmup 20
+[0/10] [run_experiments]      telemetry OK: 16344 rows, request_index 1..16344, 12 payload families
+[0/10] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 2/10 · budget=10 · no-interleave
+[1/10] [run_experiments] RUN  budget10_nointerleave
+[1/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_nointerleave --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_nointerleave/report --output-format json --lang en --no-interleave --global-seed 42 --warmup 20
+[1/10] [run_experiments]      telemetry OK: 16359 rows, request_index 1..16359, 8 payload families
+[1/10] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 3/10 · budget=10 · no-priority
+[2/10] [run_experiments] RUN  budget10_nopriority
+[2/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_nopriority --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_nopriority/report --output-format json --lang en --no-priority --global-seed 42 --warmup 20
+[2/10] [run_experiments]      telemetry OK: 16101 rows, request_index 1..16101, 15 payload families
+[2/10] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 4/10 · budget=10 · no-runtime-confirm
+[3/10] [run_experiments] RUN  budget10_noruntimeconfirm
+[3/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_noruntimeconfirm --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_noruntimeconfirm/report --output-format json --lang en --no-runtime-confirm --global-seed 42 --warmup 20
+[3/10] [run_experiments]      telemetry OK: 16346 rows, request_index 1..16346, 12 payload families
+[3/10] [run_experiments]      TP=131 FP=73 FN=63 P=0.6421568627450981 R=0.6752577319587629 F1=0.6582914572864321 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 5/10 · budget=10 · no-adaptive-sorting
+[4/10] [run_experiments] RUN  budget10_noadaptivesorting
+[4/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_noadaptivesorting --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget10_noadaptivesorting/report --output-format json --lang en --no-adaptive-sorting --global-seed 42 --warmup 20
+[4/10] [run_experiments]      telemetry OK: 16105 rows, request_index 1..16105, 12 payload families
+[4/10] [run_experiments]      TP=131 FP=72 FN=63 P=0.645320197044335 R=0.6752577319587629 F1=0.6599496221662469 FPR=0.013888888888888888
+[run_experiments] ==> Corrida 6/10 · budget=20 · baseline
+[5/10] [run_experiments] RUN  budget20_baseline
+[5/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_baseline --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_baseline/report --output-format json --lang en --global-seed 42 --warmup 20
+[5/10] [run_experiments]      telemetry OK: 31164 rows, request_index 1..31164, 15 payload families
+[5/10] [run_experiments]      TP=137 FP=77 FN=57 P=0.6401869158878505 R=0.7061855670103093 F1=0.6715686274509804 FPR=0.013888888888888888
+[run_experiments] ==> Corrida 7/10 · budget=20 · no-interleave
+[6/10] [run_experiments] RUN  budget20_nointerleave
+[6/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_nointerleave --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_nointerleave/report --output-format json --lang en --no-interleave --global-seed 42 --warmup 20
+[6/10] [run_experiments]      telemetry OK: 31156 rows, request_index 1..31156, 13 payload families
+[6/10] [run_experiments]      TP=137 FP=78 FN=57 P=0.6372093023255814 R=0.7061855670103093 F1=0.6699266503667481 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 8/10 · budget=20 · no-priority
+[7/10] [run_experiments] RUN  budget20_nopriority
+[7/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_nopriority --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_nopriority/report --output-format json --lang en --no-priority --global-seed 42 --warmup 20
+[7/10] [run_experiments]      telemetry OK: 30862 rows, request_index 1..30862, 15 payload families
+[7/10] [run_experiments]      TP=131 FP=94 FN=63 P=0.5822222222222222 R=0.6752577319587629 F1=0.6252983293556086 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 9/10 · budget=20 · no-runtime-confirm
+[8/10] [run_experiments] RUN  budget20_noruntimeconfirm
+[8/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_noruntimeconfirm --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_noruntimeconfirm/report --output-format json --lang en --no-runtime-confirm --global-seed 42 --warmup 20
+[8/10] [run_experiments]      telemetry OK: 31147 rows, request_index 1..31147, 15 payload families
+[8/10] [run_experiments]      TP=137 FP=78 FN=57 P=0.6372093023255814 R=0.7061855670103093 F1=0.6699266503667481 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 10/10 · budget=20 · no-adaptive-sorting
+[9/10] [run_experiments] RUN  budget20_noadaptivesorting
+[9/10] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_noadaptivesorting --output /home/luis/Documentos/wss-paper/testbed/results_rep/budget20_noadaptivesorting/report --output-format json --lang en --no-adaptive-sorting --global-seed 42 --warmup 20
+[9/10] [run_experiments]      telemetry OK: 30907 rows, request_index 1..30907, 15 payload families
+[9/10] [run_experiments]      TP=137 FP=77 FN=57 P=0.6401869158878505 R=0.7061855670103093 F1=0.6715686274509804 FPR=0.013888888888888888
+
+==============================================================
+ Experiment sweep complete — 10 run(s) in 63m34s
+==============================================================
+    budget │ condition            │      F1 │ status
+ ──────────┼──────────────────────┼─────────┼───────
+        10 │ baseline             │  0.6583 │ ok
+        10 │ no-interleave        │  0.6583 │ ok
+        10 │ no-priority          │  0.6583 │ ok
+        10 │ no-runtime-confirm   │  0.6583 │ ok
+        10 │ no-adaptive-sorting  │  0.6599 │ ok
+        20 │ baseline             │  0.6716 │ ok
+        20 │ no-interleave        │  0.6699 │ ok
+        20 │ no-priority          │  0.6253 │ ok
+        20 │ no-runtime-confirm   │  0.6699 │ ok
+        20 │ no-adaptive-sorting  │  0.6716 │ ok
+==============================================================
+ ✓  every run completed with status=ok
+ ✓  CSV written to testbed/experiment_results_rep.csv
+==============================================================
+[2026-11-19T11:05:48Z] PHASE 3a ai-triage sanity check (6 targets)
+[run_experiments] target-list: 6 endpoint(s), 6 with an injectable param -> testbed/results_smoke/tiny/targets.json
+[run_experiments] grid: budgets=[10] x conditions=['ai-triage'] => 1 run(s)
+[run_experiments] ==> Corrida 1/1 · budget=10 · ai-triage
+[0/1] [run_experiments] RUN  budget10_aitriage
+[0/1] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list testbed/results_smoke/tiny/targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results_smoke/tiny/budget10_aitriage --output /home/luis/Documentos/wss-paper/testbed/results_smoke/tiny/budget10_aitriage/report --output-format json --lang en --enable-ai-triaging --global-seed 42 --ai-backend transformers --ai-model /home/luis/Documentos/Web_security_scanner/runs/triage-redteam-qlora/merged --ai-temperature 0 --warmup 20
+[0/1] [run_experiments]      telemetry OK: 301 rows, request_index 1..301, 12 payload families
+[0/1] [run_experiments]      TP=4 FP=0 FN=190 P=1.0 R=0.020618556701030927 F1=0.04040404040404041 FPR=0.0
+
+==============================================================
+ Experiment sweep complete — 1 run(s) in 0m59s
+==============================================================
+    budget │ condition            │      F1 │ status
+ ──────────┼──────────────────────┼─────────┼───────
+        10 │ ai-triage            │  0.0404 │ ok
+==============================================================
+ ✓  every run completed with status=ok
+ ✓  CSV written to testbed/results_smoke/tiny/tiny.csv
+==============================================================
+[sanity] ai_triage block: {'enabled': True, 'active': True, 'backend': 'transformers', 'fp_threshold': 0.75, 'total_candidates_triaged': 5, 'suppressed': 0, 'kept': 5, 'cross_validation': {'enabled': False, 'total_candidates': 0, 'confirmed': 0, 'inconclusive': 0, 'decisions': []}}
+[sanity] first decisions: [{'tester': 'Cross-Site Scripting (XSS)', 'url': 'https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00041?BenchmarkTest00041=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E', 'parameter': 'BenchmarkTest00041', 'type': 'Cross-Site Scripting (XSS)', 'pre_ai_confidence': 'HIGH', 'ai_verdict': 'TRUE_POSITIVE', 'ai_confidence': 1.0, 'ai_reasoning': 'The response contains a reflected XSS payload, indicating a real script execution. This meets the criteria for a true positive exploit.', 'dropped': False, 'prompt_injection_suspected': False, 'annotations': {'ai_verified': True, 'ai_verdict': 'TRUE_POSITIVE', 'ai_is_vulnerable': True, 'ai_confidence': 1.0, 'ai_reasoning': 'The response contains a reflected XSS payload, indicating a real script execution. This meets the criteria for a true positive exploit.'}}, {'tester': 'Cross-Site Scripting (XSS)', 'url': 'https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00047?BenchmarkTest00047=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E', 'parameter': 'BenchmarkTest00047', 'type': 'Cross-Site Scripting (XSS)', 'pre_ai_confidence': 'HIGH', 'ai_verdict': 'TRUE_POSITIVE', 'ai_confidence': 1.0, 'ai_reasoning': 'The application exploits Cross-Site Scripting (XSS) by detecting a payload within the response, indicating a potential security flaw that requires immediate attention.', 'dropped': False, 'prompt_injection_suspected': False, 'annotations': {'ai_verified': True, 'ai_verdict': 'TRUE_POSITIVE', 'ai_is_vulnerable': True, 'ai_confidence': 1.0, 'ai_reasoning': 'The application exploits Cross-Site Scripting (XSS) by detecting a payload within the response, indicating a potential security flaw that requires immediate attention.'}}, {'tester': 'Cross-Site Scripting (XSS)', 'url': 'https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00048?BenchmarkTest00048=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E', 'parameter': 'BenchmarkTest00048', 'type': 'Cross-Site Scripting (XSS)', 'pre_ai_confidence': 'HIGH', 'ai_verdict': 'TRUE_POSITIVE', 'ai_confidence': 1.0, 'ai_reasoning': 'The evidence of XSS payload being reflected in the response directly indicates a true positive vulnerability.', 'dropped': False, 'prompt_injection_suspected': False, 'annotations': {'ai_verified': True, 'ai_verdict': 'TRUE_POSITIVE', 'ai_is_vulnerable': True, 'ai_confidence': 1.0, 'ai_reasoning': 'The evidence of XSS payload being reflected in the response directly indicates a true positive vulnerability.'}}]
+[2026-11-19T11:06:47Z] PHASE 3 ai-triage (4 runs)
+[run_experiments] target-list: 338 endpoint(s), 338 with an injectable param -> /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json
+[run_experiments] grid: budgets=[10, 20, 50, 0] x conditions=['ai-triage'] => 4 run(s)
+[run_experiments] ==> Corrida 1/4 · budget=10 · ai-triage
+[0/4] [run_experiments] RUN  budget10_aitriage
+[0/4] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 10 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget10_aitriage --output /home/luis/Documentos/wss-paper/testbed/results/budget10_aitriage/report --output-format json --lang en --enable-ai-triaging --global-seed 42 --ai-backend transformers --ai-model /home/luis/Documentos/Web_security_scanner/runs/triage-redteam-qlora/merged --ai-temperature 0 --warmup 20
+[0/4] [run_experiments]      telemetry OK: 16346 rows, request_index 1..16346, 12 payload families
+[0/4] [run_experiments]      TP=131 FP=72 FN=63 P=0.645320197044335 R=0.6752577319587629 F1=0.6599496221662469 FPR=0.013888888888888888
+[run_experiments] ==> Corrida 2/4 · budget=20 · ai-triage
+[1/4] [run_experiments] RUN  budget20_aitriage
+[1/4] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 20 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget20_aitriage --output /home/luis/Documentos/wss-paper/testbed/results/budget20_aitriage/report --output-format json --lang en --enable-ai-triaging --global-seed 42 --ai-backend transformers --ai-model /home/luis/Documentos/Web_security_scanner/runs/triage-redteam-qlora/merged --ai-temperature 0 --warmup 20
+[1/4] [run_experiments]      telemetry OK: 31154 rows, request_index 1..31154, 15 payload families
+[1/4] [run_experiments]      TP=137 FP=77 FN=57 P=0.6401869158878505 R=0.7061855670103093 F1=0.6715686274509804 FPR=0.013888888888888888
+[run_experiments] ==> Corrida 3/4 · budget=50 · ai-triage
+[2/4] [run_experiments] RUN  budget50_aitriage
+[2/4] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 50 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget50_aitriage --output /home/luis/Documentos/wss-paper/testbed/results/budget50_aitriage/report --output-format json --lang en --enable-ai-triaging --global-seed 42 --ai-backend transformers --ai-model /home/luis/Documentos/Web_security_scanner/runs/triage-redteam-qlora/merged --ai-temperature 0 --warmup 20
+[2/4] [run_experiments]      telemetry OK: 75176 rows, request_index 1..75176, 15 payload families
+[2/4] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+[run_experiments] ==> Corrida 4/4 · budget=unlimited · ai-triage
+[3/4] [run_experiments] RUN  budget0_aitriage
+[3/4] [run_experiments]      /home/luis/Documentos/Web_security_scanner/.venv/bin/python -m web_security_scanner.cli scan https://127.0.0.1:8443/benchmark/ --target-list /home/luis/Documentos/wss-paper/testbed/benchmark_targets.json --no-verify-ssl --allow-private-redirects --max-payloads 0 --telemetry-dir /home/luis/Documentos/wss-paper/testbed/results/budget0_aitriage --output /home/luis/Documentos/wss-paper/testbed/results/budget0_aitriage/report --output-format json --lang en --enable-ai-triaging --global-seed 42 --ai-backend transformers --ai-model /home/luis/Documentos/Web_security_scanner/runs/triage-redteam-qlora/merged --ai-temperature 0 --warmup 20
+[3/4] [run_experiments]      telemetry OK: 345319 rows, request_index 1..345319, 15 payload families
+[3/4] [run_experiments]      TP=137 FP=95 FN=57 P=0.5905172413793104 R=0.7061855670103093 F1=0.6431924882629109 FPR=0.020833333333333332
+
+==============================================================
+ Experiment sweep complete — 4 run(s) in 387m14s
+==============================================================
+    budget │ condition            │      F1 │ status
+ ──────────┼──────────────────────┼─────────┼───────
+        10 │ ai-triage            │  0.6599 │ ok
+        20 │ ai-triage            │  0.6716 │ ok
+        50 │ ai-triage            │  0.6432 │ ok
+ unlimited │ ai-triage            │  0.6432 │ ok
+==============================================================
+ ✓  every run completed with status=ok
+ ✓  CSV written to testbed/experiment_results_rev.csv
+==============================================================
+[2026-11-19T17:34:02Z] PHASE 4 ZAP 2.17.0
+ebf59a4f91ad1c61ba25ca7273b116998c27b44fc151ea7b9ce191295351ab0b
+[zap] daemon ready, version=2.17.0
+[zap] 338 targets
+[zap] accessed 338 URLs, spider-free
+[zap] [1/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00041?BenchmarkTest00041=1
+[zap] [2/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00047?BenchmarkTest00047=1
+[zap] [3/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00048?BenchmarkTest00048=1
+[zap] [4/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00049?BenchmarkTest00049=1
+[zap] [5/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00367?BenchmarkTest00367=1
+[zap] [6/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00021?BenchmarkTest00021=1
+[zap] [7/338] done: https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00026?BenchmarkTest00026=1
+[zap] [8/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00362?BenchmarkTest00362=1
+[zap] [9/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00377?BenchmarkTest00377=1
+[zap] [10/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00387?BenchmarkTest00387=1
+[zap] [11/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00392?BenchmarkTest00392=1
+[zap] [12/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00412?BenchmarkTest00412=1
+[zap] [13/338] done: https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00432?BenchmarkTest00432=1
+[zap] [14/338] done: https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00437?BenchmarkTest00437=1
+[zap] [15/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00452?BenchmarkTest00452=1
+[zap] [16/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00457?BenchmarkTest00457=1
+[zap] [17/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00467?BenchmarkTest00467=1
+[zap] [18/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00472?BenchmarkTest00472=1
+[zap] [19/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00477?BenchmarkTest00477=1
+[zap] [20/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00492?BenchmarkTest00492=1
+[zap] [21/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00497?BenchmarkTest00497=1
+[zap] [22/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00512?BenchmarkTest00512=1
+[zap] [23/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00517?BenchmarkTest00517=1
+[zap] [24/338] done: https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00382?BenchmarkTest00382=1
+[zap] [25/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00619?BenchmarkTest00619=1
+[zap] [26/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00624?BenchmarkTest00624=1
+[zap] [27/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00629?BenchmarkTest00629=1
+[zap] [28/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00649?BenchmarkTest00649=1
+[zap] [29/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00659?BenchmarkTest00659=1
+[zap] [30/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00674?BenchmarkTest00674=1
+[zap] [31/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00679?BenchmarkTest00679=1
+[zap] [32/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00694?BenchmarkTest00694=1
+[zap] [33/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00699?BenchmarkTest00699=1
+[zap] [34/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00714?BenchmarkTest00714=1
+[zap] [35/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00719?BenchmarkTest00719=1
+[zap] [36/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00724?BenchmarkTest00724=1
+[zap] [37/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00729?BenchmarkTest00729=1
+[zap] [38/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00739?BenchmarkTest00739=1
+[zap] [39/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00764?BenchmarkTest00764=1
+[zap] [40/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00769?BenchmarkTest00769=1
+[zap] [41/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00774?BenchmarkTest00774=1
+[zap] [42/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00644?BenchmarkTest00644=1
+[zap] [43/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00783?BenchmarkTest00783=1
+[zap] [44/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00784?BenchmarkTest00784=1
+[zap] [45/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00785?BenchmarkTest00785=1
+[zap] [46/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00786?BenchmarkTest00786=1
+[zap] [47/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00788?BenchmarkTest00788=1
+[zap] [48/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00799?BenchmarkTest00799=1
+[zap] [49/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00800?BenchmarkTest00800=1
+[zap] [50/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00801?BenchmarkTest00801=1
+[zap] [51/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00802?BenchmarkTest00802=1
+[zap] [52/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00803?BenchmarkTest00803=1
+[zap] [53/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00804?BenchmarkTest00804=1
+[zap] [54/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00805?BenchmarkTest00805=1
+[zap] [55/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00806?BenchmarkTest00806=1
+[zap] [56/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00807?BenchmarkTest00807=1
+[zap] [57/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00808?BenchmarkTest00808=1
+[zap] [58/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00809?BenchmarkTest00809=1
+[zap] [59/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00810?BenchmarkTest00810=1
+[zap] [60/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00787?BenchmarkTest00787=1
+[zap] [61/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00811?BenchmarkTest00811=1
+[zap] [62/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00812?BenchmarkTest00812=1
+[zap] [63/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00813?BenchmarkTest00813=1
+[zap] [64/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00814?BenchmarkTest00814=1
+[zap] [65/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00823?BenchmarkTest00823=1
+[zap] [66/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00825?BenchmarkTest00825=1
+[zap] [67/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00826?BenchmarkTest00826=1
+[zap] [68/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00407?BenchmarkTest00407=1
+[zap] [69/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00827?BenchmarkTest00827=1
+[zap] [70/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00837?BenchmarkTest00837=1
+[zap] [71/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00838?BenchmarkTest00838=1
+[zap] [72/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00839?BenchmarkTest00839=1
+[zap] [73/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00840?BenchmarkTest00840=1
+[zap] [74/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00841?BenchmarkTest00841=1
+[zap] [75/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00842?BenchmarkTest00842=1
+[zap] [76/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00822?BenchmarkTest00822=1
+[zap] [77/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00843?BenchmarkTest00843=1
+[zap] [78/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00845?BenchmarkTest00845=1
+[zap] [79/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00846?BenchmarkTest00846=1
+[zap] [80/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00847?BenchmarkTest00847=1
+[zap] [81/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00848?BenchmarkTest00848=1
+[zap] [82/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00849?BenchmarkTest00849=1
+[zap] [83/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00850?BenchmarkTest00850=1
+[zap] [84/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00851?BenchmarkTest00851=1
+[zap] [85/338] done: https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00862?BenchmarkTest00862=1
+[zap] [86/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest00867?BenchmarkTest00867=1
+[zap] [87/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00882?BenchmarkTest00882=1
+[zap] [88/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00844?BenchmarkTest00844=1
+[zap] [89/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00887?BenchmarkTest00887=1
+[zap] [90/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00897?BenchmarkTest00897=1
+[zap] [91/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00927?BenchmarkTest00927=1
+[zap] [92/338] done: https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00932?BenchmarkTest00932=1
+[zap] [93/338] done: https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest00937?BenchmarkTest00937=1
+[zap] [94/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01233?BenchmarkTest01233=1
+[zap] [95/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01238?BenchmarkTest01238=1
+[zap] [96/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01243?BenchmarkTest01243=1
+[zap] [97/338] done: https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00892?BenchmarkTest00892=1
+[zap] [98/338] done: https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01253?BenchmarkTest01253=1
+[zap] [99/338] done: https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01258?BenchmarkTest01258=1
+[zap] [100/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00815?BenchmarkTest00815=1
+[zap] [101/338] done: https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01268?BenchmarkTest01268=1
+[zap] [102/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01288?BenchmarkTest01288=1
+[zap] [103/338] done: https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01303?BenchmarkTest01303=1
+[zap] [104/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00816?BenchmarkTest00816=1
+[zap] [105/338] done: https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00824?BenchmarkTest00824=1
+[zap] [106/338] done: https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01308?BenchmarkTest01308=1
+[zap] [107/338] done: https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01313?BenchmarkTest01313=1
+[zap] [108/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01328?BenchmarkTest01328=1
+[zap] [109/338] done: https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01338?BenchmarkTest01338=1
+[zap] [110/338] done: https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01343?BenchmarkTest01343=1
+[zap] [111/338] done: https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01263?BenchmarkTest01263=1
+[zap] [112/338] done: https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01348?BenchmarkTest01348=1
+[zap] [113/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01353?BenchmarkTest01353=1
+[zap] [114/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01363?BenchmarkTest01363=1
+[zap] [115/338] done: https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01378?BenchmarkTest01378=1
+[zap] [116/338] done: https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01383?BenchmarkTest01383=1
+[zap] [117/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01393?BenchmarkTest01393=1
+[zap] [118/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01491?BenchmarkTest01491=1
+[zap] [119/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01496?BenchmarkTest01496=1
+[zap] [120/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01501?BenchmarkTest01501=1
+[zap] [121/338] done: https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01506?BenchmarkTest01506=1
+[zap] [122/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01511?BenchmarkTest01511=1
+[zap] [123/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01516?BenchmarkTest01516=1
+[zap] [124/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01526?BenchmarkTest01526=1
+[zap] [125/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01531?BenchmarkTest01531=1
+[zap] [126/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01556?BenchmarkTest01556=1
+[zap] [127/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01571?BenchmarkTest01571=1
+[zap] [128/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01586?BenchmarkTest01586=1
+[zap] [129/338] done: https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01388?BenchmarkTest01388=1
+[zap] [130/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01591?BenchmarkTest01591=1
+[zap] [131/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01596?BenchmarkTest01596=1
+[zap] [132/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01606?BenchmarkTest01606=1
+[zap] [133/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01621?BenchmarkTest01621=1
+[zap] [134/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01626?BenchmarkTest01626=1
+[zap] [135/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01631?BenchmarkTest01631=1
+[zap] [136/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01643?BenchmarkTest01643=1
+[zap] [137/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01644?BenchmarkTest01644=1
+[zap] [138/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01645?BenchmarkTest01645=1
+[zap] [139/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01646?BenchmarkTest01646=1
+[zap] [140/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01647?BenchmarkTest01647=1
+[zap] [141/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01657?BenchmarkTest01657=1
+[zap] [142/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01658?BenchmarkTest01658=1
+[zap] [143/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01659?BenchmarkTest01659=1
+[zap] [144/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01660?BenchmarkTest01660=1
+[zap] [145/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01661?BenchmarkTest01661=1
+[zap] [146/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01662?BenchmarkTest01662=1
+[zap] [147/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01663?BenchmarkTest01663=1
+[zap] [148/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01664?BenchmarkTest01664=1
+[zap] [149/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01665?BenchmarkTest01665=1
+[zap] [150/338] done: https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01642?BenchmarkTest01642=1
+[zap] [151/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01666?BenchmarkTest01666=1
+[zap] [152/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01667?BenchmarkTest01667=1
+[zap] [153/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01668?BenchmarkTest01668=1
+[zap] [154/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01670?BenchmarkTest01670=1
+[zap] [155/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01671?BenchmarkTest01671=1
+[zap] [156/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01672?BenchmarkTest01672=1
+[zap] [157/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01686?BenchmarkTest01686=1
+[zap] [158/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01687?BenchmarkTest01687=1
+[zap] [159/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01669?BenchmarkTest01669=1
+[zap] [160/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01688?BenchmarkTest01688=1
+[zap] [161/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01690?BenchmarkTest01690=1
+[zap] [162/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01691?BenchmarkTest01691=1
+[zap] [163/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01692?BenchmarkTest01692=1
+[zap] [164/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01693?BenchmarkTest01693=1
+[zap] [165/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01689?BenchmarkTest01689=1
+[zap] [166/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01712?BenchmarkTest01712=1
+[zap] [167/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01713?BenchmarkTest01713=1
+[zap] [168/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01601?BenchmarkTest01601=1
+[zap] [169/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01714?BenchmarkTest01714=1
+[zap] [170/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01715?BenchmarkTest01715=1
+[zap] [171/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01716?BenchmarkTest01716=1
+[zap] [172/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01717?BenchmarkTest01717=1
+[zap] [173/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01718?BenchmarkTest01718=1
+[zap] [174/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01719?BenchmarkTest01719=1
+[zap] [175/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01720?BenchmarkTest01720=1
+[zap] [176/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01721?BenchmarkTest01721=1
+[zap] [177/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01722?BenchmarkTest01722=1
+[zap] [178/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01723?BenchmarkTest01723=1
+[zap] [179/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01724?BenchmarkTest01724=1
+[zap] [180/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01725?BenchmarkTest01725=1
+[zap] [181/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01726?BenchmarkTest01726=1
+[zap] [182/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01727?BenchmarkTest01727=1
+[zap] [183/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01729?BenchmarkTest01729=1
+[zap] [184/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01730?BenchmarkTest01730=1
+[zap] [185/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01731?BenchmarkTest01731=1
+[zap] [186/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01673?BenchmarkTest01673=1
+[zap] [187/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01685?BenchmarkTest01685=1
+[zap] [188/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01732?BenchmarkTest01732=1
+[zap] [189/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01733?BenchmarkTest01733=1
+[zap] [190/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01746?BenchmarkTest01746=1
+[zap] [191/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01728?BenchmarkTest01728=1
+[zap] [192/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01756?BenchmarkTest01756=1
+[zap] [193/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01771?BenchmarkTest01771=1
+[zap] [194/338] done: https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01776?BenchmarkTest01776=1
+[zap] [195/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01791?BenchmarkTest01791=1
+[zap] [196/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest01796?BenchmarkTest01796=1
+[zap] [197/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01806?BenchmarkTest01806=1
+[zap] [198/338] done: https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01811?BenchmarkTest01811=1
+[zap] [199/338] done: https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest01816?BenchmarkTest01816=1
+[zap] [200/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02108?BenchmarkTest02108=1
+[zap] [201/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01674?BenchmarkTest01674=1
+[zap] [202/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02113?BenchmarkTest02113=1
+[zap] [203/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02123?BenchmarkTest02123=1
+[zap] [204/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02128?BenchmarkTest02128=1
+[zap] [205/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02133?BenchmarkTest02133=1
+[zap] [206/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02148?BenchmarkTest02148=1
+[zap] [207/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01751?BenchmarkTest01751=1
+[zap] [208/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02153?BenchmarkTest02153=1
+[zap] [209/338] done: https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02173?BenchmarkTest02173=1
+[zap] [210/338] done: https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02178?BenchmarkTest02178=1
+[zap] [211/338] done: https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02183?BenchmarkTest02183=1
+[zap] [212/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02198?BenchmarkTest02198=1
+[zap] [213/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02203?BenchmarkTest02203=1
+[zap] [214/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02208?BenchmarkTest02208=1
+[zap] [215/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02223?BenchmarkTest02223=1
+[zap] [216/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02228?BenchmarkTest02228=1
+[zap] [217/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02233?BenchmarkTest02233=1
+[zap] [218/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02238?BenchmarkTest02238=1
+[zap] [219/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02253?BenchmarkTest02253=1
+[zap] [220/338] done: https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02268?BenchmarkTest02268=1
+[zap] [221/338] done: https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02273?BenchmarkTest02273=1
+[zap] [222/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02278?BenchmarkTest02278=1
+[zap] [223/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02283?BenchmarkTest02283=1
+[zap] [224/338] done: https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02188?BenchmarkTest02188=1
+[zap] [225/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02288?BenchmarkTest02288=1
+[zap] [226/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02377?BenchmarkTest02377=1
+[zap] [227/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02397?BenchmarkTest02397=1
+[zap] [228/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02402?BenchmarkTest02402=1
+[zap] [229/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02407?BenchmarkTest02407=1
+[zap] [230/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02452?BenchmarkTest02452=1
+[zap] [231/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02462?BenchmarkTest02462=1
+[zap] [232/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02467?BenchmarkTest02467=1
+[zap] [233/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02472?BenchmarkTest02472=1
+[zap] [234/338] done: https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02482?BenchmarkTest02482=1
+[zap] [235/338] done: https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02382?BenchmarkTest02382=1
+[zap] [236/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02487?BenchmarkTest02487=1
+[zap] [237/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02512?BenchmarkTest02512=1
+[zap] [238/338] done: https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02517?BenchmarkTest02517=1
+[zap] [239/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02532?BenchmarkTest02532=1
+[zap] [240/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02537?BenchmarkTest02537=1
+[zap] [241/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02542?BenchmarkTest02542=1
+[zap] [242/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02553?BenchmarkTest02553=1
+[zap] [243/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02554?BenchmarkTest02554=1
+[zap] [244/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02492?BenchmarkTest02492=1
+[zap] [245/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02555?BenchmarkTest02555=1
+[zap] [246/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02556?BenchmarkTest02556=1
+[zap] [247/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02557?BenchmarkTest02557=1
+[zap] [248/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02558?BenchmarkTest02558=1
+[zap] [249/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02559?BenchmarkTest02559=1
+[zap] [250/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02560?BenchmarkTest02560=1
+[zap] [251/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02561?BenchmarkTest02561=1
+[zap] [252/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02562?BenchmarkTest02562=1
+[zap] [253/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02563?BenchmarkTest02563=1
+[zap] [254/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02564?BenchmarkTest02564=1
+[zap] [255/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02565?BenchmarkTest02565=1
+[zap] [256/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02567?BenchmarkTest02567=1
+[zap] [257/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02568?BenchmarkTest02568=1
+[zap] [258/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02569?BenchmarkTest02569=1
+[zap] [259/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02570?BenchmarkTest02570=1
+[zap] [260/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02571?BenchmarkTest02571=1
+[zap] [261/338] done: https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02572?BenchmarkTest02572=1
+[zap] [262/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02578?BenchmarkTest02578=1
+[zap] [263/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02579?BenchmarkTest02579=1
+[zap] [264/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02432?BenchmarkTest02432=1
+[zap] [265/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02566?BenchmarkTest02566=1
+[zap] [266/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02580?BenchmarkTest02580=1
+[zap] [267/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02243?BenchmarkTest02243=1
+[zap] [268/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02581?BenchmarkTest02581=1
+[zap] [269/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02583?BenchmarkTest02583=1
+[zap] [270/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02584?BenchmarkTest02584=1
+[zap] [271/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02585?BenchmarkTest02585=1
+[zap] [272/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02586?BenchmarkTest02586=1
+[zap] [273/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02587?BenchmarkTest02587=1
+[zap] [274/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02588?BenchmarkTest02588=1
+[zap] [275/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02589?BenchmarkTest02589=1
+[zap] [276/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02590?BenchmarkTest02590=1
+[zap] [277/338] done: https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02412?BenchmarkTest02412=1
+[zap] [278/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02591?BenchmarkTest02591=1
+[zap] [279/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02592?BenchmarkTest02592=1
+[zap] [280/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02582?BenchmarkTest02582=1
+[zap] [281/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02593?BenchmarkTest02593=1
+[zap] [282/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02594?BenchmarkTest02594=1
+[zap] [283/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02595?BenchmarkTest02595=1
+[zap] [284/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02597?BenchmarkTest02597=1
+[zap] [285/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02598?BenchmarkTest02598=1
+[zap] [286/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02599?BenchmarkTest02599=1
+[zap] [287/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02600?BenchmarkTest02600=1
+[zap] [288/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02601?BenchmarkTest02601=1
+[zap] [289/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02608?BenchmarkTest02608=1
+[zap] [290/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02609?BenchmarkTest02609=1
+[zap] [291/338] done: https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02610?BenchmarkTest02610=1
+[zap] [292/338] done: https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02612?BenchmarkTest02612=1
+[zap] [293/338] done: https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02613?BenchmarkTest02613=1
+[zap] [294/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02625?BenchmarkTest02625=1
+[zap] [295/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02626?BenchmarkTest02626=1
+[zap] [296/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02627?BenchmarkTest02627=1
+[zap] [297/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02596?BenchmarkTest02596=1
+[zap] [298/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02628?BenchmarkTest02628=1
+[zap] [299/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02629?BenchmarkTest02629=1
+[zap] [300/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02630?BenchmarkTest02630=1
+[zap] [301/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02631?BenchmarkTest02631=1
+[zap] [302/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02633?BenchmarkTest02633=1
+[zap] [303/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02634?BenchmarkTest02634=1
+[zap] [304/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02635?BenchmarkTest02635=1
+[zap] [305/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02636?BenchmarkTest02636=1
+[zap] [306/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02637?BenchmarkTest02637=1
+[zap] [307/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02638?BenchmarkTest02638=1
+[zap] [308/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02639?BenchmarkTest02639=1
+[zap] [309/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02640?BenchmarkTest02640=1
+[zap] [310/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02641?BenchmarkTest02641=1
+[zap] [311/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02642?BenchmarkTest02642=1
+[zap] [312/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02632?BenchmarkTest02632=1
+[zap] [313/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02643?BenchmarkTest02643=1
+[zap] [314/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02644?BenchmarkTest02644=1
+[zap] [315/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02645?BenchmarkTest02645=1
+[zap] [316/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02646?BenchmarkTest02646=1
+[zap] [317/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02648?BenchmarkTest02648=1
+[zap] [318/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02649?BenchmarkTest02649=1
+[zap] [319/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02650?BenchmarkTest02650=1
+[zap] [320/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02651?BenchmarkTest02651=1
+[zap] [321/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02652?BenchmarkTest02652=1
+[zap] [322/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02653?BenchmarkTest02653=1
+[zap] [323/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02654?BenchmarkTest02654=1
+[zap] [324/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02655?BenchmarkTest02655=1
+[zap] [325/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02656?BenchmarkTest02656=1
+[zap] [326/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02657?BenchmarkTest02657=1
+[zap] [327/338] done: https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02647?BenchmarkTest02647=1
+[zap] [328/338] done: https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02667?BenchmarkTest02667=1
+[zap] [329/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02682?BenchmarkTest02682=1
+[zap] [330/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02687?BenchmarkTest02687=1
+[zap] [331/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02692?BenchmarkTest02692=1
+[zap] [332/338] done: https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02697?BenchmarkTest02697=1
+[zap] [333/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02727?BenchmarkTest02727=1
+[zap] [334/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02732?BenchmarkTest02732=1
+[zap] [335/338] done: https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02737?BenchmarkTest02737=1
+[zap] [336/338] done: https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02611?BenchmarkTest02611=1
+[zap] [337/338] done: https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02712?BenchmarkTest02712=1
+[zap] [338/338] done: https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907?BenchmarkTest00907=1
+[zap] all active scans complete in 1976.6s
+[zap] 1242 raw alerts
+[zap] 1219 unique (url, param, type) findings after folding
+[zap] 79247 HTTP messages recorded under https://127.0.0.1:8443/benchmark/
+{
+  "tp": 137,
+  "fp": 1082,
+  "fn": 57,
+  "fp_on_traps": 0,
+  "total_traps": 144,
+  "precision": 0.11238720262510254,
+  "recall": 0.7061855670103093,
+  "f1_score": 0.19391365888181175,
+  "fpr": 0.0,
+  "elapsed_seconds": 1976.6,
+  "n_targets": 338,
+  "n_raw_alerts": 1242,
+  "n_requests": 79247,
+  "zap_version": "2.17.0",
+  "restricted": {
+    "tp": 137,
+    "fp": 17,
+    "fn": 57,
+    "fp_on_traps": 0,
+    "total_traps": 144,
+    "precision": 0.8896103896103896,
+    "recall": 0.7061855670103093,
+    "f1_score": 0.7873563218390804,
+    "fpr": 0.0
+  }
+}
+[2026-11-19T18:07:25Z] PHASE 5 reanalysis
+{
+ "confusion": [
+  {
+   "budget": 0,
+   "condition": "ai-triage",
+   "TP": 137,
+   "FP": 95,
+   "trap": 3,
+   "precision": 0.5905172413793104,
+   "recall": 0.7061855670103093,
+   "f1": 0.6431924882629109,
+   "unique_tuples": 232,
+   "raw_findings": 232,
+   "telemetry_rows": 345319,
+   "wall_clock_s": 6378.315056,
+   "network_requests": 515804,
+   "confirmation_requests": 30
+  },
+  {
+   "budget": 0,
+   "condition": "baseline",
+   "TP": 137,
+   "FP": 95,
+   "trap": 3,
+   "precision": 0.5905172413793104,
+   "recall": 0.7061855670103093,
+   "f1": 0.6431924882629109,
+   "unique_tuples": 232,
+   "raw_findings": 232,
+   "telemetry_rows": 345216,
+   "wall_clock_s": 1576.585514,
+   "network_requests": 515958,
+   "confirmation_requests": 30
+  },
+  {
+   "budget": 0,
+   "condition": "no-adaptive-sorting",
+   "TP": 137,
+   "FP": 95,
+   "trap": 3,
+   "precision": 0.5905172413793104,
+   "recall": 0.7061855670103093,
+   "f1": 0.6431924882629109,
+   "unique_tuples": 232,
+   "raw_findings": 232,
+   "telemetry_rows": 343894,
+   "wall_clock_s": 1613.549223,
+   "network_requests": 514691,
+   "confirmation_requests": 30
+  },
+  {
+   "budget": 0,
+   "condition": "no-interleave",
+   "TP": 137,
+   "FP": 95,
+   "trap": 3,
+   "precision": 0.5905172413793104,
+   "recall": 0.7061855670103093,
+   "f1": 0.6431924882629109,
+   "unique_tuples": 232,
+   "raw_findings": 232,
+   "telemetry_rows": 344778,
+   "wall_clock_s": 1565.802956,
+   "network_requests": 515582,
+   "confirmation_requests": 30
+  },
+  {
+   "budget": 0,
+   "condition": "no-priority",
+   "TP": 137,
+   "FP": 95,
+   "trap": 3,
+   "precision": 0.5905172413793104,
+   "recall": 0.7061855670103093,
+   "f1": 0.6431924882629109,
+   "unique_tuples": 232,
+   "raw_findings": 232,
+   "telemetry_rows": 344506,
+   "wall_clock_s": 1682.910995,
+   "network_requests": 515289,
+   "confirmation_requests": 30
+  },
+  {
+   "budget": 0,
+   "condition": "no-runtime-confirm",
+   "TP": 137,
+   "FP": 95,
+   "trap": 3,
+   "precision": 0.5905172413793104,
+   "recall": 0.7061855670103093,
+   "f1": 0.6431924882629109,
+   "unique_tuples": 232,
+   "raw_findings": 232,
+   "telemetry_rows": 345346,
+   "wall_clock_s": 1587.286383,
+   "network_requests": 516067,
+   "confirmation_requests": 28
+  },
+  {
+   "budget": 10,
+   "condition": "ai-triage",
+   "TP": 131,
+   "FP": 72,
+   "trap": 2,
+   "precision": 0.645320197044335,
+   "recall": 0.6752577319587629,
+   "f1": 0.6599496221662469,
+   "unique_tuples": 203,
+   "raw_findings": 203,
+   "telemetry_rows": 16346,
+   "wall_clock_s": 5089.133184,
+   "network_requests": 59462,
+   "confirmation_requests": 26
+  },
+  {
+   "budget": 10,
+   "condition": "baseline",
+   "TP": 131,
+   "FP": 73,
+   "trap": 3,
+   "precision": 0.6421568627450981,
+   "recall": 0.6752577319587629,
+   "f1": 0.6582914572864321,
+   "unique_tuples": 204,
+   "raw_findings": 204,
+   "telemetry_rows": 16345,
+   "wall_clock_s": 99.416105,
+   "network_requests": 59451,
+   "confirmation_requests": 32
+  },
+  {
+   "budget": 10,
+   "condition": "no-adaptive-sorting",
+   "TP": 131,
+   "FP": 73,
+   "trap": 3,
+   "precision": 0.6421568627450981,
+   "recall": 0.6752577319587629,
+   "f1": 0.6582914572864321,
+   "unique_tuples": 204,
+   "raw_findings": 204,
+   "telemetry_rows": 16094,
+   "wall_clock_s": 99.416148,
+   "network_requests": 59187,
+   "confirmation_requests": 30
+  },
+  {
+   "budget": 10,
+   "condition": "no-interleave",
+   "TP": 131,
+   "FP": 73,
+   "trap": 3,
+   "precision": 0.6421568627450981,
+   "recall": 0.6752577319587629,
+   "f1": 0.6582914572864321,
+   "unique_tuples": 204,
+   "raw_findings": 204,
+   "telemetry_rows": 16359,
+   "wall_clock_s": 99.133053,
+   "network_requests": 59464,
+   "confirmation_requests": 32
+  },
+  {
+   "budget": 10,
+   "condition": "no-priority",
+   "TP": 131,
+   "FP": 73,
+   "trap": 3,
+   "precision": 0.6421568627450981,
+   "recall": 0.6752577319587629,
+   "f1": 0.6582914572864321,
+   "unique_tuples": 204,
+   "raw_findings": 204,
+   "telemetry_rows": 16089,
+   "wall_clock_s": 104.590618,
+   "network_requests": 58686,
+   "confirmation_requests": 32
+  },
+  {
+   "budget": 10,
+   "condition": "no-runtime-confirm",
+   "TP": 131,
+   "FP": 73,
+   "trap": 3,
+   "precision": 0.6421568627450981,
+   "recall": 0.6752577319587629,
+   "f1": 0.6582914572864321,
+   "unique_tuples": 204,
+   "raw_findings": 204,
+   "telemetry_rows": 16351,
+   "wall_clock_s": 100.468513,
+   "network_requests": 59446,
+   "confirmation_requests": 28
+  },
+  {
+   "budget": 20,
+   "condition": "ai-triage",
+   "TP": 137,
+   "FP": 77,
+   "trap": 2,
+   "precision": 0.6401869158878505,
+   "recall": 0.7061855670103093,
+   "f1": 0.6715686274509804,
+   "unique_tuples": 214,
+   "raw_findings": 214,
+   "telemetry_rows": 31154,
+   "wall_clock_s": 5479.20155,
+   "network_requests": 84932,
+   "confirmation_requests": 26
+  },
+  {
+   "budget": 20,
+   "condition": "baseline",
+   "TP": 137,
+   "FP": 78,
+   "trap": 3,
+   "precision": 0.6372093023255814,
+   "recall": 0.7061855670103093,
+   "f1": 0.6699266503667481,
+   "unique_tuples": 215,
+   "raw_findings": 215,
+   "telemetry_rows": 31144,
+   "wall_clock_s": 150.45399,
+   "network_requests": 84892,
+   "confirmation_requests": 32
+  },
+  {
+   "budget": 20,
+   "condition": "no-adaptive-sorting",
+   "TP": 137,
+   "FP": 78,
+   "trap": 3,
+   "precision": 0.6372093023255814,
+   "recall": 0.7061855670103093,
+   "f1": 0.6699266503667481,
+   "unique_tuples": 215,
+   "raw_findings": 215,
+   "telemetry_rows": 30890,
+   "wall_clock_s": 150.585708,
+   "network_requests": 84646,
+   "confirmation_requests": 32
+  },
+  {
+   "budget": 20,
+   "condition": "no-interleave",
+   "TP": 137,
+   "FP": 78,
+   "trap": 3,
+   "precision": 0.6372093023255814,
+   "recall": 0.7061855670103093,
+   "f1": 0.6699266503667481,
+   "unique_tuples": 215,
+   "raw_findings": 215,
+   "telemetry_rows": 31158,
+   "wall_clock_s": 150.34429,
+   "network_requests": 85054,
+   "confirmation_requests": 32
+  },
+  {
+   "budget": 20,
+   "condition": "no-priority",
+   "TP": 131,
+   "FP": 94,
+   "trap": 3,
+   "precision
+[2026-11-19T18:08:17Z] PHASE 6 archive
+a3d6880dabb7bd32a2f60437d5cc1c8372237279e882ff4f499d6900651cafbb  /home/luis/Documentos/wss-paper-artifacts/revision_runs_20261119.tar.gz
+[2026-11-19T18:08:26Z] PIPELINE DONE

@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import hashlib
 import ipaddress
 import logging
@@ -615,6 +616,10 @@ class AsyncScannerCore:
     async def close(self):
         """Close the aiohttp session (idempotent)."""
         session, self.session = self.session, None
+        if session is not None and getattr(self, "network_requests", None) is not None:
+            print(f"[core] network_requests={self.network_requests} "
+                  f"confirmation_requests={getattr(self, 'confirmation_requests', 0)}",
+                  file=sys.stderr)
         if session is not None and not session.closed:
             await session.close()
             # Let underlying transports (esp. TLS) finish closing.
@@ -930,6 +935,10 @@ class AsyncScannerCore:
         if self._rate_bucket is not None:
             await self._rate_bucket.acquire()
 
+        # Measurement only: count requests that actually go on the wire (cache
+        # hits returned above are excluded). Reported on close() so the paper
+        # can state total request volume including confirmation sub-requests.
+        self.network_requests = getattr(self, "network_requests", 0) + 1
         result = await self._request_with_resilience(
             method, url, follow_redirects, caller_headers, kwargs, first_hop_host,
         )

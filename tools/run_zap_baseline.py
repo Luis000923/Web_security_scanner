@@ -141,6 +141,24 @@ def main(argv=None) -> int:
         key = (oracle.normalize_url(url), param, oracle.canonicalize_type(vtype))
         findings.add(key)
     print(f"[zap] {len(findings)} unique (url, param, type) findings after folding")
+    # Persist the alert-to-tuple mapping (reviewer request) and the folded
+    # tuples, so instance-level overlap with the scanner can be computed.
+    mapping = [
+        {"alert": a.get("alert", "") or a.get("name", ""),
+         "pluginId": a.get("pluginId"), "url": a.get("url", ""),
+         "param": a.get("param", "") or "",
+         "tuple": [oracle.normalize_url(a.get("url", "")), a.get("param", "") or "",
+                   oracle.canonicalize_type(a.get("alert", "") or a.get("name", ""))]}
+        for a in alerts if a.get("param")
+    ]
+    (args.out / "zap_alert_to_tuple.json").write_text(json.dumps(mapping, indent=2))
+    (args.out / "zap_tuples.json").write_text(json.dumps(sorted(map(list, findings)), indent=2))
+    try:
+        n_msgs = int(zap_get(base, "/JSON/core/view/numberOfMessages/",
+                             baseurl=base_url).get("numberOfMessages", -1))
+    except Exception:
+        n_msgs = -1
+    print(f"[zap] {n_msgs} HTTP messages recorded under {base_url}")
 
     gt = oracle.load_ground_truth(args.ground_truth)
     metrics = oracle.evaluate(findings, gt)
@@ -148,6 +166,8 @@ def main(argv=None) -> int:
     result["elapsed_seconds"] = round(elapsed, 1)
     result["n_targets"] = len(targets)
     result["n_raw_alerts"] = len(alerts)
+    result["n_requests"] = n_msgs
+    result["zap_version"] = zap_get(base, "/JSON/core/view/version/").get("version")
 
     # Restricted variant: only alerts whose canonical type is one of the five
     # categories this ground truth actually scores (drops ZAP's unrelated
