@@ -60,7 +60,7 @@ def compute_simhash(tokens: Sequence[str], bit_size: int = 64) -> int:
 
     v = [0] * bit_size
     for token in tokens:
-        token_hash = int(hashlib.md5(token.encode("utf-8")).hexdigest(), 16)
+        token_hash = int(hashlib.md5(token.encode("utf-8"), usedforsecurity=False).hexdigest(), 16)
         for i in range(bit_size):
             bit = (token_hash >> i) & 1
             v[i] += 1 if bit else -1
