@@ -87,3 +87,6 @@ docs_context/
 
 # QLoRA training outputs / experiment telemetry
 runs/
+
+# Local MariaDB demonstration data
+.demo_lab_mysql/

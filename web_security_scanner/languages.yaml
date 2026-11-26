@@ -91,6 +91,11 @@ en:
     credential_exposure: "Credential / Secret Exposure"
     cookie_security: "Insecure Cookie Configuration"
     protocol_injection: "Protocol / Header Injection"
+    cors_misconfig: "CORS Misconfiguration"
+    jwt_weak: "Weak / Forgeable JWT"
+    account_enum: "Account Enumeration"
+    http_smuggling: "HTTP Request Smuggling"
+    prototype_pollution: "Prototype Pollution"
     evidence:
       sqli_error: "Database error message found in response"
       missing_header: "Missing {header} header"
@@ -115,6 +120,11 @@ en:
       credential_exposure: "Credential-shaped secret found exposed in a publicly reachable file"
       cookie_security: "Session cookie missing a required security attribute"
       protocol_injection: "Injected protocol control sequence altered the outbound request/response"
+      cors_misconfig: "Arbitrary Origin ({origin}) reflected in Access-Control-Allow-Origin with credentials allowed"
+      jwt_weak: "JWT accepted by the server after tampering ({technique})"
+      account_enum: "Response for an existing account differs from a non-existing one ({signal})"
+      http_smuggling: "Backend interpreted Content-Length and Transfer-Encoding inconsistently ({variant})"
+      prototype_pollution: "A polluted prototype property was observed on the page's global object"
 
   # Tecnologías
   technologies:
@@ -278,6 +288,11 @@ es:
     credential_exposure: "Exposición de Credenciales / Secretos"
     cookie_security: "Configuración Insegura de Cookies"
     protocol_injection: "Inyección de Protocolo / Cabeceras"
+    cors_misconfig: "Configuración Incorrecta de CORS"
+    jwt_weak: "JWT Débil / Falsificable"
+    account_enum: "Enumeración de Cuentas"
+    http_smuggling: "Contrabando de Peticiones HTTP (Request Smuggling)"
+    prototype_pollution: "Contaminación de Prototipos"
     evidence:
       sqli_error: "Mensaje de error de base de datos encontrado en la respuesta"
       missing_header: "Falta la cabecera {header}"
@@ -302,6 +317,11 @@ es:
       credential_exposure: "Se encontró un secreto con forma de credencial expuesto en un archivo públicamente accesible"
       cookie_security: "A la cookie de sesión le falta un atributo de seguridad requerido"
       protocol_injection: "La secuencia de control de protocolo inyectada alteró la solicitud/respuesta saliente"
+      cors_misconfig: "Origin arbitrario ({origin}) reflejado en Access-Control-Allow-Origin con credenciales permitidas"
+      jwt_weak: "El servidor aceptó un JWT manipulado ({technique})"
+      account_enum: "La respuesta para una cuenta existente difiere de una inexistente ({signal})"
+      http_smuggling: "El backend interpretó Content-Length y Transfer-Encoding de forma inconsistente ({variant})"
+      prototype_pollution: "Se observó una propiedad de prototipo contaminada en el objeto global de la página"
 
   # Tecnologías
   technologies:

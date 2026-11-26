@@ -206,11 +206,18 @@ async def test_nosql_driver_error_on_redirect_parameter_is_kept():
 
 
 async def test_nosql_still_reported_on_ordinary_parameter():
+    # Positivo real: solo los operadores verdaderos ($ne/$gt) devuelven todos
+    # los usuarios; su gemelo falso ($eq/$lt) y cualquier caracter generico
+    # (', ", )) responden como la linea base. Antes el fixture devolvia "all
+    # users" para *cualquier* valor no numerico, que es justo la senal generica
+    # que la atribucion de clase refuta (ver tests/test_fp_injection_attribution.py).
     def responder(method, url, kwargs):
         value = param_value(url, "id")
-        if value.startswith("benign") or value.isdigit():
-            return {"status_code": 200, "text": "user 1"}
-        return {"status_code": 200, "text": "all users " * 100}
+        truthy = ("$ne" in value or "$gt" in value) and not (
+            "$eq" in value or "$lt" in value)
+        if truthy:
+            return {"status_code": 200, "text": "all users " * 100}
+        return {"status_code": 200, "text": "user 1"}
 
     found = await collect_vulns(NoSQLInjectionTester, responder, target=ID_URL)
     assert found

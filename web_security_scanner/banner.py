@@ -27,6 +27,7 @@ def print_banner():
 
     banner = (
         f"{Fore.CYAN}╔{'═' * width}╗\n"
+        f"{center('WSS', width, Fore.GREEN)}\n"
         f"{center(title, width, Fore.GREEN)}\n"
         f"{center(subtitle, width, Fore.YELLOW)}\n"
         f"{left_align(feat1, width)}\n"

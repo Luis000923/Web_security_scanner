@@ -66,10 +66,11 @@ def test_path_traversal_confirmed_when_baseline_is_clean():
     # Only a request carrying an actual traversal payload in the query
     # string leaks; the benign baseline value and any non-payload probe
     # come back clean -> both double-oracle checks pass -> CONFIRMED.
+    # Sin allow_destructive solo salen objetivos seguros ante sinks de
+    # escritura (/proc/self/status...), no /etc/passwd.
     def responder(method, url, kwargs):
-        if "etc%2fpasswd" in url.lower() or "etc/passwd" in url.lower() \
-                or "win.ini" in url.lower() or "boot.ini" in url.lower():
-            return {"text": "root:x:0:0:root:/root:/bin/bash"}
+        if "proc%2fself%2fstatus" in url.lower() or "proc/self/status" in url.lower():
+            return {"text": "Pid:\t1\nPPid:\t0\nTracerPid:\t0\n"}
         return {"text": "nothing interesting here"}
     rows = asyncio.run(_run_with_telemetry(PathTraversalTester, responder))
     hits = [r for r in rows if r["decision"] is True]

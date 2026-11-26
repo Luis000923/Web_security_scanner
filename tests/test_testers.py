@@ -47,7 +47,10 @@ from web_security_scanner.utils.i18n import i18n
 
 async def test_sqli_error_based_detected():
     def r(m, u, kw):
-        return {"text": "You have an error in your SQL syntax near '1'"}
+        # Error only once the payload breaks the quoting; baseline stays clean.
+        if "'" in param_value(u, "q"):
+            return {"text": "You have an error in your SQL syntax near '1'"}
+        return {"text": "ok"}
     assert len(await collect_vulns(SQLInjectionTester, r)) > 0
 
 async def test_sqli_time_based_detected():
@@ -157,9 +160,11 @@ async def test_path_traversal_403_no_false_positive():
 # ---- Open Redirect ---------------------------------------------------------
 
 async def test_open_redirect_marker_detected():
+    # El destino de la redireccion sale del parametro (sink real).
     def r(m, u, kw):
-        return {"status_code": 302, "headers": {"Location": f"https://{MARKER}/next"}}
-    assert len(await collect_vulns(OpenRedirectTester, r)) > 0
+        return {"status_code": 302, "headers": {"Location": param_value(u, "q")}}
+    found = await collect_vulns(OpenRedirectTester, r)
+    assert len(found) > 0 and MARKER in found[0]["payload"]
 
 async def test_open_redirect_benign_host_no_fp():
     # A redirect to a legitimate host must NOT trigger.
@@ -208,17 +213,21 @@ async def test_idor_detected_on_distinct_data_object():
         return {"status_code": 200, "text": f"email user{idv}@corp.com username u{idv} " + "x" * 100}
     assert len(await collect_vulns(IDORTester, r)) > 0
 
-async def test_idor_confirmed_when_replay_reproduces_and_id_echoed():
+async def test_idor_high_when_replay_reproduces_and_id_echoed():
     # Deterministic responder -> the replay probe sees the same data-bearing,
-    # id-echoing body as the first probe -> CONFIRMED.
+    # id-echoing body as the first probe -> HIGH. Never CONFIRMED: a
+    # reproducible different record does not prove missing authorization
+    # (a public catalogue behaves the same); only cross-session reaches it.
     def r(m, u, kw):
         idv = param_value(u, "id")
         if idv == "benign_baseline_123":
             return {"status_code": 200, "text": "profile baseline"}
-        return {"status_code": 200, "text": f"email user{idv}@corp.com username u{idv} " + "x" * 100}
+        return {"status_code": 200,
+                "text": f'{{"id": "{idv}", "email": "user{idv}@corp.com"}} ' + "x" * 100}
     found = await collect_vulns(IDORTester, r)
     assert len(found) == 1
-    assert found[0]["confidence"] == "CONFIRMED"
+    assert found[0]["confidence"] == "HIGH"
+    assert found[0]["evidence_kind"] == "differential"
 
 async def test_idor_medium_when_data_indicator_present_but_no_id_echo():
     # Data indicator present, but the object id itself never appears in the
@@ -437,11 +446,17 @@ async def _run_csrf(responder, cookies=()):
 
 
 async def test_csrf_missing_token_detected():
+    # Session cookie that would ride a cross-site POST (SameSite=None+Secure)
+    # -> HIGH. Without any session cookie the same form is only MEDIUM.
     def r(m, u, kw):
         return {"text": '<form method="POST" action="/transfer"><input name="amount"></form>'}
-    found, _ = await _run_csrf(r)
+    cookie = _morsel("sessionid", "abc", samesite="None", secure=True)
+    found, _ = await _run_csrf(r, cookies=[cookie])
     assert len(found) == 1
     assert found[0]["confidence"] == "HIGH"
+    found, _ = await _run_csrf(r)
+    assert len(found) == 1
+    assert found[0]["confidence"] == "MEDIUM"
 
 async def test_csrf_no_finding_for_get_only_forms():
     def r(m, u, kw):
@@ -482,3 +497,21 @@ async def test_csrf_missing_samesite_flagged():
     matches = [f for f in found if "SameSite" in f["evidence"]]
     assert len(matches) == 1
     assert matches[0]["confidence"] == "MEDIUM"
+
+
+async def test_time_based_endpoint_lento_para_todo_no_es_confirmed():
+    # Trampa CMDi del Benchmark: ``ping`` a un host irresoluble en cada peticion.
+    # La linea base se midio con la cache DNS caliente (rapida); despues todo,
+    # tambien el valor benigno, tarda ~7.7s. El retardo no lo causa el payload.
+    state = {"cold": False}
+
+    def r(m, u, kw):
+        value = param_value(u, "q").lower()
+        if any(k in value for k in ("sleep", "waitfor", "delay")):
+            state["cold"] = True  # la cache caduca justo al empezar la sonda
+        return {"text": "ok", "elapsed": 7.7 if state["cold"] else 0.0}
+
+    for cls in (SQLInjectionTester, CommandInjectionTester):
+        state["cold"] = False
+        found = await collect_vulns(cls, r)
+        assert not any(v["confidence"] == "CONFIRMED" for v in found), cls.__name__

@@ -66,8 +66,10 @@ def test_hybrid_constructor_configures_both_tiers():
 
 def _stub_local_backend(monkeypatch, reply_json: str):
     monkeypatch.setattr(AgentClient, "_build_hf_pipeline", lambda self: object())
+    # Mirror the real seam signature exactly: a stale stub raises TypeError,
+    # which the hybrid fallback swallows and silently serves the heuristic tier.
     monkeypatch.setattr(AgentClient, "_generate_hf",
-                        lambda self, system, user, temperature=None: reply_json)
+                        lambda self, system, user, temperature=None, triage=False: reply_json)
 
 
 def test_local_tier_serves_a_real_verdict(monkeypatch):
