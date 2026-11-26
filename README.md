@@ -1,5 +1,11 @@
 # Web Security Scanner
 
+[![CI](https://github.com/Luis000923/Web_security_scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/Luis000923/Web_security_scanner/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+
+> **English summary:** Asynchronous web security scanner built on `asyncio` and `aiohttp`, with a plugin system for vulnerability testers (SQLi, XSS, SSRF, XXE, CSRF, IDOR, path traversal and more), an anti-SSRF guard, rate limiting, and JSON/PDF reports. For authorized security testing and education only.
+
 Escaner de seguridad web asincrono construido sobre `asyncio` y `aiohttp`, con
 un sistema de plugins para los testers de vulnerabilidades y una arquitectura
 orientada a eventos que desacopla el motor de escaneo de la presentacion.
