@@ -14,7 +14,13 @@ from typing import Any
 import aiohttp
 from aiohttp.abc import AbstractResolver, ResolveResult
 
-from .http_client import AsyncHTTPClient, HTTPClientConfig, TokenBucket, read_body_capped
+from .http_client import (
+    AsyncHTTPClient,
+    HTTPClientConfig,
+    TokenBucket,
+    new_client_session,
+    read_body_capped,
+)
 from .telemetry_engine import AdaptiveConcurrencyController, TelemetryEngine
 
 # Small pool of legitimate, current desktop User-Agents. One is picked at
@@ -585,16 +591,15 @@ class AsyncScannerCore:
 
     async def start(self):
         """Initialize the aiohttp session."""
+        # Only ``None`` triggers a rebuild: close() resets it, and a session
+        # closed behind our back must surface as an error, not be replaced
+        # silently (unlike AsyncHTTPClient.start, which also checks .closed).
         if not self.session:
-            connector = self._build_connector()
-            headers = dict(self.config.headers)
-            if self.config.user_agent:
-                headers.setdefault("User-Agent", self.config.user_agent)
-            # Explicit cookie jar so form-login / static session cookies persist
-            # across the whole scan and auto-attach to every probe.
-            self.session = aiohttp.ClientSession(
-                connector=connector, headers=headers,
-                cookie_jar=aiohttp.CookieJar(unsafe=self.config.cookie_jar_unsafe),
+            self.session = new_client_session(
+                self._build_connector(),
+                self.config.headers,
+                self.config.user_agent,
+                cookie_jar_unsafe=self.config.cookie_jar_unsafe,
             )
 
     # ---- authenticated-session hooks --------------------------------

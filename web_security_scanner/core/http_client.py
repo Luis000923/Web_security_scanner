@@ -26,6 +26,30 @@ _READ_CHUNK = 64 * 1024  # 64 KiB per chunk
 MAX_RESPONSE_SIZE = 5 * 1024 * 1024  # 5 MiB
 
 
+def new_client_session(
+    connector: aiohttp.BaseConnector,
+    headers: Mapping[str, str],
+    user_agent: str | None,
+    *,
+    cookie_jar_unsafe: bool,
+) -> aiohttp.ClientSession:
+    """Build the scanner's ``aiohttp.ClientSession``.
+
+    ``user_agent`` only fills ``User-Agent`` when ``headers`` does not set it.
+    The explicit cookie jar makes form-login / static session cookies persist
+    for the whole scan and auto-attach to every probe (``unsafe`` also keeps
+    cookies for bare-IP targets). Callers own the "already started?" check.
+    """
+    session_headers = dict(headers)
+    if user_agent:
+        session_headers.setdefault("User-Agent", user_agent)
+    return aiohttp.ClientSession(
+        connector=connector,
+        headers=session_headers,
+        cookie_jar=aiohttp.CookieJar(unsafe=cookie_jar_unsafe),
+    )
+
+
 async def read_body_capped(response: aiohttp.ClientResponse, limit: int) -> tuple[str, bool, int]:
     """Read a response body defensively, never buffering more than ``limit`` bytes.
 
@@ -195,15 +219,11 @@ class AsyncHTTPClient:
     async def start(self) -> None:
         """Initialize the client session and connection pool."""
         if not self.session or self.session.closed:
-            connector = self._build_connector()
-            headers = dict(self.config.headers)
-            if self.config.user_agent:
-                headers.setdefault("User-Agent", self.config.user_agent)
-
-            self.session = aiohttp.ClientSession(
-                connector=connector,
-                headers=headers,
-                cookie_jar=aiohttp.CookieJar(unsafe=self.config.cookie_jar_unsafe),
+            self.session = new_client_session(
+                self._build_connector(),
+                self.config.headers,
+                self.config.user_agent,
+                cookie_jar_unsafe=self.config.cookie_jar_unsafe,
             )
 
     async def close(self) -> None:
