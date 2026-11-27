@@ -9,4 +9,6 @@ confirmación del humano (ver `../../AGENTS.md` §3).
 
 ## Contenido actual
 
-(vacío)
+- `shared-estado-investigacion.md` — estado verificado de la investigación (antes `AGENTS.md` §1).
+- `shared-backlog-tecnico.md` — deuda de contexto y tooling pendiente.
+- `metrics-class-conditional-detection.md` — evaluación class-conditional.

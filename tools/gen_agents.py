@@ -22,7 +22,7 @@ redaccion. No reescribas. Audita y reporta discrepancias.
 
 ## Contexto obligatorio antes de auditar
 
-Lee `AGENTS.md` del repo. En particular:
+Lee `research/notes/shared-estado-investigacion.md` (antes `AGENTS.md` §1). En particular:
 - §1.5 — hay una discrepancia YA CONOCIDA entre las macros de `_datos.tex`
   (recall 70.6 %) y el CSV real (64.4 %). No la descubras como nueva; verifica
   si sigue abierta y si se propagó a otros documentos.
@@ -86,7 +86,7 @@ podria ser incorrecto aunque las cifras cuadren.
 
 ## Contexto obligatorio
 
-Lee `AGENTS.md` §1.5 (discrepancia macros vs CSV) y §1.6 (insumos
+Lee `research/notes/shared-estado-investigacion.md` §1.5 (discrepancia macros vs CSV) y §1.6 (insumos
 experimentales y coste por corrida). Carga la skill `experiment-protocol` si
 esta disponible: define la potencia esperada, la eleccion de test y los
 confounders conocidos de este repo.
@@ -175,7 +175,7 @@ esta.
 
 ## Contexto obligatorio
 
-Lee `AGENTS.md` completo. En particular §1.1 (el paper previo dio null), §1.2
+Lee `AGENTS.md` y `research/notes/shared-estado-investigacion.md`. En particular §1.1 (el paper previo dio null), §1.2
 (por que: el testbed no generaba ruido), §1.5 (discrepancia de cifras) y §6
 (trampas verificadas). Carga la skill `phd-thesis-framing` si esta disponible:
 define la escalera de contribucion (N1 artefacto, N2 metodo, N3 teoria, N4

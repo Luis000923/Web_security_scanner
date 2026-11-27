@@ -17,7 +17,7 @@ podria ser incorrecto aunque las cifras cuadren.
 
 ## Contexto obligatorio
 
-Lee `AGENTS.md` §1.5 (discrepancia macros vs CSV) y §1.6 (insumos
+Lee `research/notes/shared-estado-investigacion.md` §1.5 (discrepancia macros vs CSV) y §1.6 (insumos
 experimentales y coste por corrida). Carga la skill `experiment-protocol` si
 esta disponible: define la potencia esperada, la eleccion de test y los
 confounders conocidos de este repo.
