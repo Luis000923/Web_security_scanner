@@ -26,13 +26,17 @@ NO TOCAR: <rutas/simbolos fuera de alcance>
 CRITERIOS DE ACEPTACION:
   - [ ] <comando> -> <resultado esperado>
 TESTS: <archivo::test a crear o actualizar>
+REUSO: <ruta::Qual reutilizado | ninguno (formulaciones probadas, motivo)>
 RIESGOS: <imports dinamicos, metaclases, callers omitidos, concurrencia>
 DEUDA DETECTADA (fuera de alcance): <ruta:linea - que>
-SKILL PARA EL CODER: <context-navigation|scoped-testing|diff-code-review|debt-isolation>
+SKILL PARA EL CODER: <context-navigation|scoped-testing|diff-code-review|debt-isolation|reuse-before-write>
 ```
 
 ## Reglas
 - Cada cambio nombra archivo y simbolo que existen en L0, o se marca "nuevo".
+- Antes de marcar "nuevo" una funcion de >= 8 lineas: `python3 tools/dup_guard.py --lookup "<proposito>"`
+  (skill `reuse-before-write`). Si hay hit, el cambio es "modificar" o
+  reutilizar; si no, la linea REUSO dice por que.
 - Maximo 7 cambios por spec; si hay mas, parte en varios specs.
 - Funcional y deuda nunca en el mismo spec (skill `debt-isolation`).
 

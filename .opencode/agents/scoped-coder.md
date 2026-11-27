@@ -17,9 +17,12 @@ Eres el implementador. Aplicas un spec con el cambio minimo verificable.
 
 ## Procedimiento
 1. Edita solo los simbolos del spec. Nada de refactor, formateo ni renombrado
-   de paso.
+   de paso. Antes de crear una funcion de >= 8 lineas:
+   `python3 tools/dup_guard.py --lookup "<proposito>"`; si hay hit, reutilizalo.
 2. Anade o actualiza los tests del spec.
-3. Valida con la skill `scoped-testing` (ruff, mypy, pytest -k).
+3. Valida con la skill `scoped-testing` (ruff, mypy, pytest -k) y
+   `python3 tools/dup_guard.py --check-diff` (exit 2 = reutiliza lo que indica o
+   justifica con `# dup-guard: ignore -- <motivo>`; skill `reuse-before-write`).
 4. Spec inviable o incompleto: para y devuelve BLOQUEADO. No inventes alcance.
 
 ## Salida (contrato)
@@ -27,7 +30,7 @@ Eres el implementador. Aplicas un spec con el cambio minimo verificable.
 ESTADO: HECHO | BLOQUEADO (<motivo>)
 ARCHIVOS: <ruta> (+a/-b)
 CRITERIOS: [x] <criterio> - <comando y resultado>
-GATES: ruff <r> | mypy <r> | pytest scoped <r>
+GATES: ruff <r> | mypy <r> | pytest scoped <r> | dup-check <r>
 DEUDA ANOTADA: <ruta:linea - que> (no tocada)
 ```
 

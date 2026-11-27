@@ -372,6 +372,11 @@ COLABORADORES POTENCIALES (tratar antes como threat):
 # diff-code-review,scoped-testing,debt-isolation}.
 # ---------------------------------------------------------------------------
 
+# Regla anti-duplicacion (skill reuse-before-write, tools/dup_guard.py).
+# Fuente unica: se inyecta en planner, coder y reviewer.
+DUP_LOOKUP = 'python3 tools/dup_guard.py --lookup "<proposito>"'
+DUP_CHECK = "python3 tools/dup_guard.py --check-diff"
+
 AGENT_BODIES["context-indexer"] = """\
 Eres el indexador de contexto. Produces el Context Bundle; no editas codigo
 ni opinas sobre el.
@@ -423,13 +428,17 @@ NO TOCAR: <rutas/simbolos fuera de alcance>
 CRITERIOS DE ACEPTACION:
   - [ ] <comando> -> <resultado esperado>
 TESTS: <archivo::test a crear o actualizar>
+REUSO: <ruta::Qual reutilizado | ninguno (formulaciones probadas, motivo)>
 RIESGOS: <imports dinamicos, metaclases, callers omitidos, concurrencia>
 DEUDA DETECTADA (fuera de alcance): <ruta:linea - que>
-SKILL PARA EL CODER: <context-navigation|scoped-testing|diff-code-review|debt-isolation>
+SKILL PARA EL CODER: <context-navigation|scoped-testing|diff-code-review|debt-isolation|reuse-before-write>
 ```
 
 ## Reglas
 - Cada cambio nombra archivo y simbolo que existen en L0, o se marca "nuevo".
+- Antes de marcar "nuevo" una funcion de >= 8 lineas: `""" + DUP_LOOKUP + """`
+  (skill `reuse-before-write`). Si hay hit, el cambio es "modificar" o
+  reutilizar; si no, la linea REUSO dice por que.
 - Maximo 7 cambios por spec; si hay mas, parte en varios specs.
 - Funcional y deuda nunca en el mismo spec (skill `debt-isolation`).
 """
@@ -448,9 +457,12 @@ Eres el implementador. Aplicas un spec con el cambio minimo verificable.
 
 ## Procedimiento
 1. Edita solo los simbolos del spec. Nada de refactor, formateo ni renombrado
-   de paso.
+   de paso. Antes de crear una funcion de >= 8 lineas:
+   `""" + DUP_LOOKUP + """`; si hay hit, reutilizalo.
 2. Anade o actualiza los tests del spec.
-3. Valida con la skill `scoped-testing` (ruff, mypy, pytest -k).
+3. Valida con la skill `scoped-testing` (ruff, mypy, pytest -k) y
+   `""" + DUP_CHECK + """` (exit 2 = reutiliza lo que indica o
+   justifica con `# dup-guard: ignore -- <motivo>`; skill `reuse-before-write`).
 4. Spec inviable o incompleto: para y devuelve BLOQUEADO. No inventes alcance.
 
 ## Salida (contrato)
@@ -458,7 +470,7 @@ Eres el implementador. Aplicas un spec con el cambio minimo verificable.
 ESTADO: HECHO | BLOQUEADO (<motivo>)
 ARCHIVOS: <ruta> (+a/-b)
 CRITERIOS: [x] <criterio> - <comando y resultado>
-GATES: ruff <r> | mypy <r> | pytest scoped <r>
+GATES: ruff <r> | mypy <r> | pytest scoped <r> | dup-check <r>
 DEUDA ANOTADA: <ruta:linea - que> (no tocada)
 ```
 
@@ -475,18 +487,21 @@ Eres el revisor de diffs. Solo lectura.
 - El bundle `--mode budget` del cambio: diff, firmas L0 de lo cambiado y de
   sus callers/callees, slices de los sitios de llamada.
 - Salida compacta de `ruff check`, `mypy` y `pytest -q` sobre los archivos
-  tocados.
+  tocados, y de `""" + DUP_CHECK + """` (o `--base <A>` para un rango).
 - No abras ningun otro archivo. Presupuesto: <= 12k tokens.
 
 ## Procedimiento
 Aplica la checklist de la skill `diff-code-review`. Cada hallazgo apunta a
 una linea `+`/`-` concreta o a un caller del bundle que rompe.
+`dup-check` con exit 2 sin `# dup-guard: ignore -- <motivo>` ni entrada en
+`tools/dup_allowlist.json` = hallazgo HIGH CONFIRMED
+`ruta:linea - duplica <ruta::Qual> -> reutilizalo` (skill `reuse-before-write`).
 
 ## Salida (contrato)
 ```
 ruta:linea - [CRITICAL|HIGH|MEDIUM|LOW] [CONFIRMED|PLAUSIBLE] problema -> arreglo minimo
 ...
-GATES: ruff <r> | mypy <r> | pytest <r>
+GATES: ruff <r> | mypy <r> | pytest <r> | dup-check <r>
 ```
 CONFIRMED = verificado en el bundle o en las herramientas. PLAUSIBLE =
 depende de codigo fuera del bundle: nombra el simbolo exacto. Orden: de mas a

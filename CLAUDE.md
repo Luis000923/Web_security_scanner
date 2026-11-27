@@ -25,6 +25,9 @@ plugins, informes JSON/PDF. Investigación, tracks y claims: `AGENTS.md`.
 - Docstrings, comentarios y commits en inglés; los mensajes de hallazgos de
   `tests/` y `tools/` en español.
 - Localiza código por nombre de función, nunca por número de línea.
+- Antes de crear una función de ≥ 8 líneas: `python3 tools/dup_guard.py
+  --lookup "<propósito>"`; antes de cerrar: `--check-diff` (skill
+  `reuse-before-write`; el hook PreToolUse bloquea `git commit` con exit 2).
 - No edites secciones de otro track sin claim (`AGENTS.md` §3–§4).
   Intocables sin decisión humana: `core/adaptive_metrics.py`,
   `tools/eval_oracle.py` y las secciones publicadas del paper.
