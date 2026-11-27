@@ -53,3 +53,50 @@ def test_content_type_of_ausente_o_none() -> None:
     assert content_type_of({}) == ""
     assert content_type_of(None) == ""
     assert content_type_of({"X-Other": "a"}) == ""
+
+
+class _FakeContent:
+    def __init__(self, chunks: list[bytes]) -> None:
+        self._chunks = chunks
+
+    async def iter_chunked(self, _size: int):  # type: ignore[no-untyped-def]
+        for chunk in self._chunks:
+            yield chunk
+
+
+class _FakeResponse:
+    def __init__(self, chunks: list[bytes], encoding: str | None = "utf-8") -> None:
+        self.content = _FakeContent(chunks)
+        self._encoding = encoding
+        self.closed = False
+
+    def get_encoding(self) -> str:
+        if self._encoding is None:
+            raise RuntimeError("no encoding")
+        return self._encoding
+
+    def close(self) -> None:
+        self.closed = True
+
+
+async def test_read_body_capped_bajo_el_limite() -> None:
+    from web_security_scanner.core.http_client import read_body_capped
+
+    resp = _FakeResponse([b"hola ", b"mundo"])
+    assert await read_body_capped(resp, 100) == ("hola mundo", False, 10)  # type: ignore[arg-type]
+    assert not resp.closed
+
+
+async def test_read_body_capped_trunca_y_cierra_el_socket() -> None:
+    from web_security_scanner.core.http_client import read_body_capped
+
+    resp = _FakeResponse([b"aaaa", b"bbbb", b"cccc"])
+    assert await read_body_capped(resp, 6) == ("aaaabb", True, 6)  # type: ignore[arg-type]
+    assert resp.closed
+
+
+async def test_read_body_capped_encoding_desconocido_cae_a_utf8() -> None:
+    from web_security_scanner.core.http_client import read_body_capped
+
+    resp = _FakeResponse(["ñ".encode()], encoding=None)
+    assert await read_body_capped(resp, 100) == ("ñ", False, 2)  # type: ignore[arg-type]

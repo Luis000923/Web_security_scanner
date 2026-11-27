@@ -26,6 +26,43 @@ _READ_CHUNK = 64 * 1024  # 64 KiB per chunk
 MAX_RESPONSE_SIZE = 5 * 1024 * 1024  # 5 MiB
 
 
+async def read_body_capped(response: aiohttp.ClientResponse, limit: int) -> tuple[str, bool, int]:
+    """Read a response body defensively, never buffering more than ``limit`` bytes.
+
+    The body is consumed in ``_READ_CHUNK`` steps from the *decoded*
+    (already decompressed by aiohttp) stream. As soon as the accumulated
+    size would exceed ``limit`` the read stops, the connection is
+    force-closed so the server can't keep feeding us, and the partial body
+    is returned with ``truncated=True``.
+
+    Returns ``(text, truncated, raw_len)``.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    truncated = False
+    async for chunk in response.content.iter_chunked(_READ_CHUNK):
+        if total + len(chunk) > limit:
+            chunks.append(chunk[: limit - total])
+            total = limit
+            truncated = True
+            break
+        chunks.append(chunk)
+        total += len(chunk)
+
+    if truncated:
+        # Abandon the rest of the stream and drop the socket instead of
+        # draining a potentially infinite body.
+        response.close()
+
+    body = b"".join(chunks)
+    try:
+        encoding = response.get_encoding()
+    except (RuntimeError, LookupError):
+        encoding = "utf-8"
+    text = body.decode(encoding or "utf-8", errors="ignore")
+    return text, truncated, total
+
+
 class TokenBucket:
     """Async token bucket rate limiter.
 
@@ -184,30 +221,7 @@ class AsyncHTTPClient:
         self, response: aiohttp.ClientResponse
     ) -> tuple[str, bool, int]:
         """Read response body incrementally, stopping if max_response_size is exceeded."""
-        limit = self.config.max_response_size
-        chunks: list[bytes] = []
-        total = 0
-        truncated = False
-
-        async for chunk in response.content.iter_chunked(_READ_CHUNK):
-            if total + len(chunk) > limit:
-                chunks.append(chunk[: limit - total])
-                total = limit
-                truncated = True
-                break
-            chunks.append(chunk)
-            total += len(chunk)
-
-        if truncated:
-            response.close()
-
-        body = b"".join(chunks)
-        try:
-            encoding = response.get_encoding()
-        except (RuntimeError, LookupError):
-            encoding = "utf-8"
-        text = body.decode(encoding or "utf-8", errors="ignore")
-        return text, truncated, total
+        return await read_body_capped(response, self.config.max_response_size)
 
     async def send_single_request(
         self,
