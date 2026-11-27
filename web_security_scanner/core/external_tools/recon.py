@@ -14,7 +14,7 @@ import json
 import xml.etree.ElementTree as ET
 from typing import Any
 
-from .base import AsyncToolAdapter, sanitize_host
+from .base import AsyncToolAdapter, iter_json_lines, sanitize_host
 
 __all__ = ["NmapAdapter", "NaabuAdapter", "MasscanAdapter"]
 
@@ -98,14 +98,7 @@ class NaabuAdapter(AsyncToolAdapter):
 
     def parse(self, stdout: str) -> list[dict[str, Any]]:
         findings: list[dict[str, Any]] = []
-        for line in stdout.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for record in iter_json_lines(stdout):
             findings.append(
                 {
                     "host": record.get("host") or record.get("ip"),

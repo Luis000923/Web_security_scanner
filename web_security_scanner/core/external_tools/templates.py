@@ -8,11 +8,10 @@ adapter having to know that mapping.
 
 from __future__ import annotations
 
-import json
 import re
 from typing import Any
 
-from .base import AsyncToolAdapter, sanitize_url
+from .base import AsyncToolAdapter, iter_json_lines, sanitize_url
 
 __all__ = ["NucleiAdapter"]
 
@@ -55,14 +54,7 @@ class NucleiAdapter(AsyncToolAdapter):
 
     def parse(self, stdout: str) -> list[dict[str, Any]]:
         findings: list[dict[str, Any]] = []
-        for line in stdout.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for record in iter_json_lines(stdout):
             info = record.get("info", {})
             findings.append(
                 {

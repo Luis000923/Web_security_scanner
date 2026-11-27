@@ -13,10 +13,9 @@ set an injected payload will ever produce".
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
-from .base import AsyncToolAdapter
+from .base import AsyncToolAdapter, iter_json_lines
 
 __all__ = ["InteractshAdapter"]
 
@@ -36,14 +35,7 @@ class InteractshAdapter(AsyncToolAdapter):
 
     def parse(self, stdout: str) -> list[dict[str, Any]]:
         findings: list[dict[str, Any]] = []
-        for line in stdout.splitlines():
-            line = line.strip()
-            if not line or not line.startswith("{"):
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for record in iter_json_lines(stdout, prefix="{"):
             findings.append(
                 {
                     "protocol": record.get("protocol"),
