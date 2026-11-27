@@ -17,7 +17,7 @@ redaccion. No reescribas. Audita y reporta discrepancias.
 
 ## Contexto obligatorio antes de auditar
 
-Lee `AGENTS.md` del repo. En particular:
+Lee `research/notes/shared-estado-investigacion.md` (antes `AGENTS.md` §1). En particular:
 - §1.5 — hay una discrepancia YA CONOCIDA entre las macros de `_datos.tex`
   (recall 70.6 %) y el CSV real (64.4 %). No la descubras como nueva; verifica
   si sigue abierta y si se propagó a otros documentos.

@@ -169,7 +169,15 @@ ignore = ["E501", "B008"]
 python_version = "3.10"
 # The AI subsystem ships in the wheel and is wired into the scan pipeline
 # (--enable-ai-triaging), so it is type-checked alongside the scanner.
-files = ["web_security_scanner", "ai_module"]
+files = [
+    "web_security_scanner",
+    "ai_module",
+    # Agent-context tooling (stdlib only), see AGENTS.md section 2 quater.
+    "tools/context_packer.py",
+    "tools/token_benchmark.py",
+    "tools/context_hook.py",
+    "tools/dup_guard.py",
+]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = false
@@ -178,6 +186,21 @@ no_implicit_optional = true
 # Also type-check the bodies of un-annotated functions (catches indexing /
 # attribute mistakes the default "skip untyped defs" would let through).
 check_untyped_defs = true
+
+# tools/dup_guard.py is held to `mypy --strict` (per-module equivalents of
+# the --strict flags; `strict` itself is not a per-module option).
+[[tool.mypy.overrides]]
+module = ["tools.dup_guard"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
 
 # numpy is not imported anywhere in web_security_scanner/ai_module; it is
 # pulled in transitively by torch (ai_module's optional QLoRA training path).

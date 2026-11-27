@@ -41,11 +41,13 @@ Design
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import shutil
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any, ClassVar
 
@@ -208,6 +210,23 @@ async def _read_capped(stream: asyncio.StreamReader, cap: int, sink: list[bytes]
             sink.append(chunk)
         total += len(chunk)
     return truncated
+
+
+def iter_json_lines(stdout: str, *, prefix: str = "") -> Iterator[Any]:
+    """Yield each JSON value of a JSON-lines ``stdout``, in order.
+
+    Blank lines, lines not starting with ``prefix`` (after stripping) and
+    lines that are not valid JSON are skipped silently: tools interleave
+    banners and progress output with their ``-json`` records.
+    """
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line or not line.startswith(prefix):
+            continue
+        try:
+            yield json.loads(line)
+        except json.JSONDecodeError:
+            continue
 
 
 class AsyncToolAdapter(ABC):

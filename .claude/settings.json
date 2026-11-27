@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PY=\"$CLAUDE_PROJECT_DIR/.venv/bin/python\"; [ -x \"$PY\" ] || PY=python3; \"$PY\" \"$CLAUDE_PROJECT_DIR/tools/context_hook.py\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PY=\"$CLAUDE_PROJECT_DIR/.venv/bin/python\"; [ -x \"$PY\" ] || PY=python3; cd \"$CLAUDE_PROJECT_DIR\" && \"$PY\" tools/dup_guard.py --hook",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

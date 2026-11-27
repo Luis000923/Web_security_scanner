@@ -7,10 +7,9 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
-from .base import AsyncToolAdapter, sanitize_url
+from .base import AsyncToolAdapter, iter_json_lines, sanitize_url
 
 __all__ = ["KatanaAdapter", "GospiderAdapter", "KiterunnerAdapter"]
 
@@ -37,14 +36,7 @@ class KatanaAdapter(AsyncToolAdapter):
 
     def parse(self, stdout: str) -> list[dict[str, Any]]:
         findings: list[dict[str, Any]] = []
-        for line in stdout.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for record in iter_json_lines(stdout):
             endpoint = record.get("request", {}).get("endpoint") or record.get("url")
             findings.append(
                 {
@@ -88,14 +80,7 @@ class GospiderAdapter(AsyncToolAdapter):
 
     def parse(self, stdout: str) -> list[dict[str, Any]]:
         findings: list[dict[str, Any]] = []
-        for line in stdout.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for record in iter_json_lines(stdout):
             findings.append(
                 {
                     "url": record.get("output") or record.get("url"),
@@ -125,14 +110,7 @@ class KiterunnerAdapter(AsyncToolAdapter):
 
     def parse(self, stdout: str) -> list[dict[str, Any]]:
         findings: list[dict[str, Any]] = []
-        for line in stdout.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for record in iter_json_lines(stdout):
             findings.append(
                 {
                     "url": record.get("url"),

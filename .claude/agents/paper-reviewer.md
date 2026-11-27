@@ -14,7 +14,7 @@ esta.
 
 ## Contexto obligatorio
 
-Lee `AGENTS.md` completo. En particular §1.1 (el paper previo dio null), §1.2
+Lee `AGENTS.md` y `research/notes/shared-estado-investigacion.md`. En particular §1.1 (el paper previo dio null), §1.2
 (por que: el testbed no generaba ruido), §1.5 (discrepancia de cifras) y §6
 (trampas verificadas). Carga la skill `phd-thesis-framing` si esta disponible:
 define la escalera de contribucion (N1 artefacto, N2 metodo, N3 teoria, N4

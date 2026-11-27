@@ -14,7 +14,13 @@ from typing import Any
 import aiohttp
 from aiohttp.abc import AbstractResolver, ResolveResult
 
-from .http_client import AsyncHTTPClient, HTTPClientConfig, TokenBucket
+from .http_client import (
+    AsyncHTTPClient,
+    HTTPClientConfig,
+    TokenBucket,
+    new_client_session,
+    read_body_capped,
+)
 from .telemetry_engine import AdaptiveConcurrencyController, TelemetryEngine
 
 # Small pool of legitimate, current desktop User-Agents. One is picked at
@@ -43,7 +49,6 @@ _SOCKS_SCHEMES = ("socks5://", "socks5h://", "socks4://")
 # request. Protects against infinite chunked streams and gzip/deflate bombs: the
 # stream is read incrementally and abandoned once this many bytes accumulate.
 MAX_RESPONSE_SIZE = 5 * 1024 * 1024        # 5 MiB
-_READ_CHUNK = 64 * 1024                     # 64 KiB per iter_chunked step
 
 # Caps on the two auxiliary caches that would otherwise grow for the whole scan.
 # A crawl that touches tens of thousands of distinct hosts/endpoints would keep
@@ -586,16 +591,15 @@ class AsyncScannerCore:
 
     async def start(self):
         """Initialize the aiohttp session."""
+        # Only ``None`` triggers a rebuild: close() resets it, and a session
+        # closed behind our back must surface as an error, not be replaced
+        # silently (unlike AsyncHTTPClient.start, which also checks .closed).
         if not self.session:
-            connector = self._build_connector()
-            headers = dict(self.config.headers)
-            if self.config.user_agent:
-                headers.setdefault("User-Agent", self.config.user_agent)
-            # Explicit cookie jar so form-login / static session cookies persist
-            # across the whole scan and auto-attach to every probe.
-            self.session = aiohttp.ClientSession(
-                connector=connector, headers=headers,
-                cookie_jar=aiohttp.CookieJar(unsafe=self.config.cookie_jar_unsafe),
+            self.session = new_client_session(
+                self._build_connector(),
+                self.config.headers,
+                self.config.user_agent,
+                cookie_jar_unsafe=self.config.cookie_jar_unsafe,
             )
 
     # ---- authenticated-session hooks --------------------------------
@@ -787,42 +791,11 @@ class AsyncScannerCore:
     async def _safe_read(
         self, response: "aiohttp.ClientResponse"
     ) -> tuple[str, bool, int]:
-        """
-        Read a response body defensively.
-
-        The body is consumed in ``_READ_CHUNK`` steps from the *decoded*
-        (already decompressed by aiohttp) stream. As soon as the accumulated
-        size would exceed ``config.max_response_size`` the read stops, the
-        connection is force-closed so the server can't keep feeding us, and the
-        partial body is returned with ``truncated=True``.
+        """Read a response body defensively (see :func:`read_body_capped`).
 
         Returns ``(text, truncated, raw_len)``.
         """
-        limit = self.config.max_response_size
-        chunks = []
-        total = 0
-        truncated = False
-        async for chunk in response.content.iter_chunked(_READ_CHUNK):
-            if total + len(chunk) > limit:
-                chunks.append(chunk[: limit - total])
-                total = limit
-                truncated = True
-                break
-            chunks.append(chunk)
-            total += len(chunk)
-
-        if truncated:
-            # Abandon the rest of the stream and drop the socket instead of
-            # draining a potentially infinite body.
-            response.close()
-
-        body = b"".join(chunks)
-        try:
-            encoding = response.get_encoding()
-        except (RuntimeError, LookupError):
-            encoding = "utf-8"
-        text = body.decode(encoding or "utf-8", errors="ignore")
-        return text, truncated, total
+        return await read_body_capped(response, self.config.max_response_size)
 
     # ---- warm-up ---------------------------------------------------
 

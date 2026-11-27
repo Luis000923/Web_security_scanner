@@ -9,6 +9,7 @@ from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 from bs4 import BeautifulSoup
 
 from ..events.event_emitter import ScanEventType
+from ..utils.http_headers import content_type_of
 from .recon import (
     AsyncRobotsPolicy,
     ScopeEngine,
@@ -339,11 +340,7 @@ class WebMapperAsync:
 
     @staticmethod
     def _looks_like_javascript(url: str, headers: dict[str, Any]) -> bool:
-        ctype = ""
-        for k, v in (headers or {}).items():
-            if k.lower() == "content-type":
-                ctype = str(v).lower()
-                break
+        ctype = content_type_of(headers)
         if "javascript" in ctype or "ecmascript" in ctype:
             return True
         path = urlparse(url).path.lower()
