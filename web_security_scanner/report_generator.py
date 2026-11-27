@@ -736,15 +736,23 @@ def build_structured_report(scan_data: dict[str, Any]) -> dict[str, Any]:
     return report
 
 
-def generate_json_report(scan_data: dict[str, Any], output_dir: str = "reports") -> str:
-    """Write the structured JSON report and return its path."""
+def write_json_report(payload: Any, output_dir: str, suffix: str = ".json") -> str:
+    """Write ``payload`` to ``<output_dir>/scan_<timestamp><suffix>`` and return the path.
+
+    UTF-8, ``indent=2``, ``ensure_ascii=False``; ``output_dir`` is created
+    (with parents) when missing. Shared by every JSON-family report writer.
+    """
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    path = out / f"scan_{_timestamp()}.json"
-    payload = build_structured_report(scan_data)
+    path = out / f"scan_{_timestamp()}{suffix}"
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
     return str(path)
+
+
+def generate_json_report(scan_data: dict[str, Any], output_dir: str = "reports") -> str:
+    """Write the structured JSON report and return its path."""
+    return write_json_report(build_structured_report(scan_data), output_dir)
 
 
 # ---------------------------------------------------------------------------
@@ -917,6 +925,28 @@ def _pdf_executive_summary(report: dict[str, Any], styles: dict[str, ParagraphSt
     return story
 
 
+def _pdf_kv_table(rows: list[list[str]], styles: dict[str, ParagraphStyle]) -> list[Any]:
+    """Two-column bold-label / value table plus the trailing spacer.
+
+    Shared layout of every per-entry block in the findings, Proof-of-Impact
+    and Critical Impact Evidence sections. ``rows`` values must already be
+    XML-escaped (see :func:`_p`).
+    """
+    table = Table(
+        [[Paragraph(f"<b>{k}</b>", styles["body"]), Paragraph(val, styles["body"])]
+         for k, val in rows],
+        colWidths=[3.5 * cm, 11.5 * cm],
+    )
+    table.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#DDDDDD")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    return [table, Spacer(1, 0.5 * cm)]
+
+
 def _pdf_findings(report: dict[str, Any], styles: dict[str, ParagraphStyle]) -> list[Any]:
     story: list[Any] = [Paragraph("Detailed Findings", styles["h1"])]
     vulns = report["vulnerabilities"]
@@ -944,20 +974,7 @@ def _pdf_findings(report: dict[str, Any], styles: dict[str, ParagraphStyle]) -> 
         ]
         if v.get("evidence"):
             rows.append(["Evidence", _p(v.get("evidence"))])
-        table = Table(
-            [[Paragraph(f"<b>{k}</b>", styles["body"]), Paragraph(val, styles["body"])]
-             for k, val in rows],
-            colWidths=[3.5 * cm, 11.5 * cm],
-        )
-        table.setStyle(TableStyle([
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#DDDDDD")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 6),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ]))
-        story.append(table)
-        story.append(Spacer(1, 0.5 * cm))
+        story.extend(_pdf_kv_table(rows, styles))
     return story
 
 
@@ -1015,20 +1032,7 @@ def _pdf_proof_of_impact(report: dict[str, Any], styles: dict[str, ParagraphStyl
             ["Impact on the business", _p(a.get("impact_analysis"))],
             ["Surface priority", _p(f"{a.get('surface_priority')} (score {a.get('surface_score')})")],
         ]
-        table = Table(
-            [[Paragraph(f"<b>{k}</b>", styles["body"]), Paragraph(v, styles["body"])]
-             for k, v in rows],
-            colWidths=[3.5 * cm, 11.5 * cm],
-        )
-        table.setStyle(TableStyle([
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#DDDDDD")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 6),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ]))
-        story.append(table)
-        story.append(Spacer(1, 0.5 * cm))
+        story.extend(_pdf_kv_table(rows, styles))
     return story
 
 
@@ -1083,20 +1087,7 @@ def _pdf_critical_impact_evidence(report: dict[str, Any], styles: dict[str, Para
             ["Impact validation", _p(e.get("impact_validation"))],
             ["Business impact", _p(e.get("impact_analysis"))],
         ]
-        table = Table(
-            [[Paragraph(f"<b>{k}</b>", styles["body"]), Paragraph(val, styles["body"])]
-             for k, val in rows],
-            colWidths=[3.5 * cm, 11.5 * cm],
-        )
-        table.setStyle(TableStyle([
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#DDDDDD")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 6),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ]))
-        story.append(table)
-        story.append(Spacer(1, 0.5 * cm))
+        story.extend(_pdf_kv_table(rows, styles))
     return story
 
 

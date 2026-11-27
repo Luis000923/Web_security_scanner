@@ -8,7 +8,7 @@
 #   make            # == make all: full test suite + statistical analysis
 #   make docker-run # the same audit, but fully containerized
 
-.PHONY: all test evaluate docker-build docker-run clean context context-check bench
+.PHONY: all test evaluate docker-build docker-run clean context context-check bench dup-scan dup-check
 
 # Override on the command line if the project venv lives elsewhere, e.g.
 # `make test PYTHON=python3`.
@@ -39,6 +39,12 @@ context-check: ## Exit 1 if .context/ is stale.
 
 bench: ## Token benchmark (traditional vs L0/L1 + micro-skill) with quality gates.
 	$(PYTHON) tools/token_benchmark.py --gates
+
+dup-scan: ## Ranked duplicate-code report (AST hash + near-clone Jaccard).
+	python3 tools/dup_guard.py --scan --top 10
+
+dup-check: ## Exit 2 if the working-tree diff introduces a new duplicate function.
+	python3 tools/dup_guard.py --check-diff
 
 docker-build: ## Build the reproducible Artifact Evaluation Docker image.
 	docker build -t $(IMAGE_NAME) .
