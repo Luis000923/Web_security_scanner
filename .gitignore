@@ -9,6 +9,9 @@ dist/
 # uv / venv
 .venv/
 
+# Generated agent context (tools/context_packer.py, tools/token_benchmark.py)
+.context/
+
 # Scanner runtime output
 web_security_scanner/scanner.log
 scanner.log

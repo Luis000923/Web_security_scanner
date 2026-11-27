@@ -243,6 +243,29 @@ Los cuatro están disponibles como subagente en los tres proveedores.
 
 ---
 
+## 2 quater. Contexto de código: L0 → L1 → L2 (obligatorio para tocar código)
+
+No leas archivos `.py` completos a ciegas. `tools/context_packer.py` (solo stdlib)
+genera el contexto de forma determinista:
+
+| Nivel | Comando | Qué da |
+|---|---|---|
+| L0 | `python3 tools/context_packer.py --mode l0` | `.context/repomap.md` (firmas tipadas, ~8 % de los tokens) + `.context/symbols.json` |
+| L1 | `... --mode l1 --symbols ruta::Qual` o `--range A..B` | diff + callers/callees a 1 salto |
+| budget | `... --mode budget [--range A..B \| --staged]` | bundle podado a ≤ 60 % del baseline; exit 3 si no cabe |
+
+`.context/` está en `.gitignore` y se sincroniza solo, re-indexando únicamente los
+`.py` cuyo sha256 cambió (hook `Stop` en `.claude/settings.json`, ~0.3 s por turno).
+`make context-check` dice si está obsoleto.
+
+Micro-skills (≤ 700 tokens): `context-navigation`, `diff-code-review`,
+`scoped-testing`, `debt-isolation`. Agentes (generados por `tools/gen_agents.py`):
+`context-indexer` → `architect-planner` → `scoped-coder` → `diff-reviewer`, y
+`eval-token-auditor` (`python3 tools/token_benchmark.py --gates`, métricas en
+`.context/metrics.jsonl`).
+
+---
+
 ## 2 ter. Asignación por proveedor
 
 | Proveedor | Área asignada | Track | Skill principal |

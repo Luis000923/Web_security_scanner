@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PY=\"$CLAUDE_PROJECT_DIR/.venv/bin/python\"; [ -x \"$PY\" ] || PY=python3; \"$PY\" \"$CLAUDE_PROJECT_DIR/tools/context_hook.py\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

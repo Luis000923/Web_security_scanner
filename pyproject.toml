@@ -124,7 +124,14 @@ ignore = ["E501", "B008"]
 python_version = "3.10"
 # The AI subsystem ships in the wheel and is wired into the scan pipeline
 # (--enable-ai-triaging), so it is type-checked alongside the scanner.
-files = ["web_security_scanner", "ai_module"]
+files = [
+    "web_security_scanner",
+    "ai_module",
+    # Agent-context tooling (stdlib only), see AGENTS.md section 2 quater.
+    "tools/context_packer.py",
+    "tools/token_benchmark.py",
+    "tools/context_hook.py",
+]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = false
