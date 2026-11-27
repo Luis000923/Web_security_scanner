@@ -1,0 +1,79 @@
+{
+  "ground_truth": "ground_truth",
+  "counts": {
+    "tp": 409,
+    "fp": 46,
+    "fp_outside_ground_truth": 1,
+    "total_findings": 456,
+    "tp_instances": 182,
+    "fp_instances": 15,
+    "fn": 12,
+    "tn": 129,
+    "total_instances": 338,
+    "has_class_labels": true,
+    "tp_class_matched": 83,
+    "tp_class_matched_instances": 83,
+    "class_labelled_instances": 194,
+    "claims_unknown_class": 60,
+    "claims_unlabelled_class": 0
+  },
+  "rates": {
+    "precision": 0.8969298245614035,
+    "recall": 0.9381443298969072,
+    "f1": 0.9170742524855547,
+    "recall_lower_bound": 0.9381443298969072,
+    "specificity": 0.8958333333333334,
+    "fpr_on_ground_truth": 0.10416666666666667,
+    "fp_rate_over_findings": 0.10307017543859653,
+    "accuracy": 0.9201183431952663,
+    "coverage": 1.0,
+    "duplicate_claims": 258.0,
+    "untested_points": 0.0,
+    "untested_vulnerable": 0.0,
+    "precision_class_matched": 0.18201754385964913,
+    "recall_class_matched": 0.42783505154639173,
+    "f1_class_matched": 0.2553846153846154
+  },
+  "per_category": {
+    "cmdi": {
+      "tp": 13,
+      "fn": 12,
+      "fp": 0,
+      "tn": 0
+    },
+    "safe": {
+      "tp": 0,
+      "fn": 0,
+      "fp": 15,
+      "tn": 129
+    },
+    "ldapi": {
+      "tp": 6,
+      "fn": 0,
+      "fp": 0,
+      "tn": 0
+    },
+    "sqli": {
+      "tp": 65,
+      "fn": 0,
+      "fp": 0,
+      "tn": 0
+    },
+    "pathtraver": {
+      "tp": 30,
+      "fn": 0,
+      "fp": 0,
+      "tn": 0
+    },
+    "xss": {
+      "tp": 68,
+      "fn": 0,
+      "fp": 0,
+      "tn": 0
+    }
+  },
+  "unmatched_findings": [
+    "Missing Security Header https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907?BenchmarkTest00907=1"
+  ],
+  "untested_points": []
+}
