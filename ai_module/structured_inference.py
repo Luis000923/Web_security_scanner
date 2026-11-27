@@ -135,15 +135,20 @@ def parse_triage(text: str) -> TriageOut:
     never raises — the security-safe default is ``UNCERTAIN`` so a real finding
     is never silently suppressed by a parse failure.
     """
+    return parse_triage_with_status(text)[0]
+
+
+def parse_triage_with_status(text: str) -> tuple[TriageOut, bool]:
+    """Return the safe triage result and whether the response was parseable."""
     s = (text or "").strip()
     if REFUSAL_SENTINEL in s:
         return TriageOut(verdict=Verdict.RESTRICTED, confidence=1.0,
                          reasoning="Out-of-scope request refused by the "
-                                   "restricted security model.", next_step="")
+                                   "restricted security model.", next_step=""), True
     obj = _first_json_object(s)
     if obj is not None:
         try:
-            return TriageOut.model_validate(obj)
+            return TriageOut.model_validate(obj), True
         except Exception:
             # Salvage a recognisable verdict even if other fields are off.
             v = str(obj.get("verdict", "")).upper()
@@ -153,10 +158,10 @@ def parse_triage(text: str) -> TriageOut:
                     confidence=_clamp01(obj.get("confidence", 0.0)),
                     reasoning=str(obj.get("reasoning", ""))[:800] or "n/a",
                     next_step=str(obj.get("next_step", ""))[:400],
-                )
+                ), True
     return TriageOut(verdict=Verdict.UNCERTAIN, confidence=0.0,
                      reasoning="Unparseable model output; kept heuristic verdict.",
-                     next_step="Re-run with constrained decoding enabled.")
+                     next_step="Re-run with constrained decoding enabled."), False
 
 
 def parse_payloads(text: str) -> PayloadOut:
@@ -278,21 +283,15 @@ def _first_json_object(s: str) -> dict[str, Any] | None:
         return v if isinstance(v, dict) else None
     except json.JSONDecodeError:
         pass
-    depth = start = 0
+    decoder = json.JSONDecoder()
     for i, ch in enumerate(s):
         if ch == "{":
-            if depth == 0:
-                start = i
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                try:
-                    v = json.loads(s[start : i + 1])
-                    if isinstance(v, dict):
-                        return v
-                except json.JSONDecodeError:
-                    continue
+            try:
+                v, _ = decoder.raw_decode(s, i)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(v, dict):
+                return v
     return None
 
 

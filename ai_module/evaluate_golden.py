@@ -157,6 +157,8 @@ async def _evaluate_one(
             result = await asyncio.wait_for(
                 client.triage_finding(row.finding), timeout=timeout
             )
+            if result.error:
+                raise RuntimeError(result.error)
             return EvalResult(
                 row=row, predicted=result.verdict, confidence=result.confidence,
                 reasoning=result.reasoning, latency_s=time.monotonic() - start,

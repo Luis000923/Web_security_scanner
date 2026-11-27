@@ -995,8 +995,12 @@ class AsyncScannerCore:
         for attempt in range(attempts):
             if throttle_on and host is not None:
                 await self._host_backoff.wait_if_needed(host)
+            started: float | None = None
             try:
                 async with self._semaphore:
+                    # Clock starts inside the semaphore: queueing behind other
+                    # probes is the scanner's latency, not the target's.
+                    started = time.monotonic()
                     result = await self._request_following(
                         method, url, follow_redirects, caller_headers, kwargs
                     )
@@ -1007,9 +1011,16 @@ class AsyncScannerCore:
             except Exception as e:
                 self._logger.debug(f"Request failed: {url} - {e}")
                 self._warn_if_tls_verification_error(e)
+                # A failed request still took time. Reporting 0.0 made a probe
+                # that hit ``sock_read_timeout`` look instantaneous: a target
+                # that is slow for *every* input then had a 0.0s baseline and a
+                # benign control that read as fast, so time-based testers
+                # "confirmed" a delay their payload never caused.
+                waited = time.monotonic() - started if started is not None else 0.0
                 result = {
                     "status_code": 0, "text": "", "headers": {},
-                    "url": url, "elapsed": 0.0, "truncated": False, "error": str(e),
+                    "url": url, "elapsed": round(waited, 6), "truncated": False,
+                    "error": str(e),
                 }
 
             status = result.get("status_code", 0)

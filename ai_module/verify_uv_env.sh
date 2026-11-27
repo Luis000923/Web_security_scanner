@@ -132,11 +132,11 @@ for pkg in "${CRITICAL[@]}"; do
     if [[ -n "$inst" && "$locked" == yes ]]; then
         ok "$pkg $inst  (installed, pinned in uv.lock)"
     elif [[ -z "$inst" && "$locked" == yes ]]; then
-        miss "$pkg pinned in uv.lock but not installed — run 'uv pip install -e \".[ai]\"'"
+        miss "$pkg pinned in uv.lock but not installed — run 'uv pip install -e \".[ai,ai-local,training]\"'"
     elif [[ -n "$inst" ]]; then
         bad "$pkg $inst installed but NOT in uv.lock — not managed by uv"
     else
-        bad "$pkg missing entirely — run 'uv pip install -e \".[ai]\"'"
+        bad "$pkg missing entirely — run 'uv pip install -e \".[ai,ai-local,training]\"'"
     fi
 done
 

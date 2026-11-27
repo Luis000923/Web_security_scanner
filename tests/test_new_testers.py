@@ -51,7 +51,9 @@ async def test_ssti_not_flagged_when_product_already_on_page():
 async def test_crlf_detected_when_header_reflected():
     def responder(method, url, kwargs):
         raw = param_value(url, "q")  # parse_qs already decoded %0d%0a -> \r\n
-        headers = {"Content-Type": "text/html"}
+        # Sink realista: el valor se escribe en una cabecera (Location).
+        headers = {"Content-Type": "text/html",
+                   "Location": raw.split("\r")[0].split("\n")[0]}
         if "\r\n" in raw or "\n" in raw:
             first, _, rest = raw.partition("\n")
             name, _, value = rest.partition(":")

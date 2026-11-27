@@ -7,7 +7,7 @@ name = "web-security-scanner"
 version = "5.2.0"
 description = "Advanced Web Security Scanner with AsyncIO and Plugin System"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Luis", email = "cruncron@gmail.com"},
@@ -35,13 +35,19 @@ ai = [
     "aiohttp>=3.8.0",
     "pydantic>=2.0",
 ]
-# Local constrained decoding / in-process transformers backend (heavy, GPU):
+# Local constrained decoding / in-process transformers backend (heavy, GPU).
+# Includes bitsandbytes so int8/4-bit *inference* (not just training) works
+# from this extra alone -- ai_module/inference_client.py's local mode needs
+# it without pulling in the rest of `training`:
 #   uv pip install -e ".[ai,ai-local]"
 ai-local = [
     "torch>=2.6.0",
     "transformers>=4.48.0",
     "accelerate>=0.34.0",
     "outlines>=0.1.0",
+    "bitsandbytes>=0.45.0",
+    "sentencepiece>=0.2.0",
+    "safetensors>=0.4.5",
 ]
 # QLoRA fine-tuning of the local triage/synthesis agent (ai_module/train_qlora.py),
 # heavy + GPU-only, not needed to run the scanner or serve the agent:
@@ -55,6 +61,37 @@ training = [
     "peft>=0.11.0",
     "bitsandbytes>=0.45.0",
     "datasets>=2.19.0",
+    "tensorboard>=2.16",
+]
+# Optional: Unsloth fused kernels (~2x throughput, lower VRAM) for `training`.
+# Kept separate because its pinned deps can conflict:
+#   uv pip install -e ".[ai,ai-local,training,ai-unsloth]"
+ai-unsloth = [
+    "unsloth>=2025.1.1",
+    "unsloth-zoo>=2025.1.1",
+    "xformers>=0.0.29",
+]
+# Optional: DeepSpeed ZeRO-2/3 CPU/RAM offload, for `train_qlora.py
+# --full-finetune` on a small-VRAM card (e.g. a 6 GB RTX 4050) where
+# LoRA/QLoRA is not the goal. Separate from `training` because DeepSpeed
+# compiles CUDA extensions on install and is Linux-only in practice (no
+# supported Windows wheel):
+#   uv pip install -e ".[ai,ai-local,training,ai-offload]"
+ai-offload = [
+    "deepspeed>=0.15.0",
+]
+# Serving the fine-tuned adapter over an OpenAI-compatible endpoint --
+# ai_module/inference_client.py's *web* mode talks to this (or any other
+# OpenAI-compatible remote deployment) over plain aiohttp, so installing
+# this extra is only needed to *host* that endpoint yourself:
+#   uv pip install -e ".[ai-serve]"
+ai-serve = [
+    "vllm>=0.7.0",
+    "aiohttp>=3.8.0",
+    # Constrained decoding for structured_inference.py (tier-1 local grammar
+    # enforcement). vLLM also enforces the same schema server-side via
+    # guided_json, so this is only needed for the in-process transformers path.
+    "outlines>=0.1.0",
 ]
 dev = [
     "pytest",
@@ -74,6 +111,8 @@ dev = [
     "pydantic>=2.0",
 ]
 
+# Dev tooling lives in the [dependency-groups] table below (uv-native, and what
+# CI installs with `uv sync --all-groups`) — not as a project extra.
 [dependency-groups]
 dev = [
     "pytest",
@@ -92,6 +131,12 @@ dev = [
 
 [project.scripts]
 webscanner = "web_security_scanner.cli:main"
+
+# The project is managed exclusively with `uv` (see README.md / ai_module/README.md).
+# Do not use `pip` or `python -m venv` directly.
+[tool.uv]
+required-version = ">=0.5"
+default-groups = ["dev"]
 
 [tool.setuptools.packages.find]
 include = ["web_security_scanner*", "ai_module*"]

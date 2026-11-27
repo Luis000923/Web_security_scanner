@@ -26,6 +26,13 @@ from web_security_scanner.modules.vulnerability_testers.xss_tester_async import 
 SQLI_ERROR = "You have an error in your SQL syntax; check the manual"
 
 
+def _sqli_error_responder(m, u, k):
+    """SQL error only for payloads that break the quoting: the benign baseline
+    stays clean, so the error is attributable to the injected value."""
+    from urllib.parse import unquote
+    return {"text": SQLI_ERROR if "'" in unquote(u) else "ok"}
+
+
 class FakeAgent:
     """Records calls; verdict / payloads configurable per test."""
 
@@ -86,7 +93,7 @@ def test_ai_verify_discards_false_positive():
     agent = FakeAgent(triage=TriageResult("FALSE_POSITIVE", 0.92,
                                           "generic error page, not injection"))
     found, logs, decisions = asyncio.run(
-        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+        _run(SQLInjectionTester, _sqli_error_responder,
              {"ai_verify": True}, agent))
     assert found == []                                   # suppressed
     assert agent.triage_calls                            # agent was consulted
@@ -98,7 +105,7 @@ def test_ai_verify_discards_false_positive():
 def test_ai_verify_keeps_true_positive_and_annotates():
     agent = FakeAgent(triage=TriageResult("TRUE_POSITIVE", 0.88, "sqlstate leak"))
     found, _, decisions = asyncio.run(
-        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+        _run(SQLInjectionTester, _sqli_error_responder,
              {"ai_verify": True}, agent))
     assert len(found) == 1
     v = found[0]
@@ -111,7 +118,7 @@ def test_ai_verify_keeps_true_positive_and_annotates():
 def test_ai_verify_uncertain_does_not_discard():
     agent = FakeAgent(triage=TriageResult("UNCERTAIN", 0.99, "cannot tell"))
     found, _, _ = asyncio.run(
-        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+        _run(SQLInjectionTester, _sqli_error_responder,
              {"ai_verify": True}, agent))
     assert len(found) == 1
     assert found[0]["ai_is_vulnerable"] is True
@@ -120,7 +127,7 @@ def test_ai_verify_uncertain_does_not_discard():
 def test_low_confidence_fp_is_not_discarded():
     agent = FakeAgent(triage=TriageResult("FALSE_POSITIVE", 0.40, "maybe"))
     found, _, _ = asyncio.run(
-        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+        _run(SQLInjectionTester, _sqli_error_responder,
              {"ai_verify": True, "ai_fp_threshold": 0.75}, agent))
     assert len(found) == 1                     # below threshold -> keep finding
     assert found[0]["ai_verdict"] == "FALSE_POSITIVE"
@@ -128,7 +135,7 @@ def test_low_confidence_fp_is_not_discarded():
 
 def test_no_agent_attached_is_a_noop():
     found, _, decisions = asyncio.run(
-        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR}, {}, None))
+        _run(SQLInjectionTester, _sqli_error_responder, {}, None))
     assert len(found) == 1
     assert "ai_verified" not in found[0]
     assert decisions == []
@@ -141,7 +148,7 @@ def test_no_agent_attached_is_a_noop():
 def test_triage_backend_down_falls_back_to_heuristics():
     agent = FakeAgent(boom=ConnectionRefusedError("localhost:8000 refused"))
     found, _, _ = asyncio.run(
-        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+        _run(SQLInjectionTester, _sqli_error_responder,
              {"ai_verify": True}, agent))
     assert len(found) == 1                     # heuristic finding survives
     assert "ai_verified" not in found[0]
@@ -189,7 +196,7 @@ def test_synthesis_skipped_when_static_list_hits():
     is not empty overall -- only the exhaustion reason must be absent."""
     agent = FakeAgent(payloads=[{"payload": "x"}])
     found, _, _ = asyncio.run(
-        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+        _run(SQLInjectionTester, _sqli_error_responder,
              {"ai_synthesize": True}, agent))
     assert len(found) == 1
     reasons = [ctx.get("reason") for ctx, _n in agent.synth_calls]
@@ -424,7 +431,7 @@ def test_batching_client_preserves_the_tester_contract():
             return [await agent.triage_finding(f) for f in findings]
 
     found, _, decisions = asyncio.run(
-        _run(SQLInjectionTester, lambda m, u, k: {"text": SQLI_ERROR},
+        _run(SQLInjectionTester, _sqli_error_responder,
              {"ai_verify": True}, BatchingTriageClient(_OneShotBatch(), linger=0.0)))
     assert found == []
     assert decisions and decisions[0]["dropped"] is True
@@ -587,7 +594,7 @@ def test_transformers_backend_builds_model_only_once_under_concurrency(monkeypat
         builds.append(1)
         return object()
 
-    def _fake_generate(self, system, user, temperature=None):
+    def _fake_generate(self, system, user, temperature=None, triage=False):
         return ('{"verdict": "UNCERTAIN", "confidence": 0.0, '
                 '"reasoning": "stub", "next_step": ""}')
 

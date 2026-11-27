@@ -167,20 +167,37 @@ async def test_xssi_fixed_callback_not_controllable_not_flagged():
 
 # ---- File Upload -----------------------------------------------------------
 
+def _uploaded_marker(kw) -> str:
+    """Marker ``WSS_UPLOAD_<hex>`` from the multipart body of a mock POST."""
+    import re as _re
+    for _opts, _hdrs, value in getattr(kw.get("data"), "_fields", []):
+        if isinstance(value, bytes):
+            match = _re.search(rb"WSS_UPLOAD_[0-9a-f]+", value)
+            if match:
+                return match.group(0).decode()
+    return ""
+
+
 async def test_file_upload_confirmed_when_served_back_executable():
+    # The stored file is served back with its per-attempt marker and without
+    # the PHP source delimiter -> it was executed server-side.
+    store = {"marker": ""}
+
     def r(m, u, kw):
         if m == "POST":
+            store["marker"] = _uploaded_marker(kw) or store["marker"]
             return {"status_code": 200,
                      "text": '<a href="/uploads/shell.php">file</a>',
                      "headers": {}}
-        return {"status_code": 200, "text": "WSS_UPLOAD_anything",
+        return {"status_code": 200, "text": store["marker"],
                 "headers": {"Content-Type": "text/html"}}
 
     found = await _run_with_form(
         FileUploadTester, r, "http://target/upload",
         {"action": "http://target/upload", "file_field": "avatar"})
     assert found
-    assert any(f["confidence"] == "HIGH" for f in found)
+    assert any(f["confidence"] == "CONFIRMED" and f["evidence_kind"] == "code_execution"
+               for f in found)
 
 
 async def test_file_upload_rejected_extension_not_flagged():
@@ -207,12 +224,19 @@ async def test_file_upload_filename_traversal_detected():
 
 
 async def test_file_upload_no_auth_accepted_flagged():
+    # Only measurable when the scan authenticates with a bearer header alone
+    # (cookie-jar sessions cannot be stripped from a request).
     def r(m, u, kw):
         return {"status_code": 200, "text": "upload ok"}
 
-    found = await _run_with_form(
-        FileUploadTester, r, "http://target/upload",
-        {"action": "http://target/upload", "file_field": "avatar"})
+    em = ScanEventEmitter()
+    found: list = []
+    em.on(ScanEventType.VULNERABILITY_FOUND, lambda **k: found.append(k.get("vulnerability")))
+    scanner = MockScanner(r)
+    scanner._auth_headers = {"Authorization": "Bearer t"}
+    await FileUploadTester(scanner, em, {"payload_delay": 0}).run_test(
+        "http://target/upload",
+        form={"action": "http://target/upload", "file_field": "avatar"})
     noauth_hits = [f for f in found if f["payload"] == "N/A" and "auth" in f["evidence"].lower()]
     assert len(noauth_hits) == 1
 
@@ -225,6 +249,30 @@ async def test_file_upload_no_form_kwarg_is_noop():
 
 
 # ---- Access Control ---------------------------------------------------------
+
+async def test_access_control_public_login_and_docs_not_reported():
+    def r(m, u, kw):
+        if u.endswith('/admin/login'):
+            return {'status_code': 200, 'text': '<form><input type="password" name="password"></form>' * 3}
+        if u.endswith('/actuator/health'):
+            return {'status_code': 200, 'text': '{"status":"UP","description":"public health check"}'}
+        return {'status_code': 404, 'text': 'not found'}
+    assert await collect_vulns(AccessControlTester, r, target='http://target/admin/login') == []
+
+
+async def test_access_control_soft_404_with_admin_words_not_reported():
+    def r(m, u, kw):
+        return {'status_code': 200, 'text': 'Admin dashboard: a generic application shell. ' * 4}
+    assert await collect_vulns(AccessControlTester, r, target='http://target/page') == []
+
+
+async def test_access_control_exposed_environment_reported():
+    def r(m, u, kw):
+        if u.endswith('/.env'):
+            return {'status_code': 200, 'text': 'APP_ENV=lab\nDB_PASSWORD=example\nAPP_NAME=demo\n'}
+        return {'status_code': 404, 'text': 'not found'}
+    findings = await collect_vulns(AccessControlTester, r, target='http://target/page')
+    assert any(f['url'].endswith('/.env') for f in findings)
 
 async def test_access_control_forced_browsing_hit():
     def r(m, u, kw):
@@ -304,7 +352,7 @@ async def test_brute_force_no_mitigation_flagged():
     found = await _run_with_form(
         BruteForceDetector, r, "http://target/login",
         {"action": "http://target/login", "fields": {"username": "a", "password": "x"}},
-        config={"brute_force_attempts": 4})
+        config={"brute_force_attempts": 8})
     assert len(found) == 1
     assert found[0]["confidence"] == "MEDIUM"
 

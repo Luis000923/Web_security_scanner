@@ -69,6 +69,7 @@ emitted, because no finding should advertise evidence that was not established.
 
 from __future__ import annotations
 
+import difflib
 import html
 import re
 from dataclasses import dataclass
@@ -114,7 +115,12 @@ LDAP = "ldap"
 #: works in one direction: a real driver reads ``"$in "`` as an unknown operator,
 #: but there is no single byte to drop from ``"$nin"``. An asymmetric table
 #: hides that, so ``{"$in": []}`` is an honestly uncontrollable payload that keeps
-#: the pre-existing behaviour.
+#: the pre-existing behaviour. ``$nin`` is absent for the same reason: padding
+#: ``"$in "`` is not a real operator (no driver evaluates it as the inverse), and
+#: the whitespace itself is a token boundary for shell-backed endpoints -- on
+#: OWASP Benchmark's command-injection cases it splits one ``ls`` argument into
+#: two, and that extra error line read as a NoSQL true/false difference. A payload
+#: carrying ``$nin`` alongside another operator gets its control from that one.
 _NOSQL_OPPOSITES: dict[str, str] = {
     "$ne": "$eq",
     "$eq": "$ne",
@@ -122,7 +128,6 @@ _NOSQL_OPPOSITES: dict[str, str] = {
     "$lt": "$gt",
     "$gte": "$lte",
     "$lte": "$gte",
-    "$nin": "$in ",
 }
 
 #: JavaScript equality -> its negation, byte for byte. ``==`` is two characters and
@@ -310,8 +315,8 @@ def _nosql_twin(payload: str) -> str | None:
         if opposite is None:
             continue
         twin = (payload[: match.start()] + opposite + payload[match.end():])
-        # The "$nin" -> "$in " entry buys its length back with a trailing space;
-        # check the totals rather than trust the table to stay honest.
+        # Every entry is byte-equal; check the totals rather than trust the
+        # table to stay honest.
         if len(twin) == len(payload):
             return twin
         break  # the table is a fixed bijection: one miss means all miss
@@ -507,6 +512,22 @@ def _numeric_entity_form(text: str) -> str:
     )
 
 
+#: Characters OWASP ESAPI ``encodeForHTML`` leaves as-is besides alphanumerics.
+#: OWASP Benchmark echoes through ESAPI, so ``' OR 'a'='a`` comes back as
+#: ``&#x27; OR &#x27;a&#x27;&#x3d;&#x27;a`` -- spaces unescaped. Without this
+#: spelling the echo survives stripping and a true/false pair that differs only
+#: in its own reflected literal reads as a behavioural difference.
+_ESAPI_HTML_IMMUNE = frozenset(" ,.-_")
+
+
+def _esapi_entity_form(text: str) -> str:
+    """Reproduce ESAPI ``encodeForHTML`` hex-entity escaping of ``text``."""
+    return "".join(
+        char if char.isalnum() or char in _ESAPI_HTML_IMMUNE else f"&#x{ord(char):x};"
+        for char in text
+    )
+
+
 def _echo_forms(*tokens: str | None) -> tuple[str, ...]:
     """Every encoding under which ``tokens`` can appear inside a response body.
 
@@ -522,6 +543,7 @@ def _echo_forms(*tokens: str | None) -> tuple[str, ...]:
         for form in (
             token,
             _numeric_entity_form(token),
+            _esapi_entity_form(token),
             html.escape(token, quote=True),
             quote(token, safe=""),
         ):
@@ -570,6 +592,48 @@ def _echo_visible(body: str, tokens: tuple[str | None, ...]) -> bool:
                 if token[start:start + _ECHO_MIN_SLICE] in body:
                     return True
     return False
+
+
+def _diff_segments(a: str, b: str) -> list[tuple[str, str]]:
+    """Non-equal ``(a_part, b_part)`` segments that turn ``a`` into ``b``."""
+    matcher = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    return [
+        (a[i1:i2], b[j1:j2])
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes()
+        if tag != "equal"
+    ]
+
+
+#: Body pairs larger than this are not diffed (quadratic matcher); such pages
+#: are judged by the other rules alone.
+_REFLECTION_DIFF_MAX = 20_000
+
+
+def _difference_is_reflection(
+    body_a: str, body_b: str, payload: str | None, twin: str | None,
+) -> bool:
+    """True when the bodies differ *only* where the two requests differ.
+
+    A target that echoes a transformed copy of its input -- OWASP Benchmark's
+    XSS cases drop the last character and append ``Z``; its command-injection
+    cases split on whitespace and strip quotes before ``ls`` echoes each word
+    -- defeats literal echo stripping: no known spelling of the payload is in
+    the body. But the payload and its twin differ in a handful of characters
+    (``$ne``/``$eq``, ``'a'``/``'b'``, ``*``/``_``), and a pure reflection
+    reproduces exactly that difference and nothing else. A target that
+    *interprets* the payload answers with a different result set, an error or
+    an empty page, which is a difference the request pair cannot explain.
+    """
+    if not payload or not twin or payload == twin:
+        return False
+    a, b = html.unescape(body_a), html.unescape(body_b)
+    if not a or not b or len(a) + len(b) > _REFLECTION_DIFF_MAX:
+        return False
+    body_ops = _diff_segments(a, b)
+    if not body_ops:
+        return False
+    request_ops = set(_diff_segments(payload, twin))
+    return all(op in request_ops for op in body_ops)
 
 
 def twin_is_available(response: dict[str, Any] | None) -> bool:
@@ -726,8 +790,19 @@ def attribute_divergence(
             False, "twin-matches-payload", twin,
             status if isinstance(status, int) else None,
         )
-    if _echo_visible(_normalised_body(test_response), (payload, twin)) or _echo_visible(
-        _normalised_body(twin_response), (payload, twin)
+    if _difference_is_reflection(
+        _normalised_body(test_response), _normalised_body(twin_response), payload, twin,
+    ):
+        return CausalAttribution(
+            False, "twin-diverges-reflection", twin,
+            status if isinstance(status, int) else None,
+        )
+    # Judge reflection on the echo-stripped bodies: once every known spelling of
+    # the request is removed, a remaining difference is the target's answer, not
+    # its echo. Only an echo that survives stripping (a normalised or truncated
+    # copy of the payload) keeps the difference unexplained.
+    if _echo_visible(_echo_free(_normalised_body(test_response), forms), (payload, twin)) or (
+        _echo_visible(_echo_free(_normalised_body(twin_response), forms), (payload, twin))
     ):
         return CausalAttribution(
             False, "twin-diverges-echo", twin,

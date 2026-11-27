@@ -145,7 +145,16 @@ def test_pdf_findings_usa_una_tabla_por_hallazgo() -> None:
     story = _pdf_findings({"vulnerabilities": [vuln, dict(vuln)]}, _pdf_styles())
     tables = [f for f in story if isinstance(f, Table)]
     assert len(tables) == 2
-    assert len(tables[0]._cellvalues) == 6  # 5 fixed rows + Evidence
+    labels = [row[0].text for row in tables[0]._cellvalues]
+    assert labels[-1].endswith("</b>") and len(labels) == len(set(labels))
+    assert len(labels) == len([r for r in tables[1]._cellvalues])  # same layout per finding
+    no_evidence = dict(vuln, evidence=None)
+    (short,) = [
+        f
+        for f in _pdf_findings({"vulnerabilities": [no_evidence]}, _pdf_styles())
+        if isinstance(f, Table)
+    ]
+    assert len(short._cellvalues) == len(labels) - 1  # Evidence row is optional
 
 
 def test_write_json_report_crea_directorio_y_respeta_formato(tmp_path) -> None:  # type: ignore[no-untyped-def]

@@ -679,7 +679,9 @@ class TestUnObjetivoQueReflejaNoPuedeAtribuir:
             self.TWIN, payload=self.PAYLOAD,
         )
         assert not verdict.attributed
-        assert verdict.reason == "twin-diverges-echo"
+        # Lo refuta la regla de diferencia-igual-a-la-peticion, que corre antes
+        # que la del eco visible; ambas son refutaciones por reflejo.
+        assert verdict.reason in ("twin-diverges-echo", "twin-diverges-reflection")
 
     def test_un_objetivo_que_no_refleja_sigue_atribuyendo(self):
         """La regla solo se activa si el eco es observable.
@@ -710,4 +712,6 @@ class TestUnObjetivoQueReflejaNoPuedeAtribuir:
             _resp(200, echo("1")), _resp(200, echo("2")), self.TWIN,
         )
         assert not verdict.attributed
-        assert verdict.reason == "twin-diverges-echo"
+        # Lo refuta la regla de diferencia-igual-a-la-peticion, que corre antes
+        # que la del eco visible; ambas son refutaciones por reflejo.
+        assert verdict.reason in ("twin-diverges-echo", "twin-diverges-reflection")

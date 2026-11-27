@@ -1,0 +1,11 @@
+# Shell scripts must keep LF endings even when checked out on Windows.
+# Git Bash chokes on CRLF ("bash\r: no such file or directory"), which would
+# break run_pipeline.sh / verify_uv_env.sh on a core.autocrlf=true machine.
+*.sh    text eol=lf
+*.bash  text eol=lf
+
+# PowerShell is happiest with CRLF on Windows.
+*.ps1   text eol=crlf
+
+# Datasets: never touched, in either direction.
+*.jsonl -text

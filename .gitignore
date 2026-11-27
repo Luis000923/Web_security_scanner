@@ -6,6 +6,13 @@ __pycache__/
 build/
 dist/
 
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # uv / venv
 .venv/
 
@@ -47,6 +54,18 @@ paper/*.fdb_latexmk
 paper/*.fls
 paper/*.synctex.gz
 paper/*.run.xml
+paper/submission/build/
+paper/submission/*.aux
+paper/submission/*.log
+paper/submission/*.blg
+paper/submission/*.out
+paper/submission/*.fdb_latexmk
+paper/submission/*.fls
+paper/submission/*.synctex.gz
+paper/submission/*.run.xml
+# Figuras PNG: solo el PDF vectorial se versiona (analyze_results.py también
+# escribe .png, útil localmente, no lo usa el .tex).
+paper/submission/figures/*.png
 paper/*.pdf
 submission.zip
 
@@ -68,3 +87,9 @@ docs_context/
 .DS_Store
 .idea/
 .vscode/
+
+# QLoRA training outputs / experiment telemetry
+runs/
+
+# Local MariaDB demonstration data
+.demo_lab_mysql/

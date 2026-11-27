@@ -158,6 +158,12 @@ class WebMapperAsync:
         not expose it, the check is skipped and the request layer stays the
         backstop.
         """
+        # The operator may explicitly enable private targets and redirects.
+        # Host scope is still checked by the caller and the HTTP client keeps
+        # enforcing its own URL, DNS and redirect policies.
+        config = getattr(self.scanner, "config", None)
+        if getattr(config, "allow_private_redirects", False) is True:
+            return True
         assert_public = getattr(self.scanner, "_assert_public_url", None)
         if assert_public is None:
             return True
@@ -611,4 +617,3 @@ class WebMapperAsync:
             'total_vulnerabilities': len(self.vulnerabilities),
             'trap_branches_pruned': self.trap_branches_pruned,
         }
-

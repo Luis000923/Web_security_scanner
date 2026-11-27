@@ -104,8 +104,17 @@ class TrainConfig:
     save_total_limit: int = 2
     early_stopping_patience: int = 2
     early_stopping_threshold: float = 0.0
-    # RTX 5090 knobs
-    bf16: bool = True
+    # Compute precision. "auto" (the default) resolves against the device's
+    # compute capability at build time: bf16 on Ampere and newer (sm_80+),
+    # fp16 on older CUDA silicon, fp32 with no GPU at all.
+    #
+    # This has to be a runtime decision, not a constant: Turing (sm_75 — GTX
+    # 1650/1660, RTX 20xx) exposes a perfectly usable CUDA device that torch
+    # allocates on happily, and then TrainingArguments aborts the run with
+    # "Your setup doesn't support bf16/gpu" the moment training starts.
+    precision: str = "auto"
+    # Ampere tensor-core TF32 matmul. Meaningless (and noisy) below sm_80.
+    tf32: bool = True
     # 4-bit quantization is now OFF by default (native bf16). Kept as an opt-in
     # escape hatch (``--load-in-4bit``) for smaller GPUs / multi-model VRAM
     # sharing; it forces the bitsandbytes NF4 load path in _build_model_hf.
@@ -119,6 +128,18 @@ class TrainConfig:
     attn_impl: str = "sdpa"           # "sdpa" | "flash_attention_2" | "eager"
     use_unsloth: bool = False
     merge_adapter: bool = False
+    # Full fine-tune (all base-model weights, no LoRA adapter) via DeepSpeed
+    # ZeRO CPU/RAM offload -- the escape hatch for a card too small even for
+    # bf16 LoRA (e.g. a 6 GB RTX 4050 running a 1.5B base). Mutually exclusive
+    # with --load-in-4bit (there are no adapter-only params to train against a
+    # frozen quantised base) and --use-unsloth (Unsloth always attaches a LoRA
+    # adapter). Slow: every optimiser step round-trips through CPU RAM, so
+    # expect an order of magnitude less throughput than the LoRA path.
+    full_finetune: bool = False
+    zero_stage: int = 3           # 2: optimizer offload only; 3: + param offload
+    offload_optimizer: bool = True
+    offload_params: bool = True   # stage 3 only
+    deepspeed_config: Path | None = None  # advanced: bypass the generated JSON
     seed: int = 1337
     dataset_text_field: str = "text"
     # --- throughput / Blackwell kernel knobs ---
@@ -137,6 +158,8 @@ class TrainConfig:
         # Standard LoRA scaling: alpha = 2 * r unless explicitly overridden.
         if self.lora_alpha is None:
             self.lora_alpha = 2 * self.lora_r
+        if self.zero_stage not in (2, 3):
+            raise ValueError(f"zero_stage must be 2 or 3, got {self.zero_stage}")
 
     @property
     def effective_lora_alpha(self) -> int:
@@ -172,15 +195,77 @@ def _supported_kwargs(target: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in kwargs.items() if k in allowed}
 
 
+# bf16 and TF32 both need Ampere (sm_80). Kept in sync with
+# ai_module.auto_select_model.BF16_MIN_CAPABILITY, which is what tells
+# run_pipeline.sh to pass --precision fp16 in the first place; this is the
+# in-process backstop for a direct `python -m ai_module.train_qlora` call.
+BF16_MIN_CAPABILITY = (8, 0)
+
+PRECISIONS = ("auto", "bf16", "fp16", "fp32")
+
+
+def _cuda_capability() -> tuple[int, int] | None:
+    """``(major, minor)`` for the current CUDA device, or ``None`` without one."""
+    try:
+        import torch
+
+        if not torch.cuda.is_available():
+            return None
+        major, minor = torch.cuda.get_device_capability()
+        return int(major), int(minor)
+    except Exception:
+        return None
+
+
+def _resolve_precision(precision: str) -> str:
+    """Turn ``"auto"`` into a concrete ``bf16`` / ``fp16`` / ``fp32``.
+
+    An explicit choice is honoured as given — except bf16 on hardware that
+    cannot do it, which is downgraded to fp16 with a warning rather than left
+    to fail deep inside the trainer.
+
+    The capability is read directly instead of via
+    ``torch.cuda.is_bf16_supported()``: since torch 2.6 that helper counts
+    *emulated* bf16 and answers True on sm_75, which is precisely the case we
+    are trying to catch.
+    """
+    cap = _cuda_capability()
+    if precision == "auto":
+        if cap is None:
+            return "fp32"
+        return "bf16" if cap >= BF16_MIN_CAPABILITY else "fp16"
+    if precision == "bf16" and cap is not None and cap < BF16_MIN_CAPABILITY:
+        print(f"warn: sm_{cap[0]}{cap[1]} has no bf16 — falling back to fp16")
+        return "fp16"
+    if precision in ("bf16", "fp16") and cap is None:
+        print(f"warn: no CUDA device — {precision} would be slow and unstable "
+              f"on CPU, falling back to fp32")
+        return "fp32"
+    return precision
+
+
+def _torch_dtype(precision: str):
+    import torch
+
+    return {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
+
+
 def _tune_cuda_for_blackwell() -> None:
-    """Enable TF32 / flash-sdp and sane allocator behaviour for sm_120."""
+    """Enable TF32 / flash-sdp and sane allocator behaviour for the local GPU.
+
+    TF32 is gated on sm_80: asking a Turing card for it is at best ignored and
+    at worst logs a warning per matmul. The SDPA backends and the expandable
+    allocator are safe everywhere and matter most on the small cards, where
+    fragmentation is what turns a fitting run into an OOM.
+    """
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     try:
         import torch
 
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-        torch.set_float32_matmul_precision("high")
+        tf32_ok = (_cuda_capability() or (0, 0)) >= BF16_MIN_CAPABILITY
+        torch.backends.cuda.matmul.allow_tf32 = tf32_ok
+        torch.backends.cudnn.allow_tf32 = tf32_ok
+        torch.set_float32_matmul_precision("high" if tf32_ok else "highest")
         if hasattr(torch.backends.cuda, "enable_flash_sdp"):
             torch.backends.cuda.enable_flash_sdp(True)
         if hasattr(torch.backends.cuda, "enable_cudnn_sdp"):
@@ -241,40 +326,26 @@ def _render_messages(messages: list[dict[str, str]], tokenizer: Any) -> str:
 
 
 def _load_dataset(path: Path, tokenizer: Any, text_field: str):
-    from datasets import Dataset
+    from datasets import load_dataset
 
-    # Parse the JSONL with the stdlib rather than ``load_dataset("json", ...)``.
-    # Arrow unifies the schema across every row and aborts when a key's type
-    # drifts between records ("Column(/meta/synthetic) changed from boolean to
-    # string") — which happens whenever one producer writes a flag as a bool
-    # and another (e.g. inject_cognitive_noise) as a string. We only ever keep
-    # the rendered ``text`` column, so the metadata schema is irrelevant; read
-    # each line independently and hand Arrow a single-column table it cannot
-    # trip over.
-    rows: list[dict[str, str]] = []
-    with path.open(encoding="utf-8") as fh:
-        for lineno, line in enumerate(fh, 1):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"{path}:{lineno}: invalid JSON ({exc})") from exc
-            rows.append({text_field: _render_messages(_row_to_messages(row), tokenizer)})
+    ds = load_dataset("json", data_files=str(path), split="train")
 
-    if not rows:
-        raise ValueError(f"{path}: no usable training rows")
-    return Dataset.from_list(rows)
+    def _to_text(row):
+        return {text_field: _render_messages(_row_to_messages(row), tokenizer)}
+
+    return ds.map(_to_text, remove_columns=list(ds.column_names))
 
 
 def _build_model_unsloth(cfg: TrainConfig):
     from unsloth import FastLanguageModel
 
+    precision = _resolve_precision(cfg.precision)
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=cfg.base_model,
         max_seq_length=cfg.max_seq_len,
-        dtype=None,  # auto -> bf16 on Blackwell
+        # None would let Unsloth pick, which lands on bf16 wherever torch claims
+        # (possibly emulated) support; pass the resolved dtype instead.
+        dtype=None if precision == "fp32" else _torch_dtype(precision),
         load_in_4bit=cfg.load_in_4bit,
     )
     model = FastLanguageModel.get_peft_model(
@@ -290,6 +361,152 @@ def _build_model_unsloth(cfg: TrainConfig):
     return model, tokenizer
 
 
+def _build_deepspeed_config(cfg: TrainConfig) -> dict[str, Any]:
+    """Resolve the ZeRO CPU/RAM-offload config for ``--full-finetune``.
+
+    Pure Python / JSON-serialisable, no ``deepspeed`` or ``torch`` import --
+    safe to call from ``--dry-run``.
+
+    Every field is a concrete value from ``cfg``, never DeepSpeed's
+    ``"auto"`` placeholder. ``"auto"`` is only ever resolved by the
+    *Trainer's* ``HfTrainerDeepSpeedConfig.trainer_config_process()``, which
+    runs once the ``Trainer``/``Accelerator`` is constructed — too late for
+    ZeRO-3, which must see a fully-resolved config the moment
+    ``from_pretrained()`` triggers ``deepspeed.zero.Init()`` in
+    :func:`_build_model_hf_full`, well before any ``Trainer`` exists (a raw
+    ``"auto"`` string reaching ``deepspeed.zero.Init`` there fails with
+    ``TypeError: can't multiply sequence by non-int`` — confirmed against a
+    real ZeRO-3 smoke run). Bucket-size / prefetch knobs are left out
+    entirely rather than guessed at "auto": the model isn't loaded yet, so
+    there is no ``hidden_size`` to size them against, and DeepSpeed's own
+    built-in defaults (independent of any HF-Trainer sizing) apply when they
+    are simply absent.
+
+    Using the same ``cfg`` fields the SFTConfig is built from also means the
+    two configs can never disagree — ``fill_match()`` hard-errors on a
+    mismatch between an explicit DeepSpeed value and the matching
+    ``TrainingArguments`` value once the Trainer *does* process this file.
+
+    Stage 2 offloads only the optimiser state (params + gradients stay on the
+    GPU) -- enough headroom for models that fit in VRAM but not alongside a
+    full-precision Adam state. Stage 3 additionally shards and offloads the
+    parameters themselves, streaming each layer's weights onto the GPU only
+    while it is being used -- the path an 8 GB-or-smaller card needs for a
+    1.5B-class full fine-tune.
+    """
+    precision = _resolve_precision(cfg.precision)
+    zero: dict[str, Any] = {
+        "stage": cfg.zero_stage,
+        "contiguous_gradients": True,
+        "overlap_comm": True,
+    }
+    if cfg.offload_optimizer:
+        zero["offload_optimizer"] = {"device": "cpu", "pin_memory": True}
+    if cfg.zero_stage >= 3:
+        # Consolidate the sharded fp16/bf16 weights back into one checkpoint
+        # on save -- otherwise trainer.save_model() writes one shard per rank.
+        zero["stage3_gather_16bit_weights_on_model_save"] = True
+        if cfg.offload_params:
+            zero["offload_param"] = {"device": "cpu", "pin_memory": True}
+    return {
+        "zero_optimization": zero,
+        "bf16": {"enabled": precision == "bf16"},
+        "fp16": {"enabled": precision == "fp16"},
+        "gradient_accumulation_steps": cfg.grad_accum,
+        "gradient_clipping": 1.0,
+        "train_micro_batch_size_per_gpu": cfg.batch_size,
+        "train_batch_size": cfg.batch_size * cfg.grad_accum,
+        "steps_per_print": 50,
+    }
+
+
+def _write_deepspeed_config(cfg: TrainConfig) -> Path:
+    """Write the resolved ZeRO config next to the run and return its path.
+
+    ``--deepspeed-config`` bypasses generation entirely and is returned
+    as-is -- an operator's hand-tuned file always wins.
+    """
+    if cfg.deepspeed_config is not None:
+        return cfg.deepspeed_config
+    path = cfg.output_dir / "deepspeed_config.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(_build_deepspeed_config(cfg), indent=2))
+    return path
+
+
+def _ensure_single_process_distributed_env() -> None:
+    """Fake a single-process torch.distributed world for DeepSpeed.
+
+    ``train_qlora.py`` is invoked directly (``python -m ai_module.
+    train_qlora``), never through the ``deepspeed`` / ``torchrun``
+    launchers that normally set these. Without them DeepSpeed's
+    ``init_distributed()`` can't find ``RANK``/``WORLD_SIZE``/etc. and falls
+    back to MPI auto-discovery (``mpi4py`` — not a dependency here, and the
+    wrong tool for a single local GPU anyway). Setting all five with
+    ``setdefault`` gives it a rank-0-of-1 world over ``env://`` instead, and
+    never overrides a real launcher's values if one *was* used.
+    """
+    os.environ.setdefault("RANK", "0")
+    os.environ.setdefault("LOCAL_RANK", "0")
+    os.environ.setdefault("WORLD_SIZE", "1")
+    os.environ.setdefault("MASTER_ADDR", "localhost")
+    os.environ.setdefault("MASTER_PORT", "29500")
+
+
+def _build_model_hf_full(cfg: TrainConfig):
+    """Full fine-tune: every base-model weight is trainable, no LoRA adapter.
+
+    ZeRO-3 needs to see the DeepSpeed config *before* ``from_pretrained`` so
+    it partitions the weights straight onto GPU/CPU as they are constructed,
+    instead of materialising the full model on one device first -- which is
+    exactly the OOM this path exists to avoid. ``HfDeepSpeedConfig`` only
+    needs to stay alive for the duration of model construction; the
+    ``Trainer``'s own DeepSpeed engine (built from the same JSON via
+    ``--deepspeed`` on ``SFTConfig``) takes over from there.
+    """
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    precision = _resolve_precision(cfg.precision)
+    dtype = _torch_dtype(precision)
+    offload = []
+    if cfg.offload_optimizer:
+        offload.append("optimizer")
+    if cfg.zero_stage >= 3 and cfg.offload_params:
+        offload.append("params")
+    print(f"compute precision: {precision} (full fine-tune, ZeRO-{cfg.zero_stage}"
+          f"{' + CPU-offloaded ' + '/'.join(offload) if offload else ''})")
+
+    # DeepSpeed's own init_distributed() needs this regardless of ZeRO stage
+    # -- the engine build at trainer.train() time (stage 2 or 3) goes through
+    # it -- not only the stage-3 zero.Init() below.
+    _ensure_single_process_distributed_env()
+
+    tokenizer = AutoTokenizer.from_pretrained(cfg.base_model)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
+
+    dschf = None
+    if cfg.zero_stage >= 3:
+        from transformers.integrations.deepspeed import HfDeepSpeedConfig
+
+        ds_config = _build_deepspeed_config(cfg)
+        dschf = HfDeepSpeedConfig(ds_config)  # noqa: F841 -- kept alive, see docstring
+
+    model = AutoModelForCausalLM.from_pretrained(
+        cfg.base_model,
+        torch_dtype=dtype,
+        attn_implementation=cfg.attn_impl,
+    )
+    if cfg.gradient_checkpointing:
+        model.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False}
+        )
+        model.enable_input_require_grads()
+    del dschf
+    return model, tokenizer
+
+
 def _build_model_hf(cfg: TrainConfig):
     import torch
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
@@ -298,13 +515,18 @@ def _build_model_hf(cfg: TrainConfig):
     # Native bf16 by default; NF4 4-bit only when explicitly requested. The
     # 5090 has the VRAM for the full bf16 base, which trains faster and avoids
     # the quantization-error floor that caps LoRA quality.
+    precision = _resolve_precision(cfg.precision)
+    dtype = _torch_dtype(precision)
+    print(f"compute precision: {precision}"
+          f"{' (4-bit NF4 base weights)' if cfg.load_in_4bit else ''}")
+
     bnb = None
     if cfg.load_in_4bit:
         bnb = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_compute_dtype=dtype,
             # Never silently spill the quantized model to CPU/disk: a partial
             # dispatch makes Accelerate raise "Some modules are dispatched on the
             # CPU or the disk" instead of OOMing loudly. QLoRA needs every base
@@ -327,8 +549,8 @@ def _build_model_hf(cfg: TrainConfig):
     tokenizer.padding_side = "right"  # required for training with bnb / SDPA / FA2
     model = AutoModelForCausalLM.from_pretrained(
         cfg.base_model,
-        quantization_config=bnb,          # None -> full bf16 load
-        torch_dtype=torch.bfloat16,
+        quantization_config=bnb,          # None -> full-precision load
+        torch_dtype=dtype,
         attn_implementation=cfg.attn_impl,
         device_map=device_map,
     )
@@ -357,13 +579,16 @@ def _build_model_hf(cfg: TrainConfig):
     return get_peft_model(model, lora), tokenizer
 
 
-def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
+def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool,
+                       deepspeed_path: str | None = None):
     """Construct ``trl.SFTConfig``, filtering renamed kwargs for the installed TRL."""
     from trl import SFTConfig
 
     report_to = []
     if not smoke and _tensorboard_available():
         report_to = ["tensorboard"]
+
+    precision = _resolve_precision(cfg.precision)
 
     # Per-epoch validation is what makes early stopping / best-checkpoint
     # selection possible; without an eval set both are silently disabled
@@ -383,8 +608,10 @@ def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
         warmup_ratio=0.0 if smoke else cfg.warmup_ratio,
         weight_decay=cfg.weight_decay,
         lr_scheduler_type="constant" if smoke else "cosine",
-        bf16=cfg.bf16,
-        tf32=True,
+        # Exactly one of these may be true; fp32 leaves both false.
+        bf16=precision == "bf16",
+        fp16=precision == "fp16",
+        tf32=cfg.tf32 and (_cuda_capability() or (0, 0)) >= BF16_MIN_CAPABILITY,
         logging_steps=1 if smoke else 10,
         save_strategy=save_strategy,
         save_total_limit=cfg.save_total_limit,
@@ -420,6 +647,8 @@ def _build_sft_config(cfg: TrainConfig, *, smoke: bool, have_eval: bool):
         max_seq_length=cfg.max_seq_len,
         max_length=cfg.max_seq_len,
     )
+    if deepspeed_path is not None:
+        candidate["deepspeed"] = deepspeed_path
     return SFTConfig(**_supported_kwargs(SFTConfig, candidate))
 
 
@@ -482,6 +711,88 @@ def _attach_early_stopping(trainer, cfg, *, have_eval: bool) -> None:
           f"eval rounds on eval_loss")
 
 
+def _is_oom(exc: BaseException) -> bool:
+    """True for a CUDA out-of-memory failure, however torch spelled it.
+
+    ``torch.cuda.OutOfMemoryError`` only exists from torch 2.0 and is not
+    importable without torch, so match on the class name and fall back to the
+    message for the plain ``RuntimeError`` that older stacks (and some
+    bitsandbytes paths) still raise.
+    """
+    if type(exc).__name__ == "OutOfMemoryError":
+        return True
+    return isinstance(exc, RuntimeError) and "out of memory" in str(exc).lower()
+
+
+def _shrink_for_oom(cfg: TrainConfig) -> TrainConfig | None:
+    """Halve the memory footprint of one step, or ``None`` if already minimal.
+
+    Micro-batch first, with grad-accum doubled to hold the tokens-per-step
+    budget constant — that keeps the optimiser schedule comparable to the run
+    that OOMed. Only once the batch is down to 1 do we start cutting the
+    sequence length, which does change what the model sees.
+    """
+    from dataclasses import replace
+
+    if cfg.batch_size > 1:
+        return replace(cfg, batch_size=cfg.batch_size // 2,
+                       grad_accum=cfg.grad_accum * 2)
+    if cfg.max_seq_len > 256:
+        return replace(cfg, max_seq_len=cfg.max_seq_len // 2)
+    return None
+
+
+def _release_cuda(*objects: Any) -> None:
+    """Drop references and hand the VRAM back before retrying."""
+    import gc
+
+    for obj in objects:
+        try:
+            del obj
+        except Exception:  # pragma: no cover - defensive
+            pass
+    gc.collect()
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
+    except Exception:  # pragma: no cover - defensive
+        pass
+
+
+def _oom_advice(cfg: TrainConfig) -> str:
+    """What the operator should try next, given what this run already used."""
+    tips = []
+    if cfg.full_finetune:
+        if cfg.zero_stage < 3:
+            tips.append("--zero-stage 3  (also shard + offload parameters, "
+                        "not just the optimiser state)")
+        if not cfg.offload_optimizer:
+            tips.append("drop --no-offload-optimizer (keep the optimiser on CPU RAM)")
+        if not cfg.offload_params:
+            tips.append("drop --no-offload-params (keep parameters on CPU RAM)")
+        tips.append("--full-finetune is inherently the most VRAM-hungry path; "
+                    "consider LoRA/QLoRA (drop --full-finetune) if the CPU-RAM "
+                    "offload round-trip is still too slow to be worth it")
+    elif not cfg.load_in_4bit:
+        tips.append("--load-in-4bit  (4-bit NF4 base weights — the single biggest saving)")
+    if cfg.batch_size > 1:
+        tips.append(f"--batch-size 1 --grad-accum {cfg.batch_size * cfg.grad_accum}")
+    if cfg.max_seq_len > 512:
+        tips.append(f"--max-seq-len {cfg.max_seq_len // 2}")
+    if not cfg.full_finetune and cfg.lora_r > 8:
+        tips.append(f"--lora-r {cfg.lora_r // 2}")
+    if not cfg.gradient_checkpointing:
+        tips.append("gradient checkpointing (currently off)")
+    tips.append("a smaller base model, e.g. --base-model "
+                "unsloth/Qwen2.5-0.5B-Instruct-bnb-4bit")
+    tips.append("closing anything else using the GPU (a browser or the desktop "
+                "compositor can hold back several hundred MB)")
+    return "\n".join(f"    - {t}" for t in tips)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base-model", default=TrainConfig.base_model)
@@ -522,6 +833,21 @@ def main(argv: list[str] | None = None) -> int:
                          "lobotomy recipe keeps every security sample isolated)")
     ap.add_argument("--no-packing", action="store_true",
                     help="explicit no-op; packing is already off by default")
+    ap.add_argument("--precision", choices=PRECISIONS, default=TrainConfig.precision,
+                    help="compute precision (default: auto — bf16 on sm_80+, "
+                         "fp16 on older CUDA cards such as Turing/GTX 16xx, "
+                         "fp32 with no GPU)")
+    ap.add_argument("--no-tf32", dest="tf32", action="store_false",
+                    help="disable the Ampere TF32 matmul path (auto-disabled "
+                         "below sm_80 regardless)")
+    ap.add_argument("--attn-impl", default=None, choices=("sdpa", "eager", "flash_attention_2"),
+                    help="attention kernel (default: sdpa; --flash-attn is a "
+                         "shorthand for flash_attention_2)")
+    ap.add_argument("--oom-retries", type=int, default=1, metavar="N",
+                    help="on a CUDA out-of-memory error, retry N times with the "
+                         "micro-batch halved and grad-accum doubled (default: 1; "
+                         "0 disables). The token budget per optimiser step is "
+                         "preserved, so the schedule stays comparable.")
     ap.add_argument("--load-in-4bit", action="store_true",
                     help="opt back into bitsandbytes NF4 4-bit base (OFF by "
                          "default; native bf16 fits on the 32 GB RTX 5090)")
@@ -544,10 +870,49 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--merge-adapter", action="store_true",
                     help="also write a merged fp16 model next to the adapter "
                          "(ready to serve with vLLM / transformers)")
+    ap.add_argument("--full-finetune", action="store_true",
+                    help="train every base-model weight instead of a LoRA "
+                         "adapter, via DeepSpeed ZeRO CPU/RAM offload (needs "
+                         "the ai-offload extra). For a card too small even "
+                         "for bf16 LoRA. Mutually exclusive with "
+                         "--load-in-4bit and --use-unsloth. Much slower than "
+                         "the LoRA path — every step round-trips through CPU "
+                         "RAM.")
+    ap.add_argument("--zero-stage", type=int, choices=(2, 3), default=TrainConfig.zero_stage,
+                    help="DeepSpeed ZeRO stage for --full-finetune (default 3: "
+                         "offload params + optimiser; 2: optimiser only, needs "
+                         "the full model to fit in VRAM)")
+    ap.add_argument("--no-offload-optimizer", dest="offload_optimizer",
+                    action="store_false", default=TrainConfig.offload_optimizer,
+                    help="keep optimiser state on the GPU instead of CPU RAM "
+                         "(--full-finetune only; needs much more VRAM)")
+    ap.add_argument("--no-offload-params", dest="offload_params",
+                    action="store_false", default=TrainConfig.offload_params,
+                    help="keep parameters on the GPU instead of CPU RAM "
+                         "(--full-finetune --zero-stage 3 only)")
+    ap.add_argument("--deepspeed-config", type=Path, default=None,
+                    help="use this DeepSpeed JSON verbatim instead of the "
+                         "generated ZeRO config (advanced escape hatch)")
     ap.add_argument("--seed", type=int, default=TrainConfig.seed)
     ap.add_argument("--dry-run", action="store_true",
                     help="resolve + print config only; never imports torch")
     args = ap.parse_args(argv)
+
+    if args.full_finetune and args.load_in_4bit:
+        print("error: --full-finetune and --load-in-4bit are mutually "
+              "exclusive (full fine-tune updates every real weight; 4-bit "
+              "NF4 base weights are frozen and only reachable through a "
+              "LoRA adapter)")
+        return 2
+    if args.full_finetune and args.use_unsloth:
+        print("error: --full-finetune and --use-unsloth are mutually "
+              "exclusive (Unsloth's get_peft_model always attaches a LoRA "
+              "adapter)")
+        return 2
+    if args.full_finetune and args.merge_adapter:
+        print("warn: --merge-adapter has no effect with --full-finetune "
+              "(there is no adapter to merge; the full model is already "
+              "saved to <output-dir>/model/)")
 
     cfg = TrainConfig(
         base_model=args.base_model,
@@ -568,9 +933,17 @@ def main(argv: list[str] | None = None) -> int:
         early_stopping_threshold=args.early_stopping_threshold,
         packing=args.packing and not args.no_packing,
         load_in_4bit=args.load_in_4bit,
-        attn_impl="flash_attention_2" if args.flash_attn else "sdpa",
+        precision=args.precision,
+        tf32=args.tf32,
+        attn_impl=(args.attn_impl
+                   or ("flash_attention_2" if args.flash_attn else "sdpa")),
         use_unsloth=args.use_unsloth,
         merge_adapter=args.merge_adapter,
+        full_finetune=args.full_finetune,
+        zero_stage=args.zero_stage,
+        offload_optimizer=args.offload_optimizer,
+        offload_params=args.offload_params,
+        deepspeed_config=args.deepspeed_config,
         seed=args.seed,
         optim=args.optim,
         group_by_length=not args.no_group_by_length,
@@ -583,12 +956,20 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps({k: str(v) for k, v in cfg.__dict__.items()}, indent=2)
     )
     print("resolved config:\n" + json.dumps({k: str(v) for k, v in cfg.__dict__.items()}, indent=2))
+    deepspeed_path = str(_write_deepspeed_config(cfg)) if cfg.full_finetune else None
+    if deepspeed_path:
+        print(f"deepspeed config -> {deepspeed_path}")
     if args.dry_run:
         return 0
 
     _tune_cuda_for_blackwell()
 
-    build = _build_model_unsloth if cfg.use_unsloth else _build_model_hf
+    if cfg.full_finetune:
+        build = _build_model_hf_full
+    elif cfg.use_unsloth:
+        build = _build_model_unsloth
+    else:
+        build = _build_model_hf
     try:
         model, tokenizer = build(cfg)
     except (ImportError, RuntimeError, NotImplementedError) as exc:
@@ -606,13 +987,63 @@ def main(argv: list[str] | None = None) -> int:
         if cfg.eval and not smoke else None
     )
 
-    sft_config = _build_sft_config(cfg, smoke=smoke, have_eval=eval_ds is not None)
-    trainer = _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds, cfg)
-    trainer.train()
+    attempt = 0
+    while True:
+        if cfg.full_finetune:
+            # Batch/grad-accum are baked as concrete numbers into the
+            # DeepSpeed JSON (see _build_deepspeed_config) so they must be
+            # rewritten in lock-step with an OOM shrink, or the Trainer's
+            # fill_match() rejects the mismatch between this file and the
+            # freshly-shrunk SFTConfig.
+            deepspeed_path = str(_write_deepspeed_config(cfg))
+        sft_config = _build_sft_config(cfg, smoke=smoke, have_eval=eval_ds is not None,
+                                        deepspeed_path=deepspeed_path)
+        trainer = _build_trainer(model, tokenizer, sft_config, train_ds, eval_ds, cfg)
+        try:
+            trainer.train()
+            break
+        except Exception as exc:
+            if not _is_oom(exc):
+                raise
+            smaller = _shrink_for_oom(cfg) if attempt < args.oom_retries else None
+            if smaller is None:
+                print(f"\nCUDA out of memory with batch-size={cfg.batch_size} "
+                      f"grad-accum={cfg.grad_accum} max-seq-len={cfg.max_seq_len} "
+                      f"4bit={cfg.load_in_4bit}.\nTry:\n{_oom_advice(cfg)}")
+                raise
+            attempt += 1
+            print(f"\nCUDA out of memory — retry {attempt}/{args.oom_retries} with "
+                  f"batch-size {cfg.batch_size} -> {smaller.batch_size}, "
+                  f"grad-accum {cfg.grad_accum} -> {smaller.grad_accum}, "
+                  f"max-seq-len {cfg.max_seq_len} -> {smaller.max_seq_len}")
+            cfg = smaller
+            # The model itself is unchanged by these knobs; it is the trainer's
+            # optimiser state and activation buffers that have to go.
+            model.zero_grad(set_to_none=True)
+            _release_cuda(trainer, sft_config)
+
+    if attempt:
+        # The run that finished is not the one whose config we wrote before the
+        # first attempt; make the record match what actually trained.
+        (cfg.output_dir / "train_config.json").write_text(
+            json.dumps({k: str(v) for k, v in cfg.__dict__.items()}, indent=2)
+        )
 
     if smoke:
+        what = "model" if cfg.full_finetune else "adapter"
         print(f"smoke test OK — {cfg.max_steps} steps ran on "
-              f"{_device_name()}; adapter not saved")
+              f"{_device_name()}; {what} not saved")
+        return 0
+
+    if cfg.full_finetune:
+        # ZeRO-3 shards live across CPU/GPU; save_model() gathers them back
+        # into one consolidated checkpoint (stage3_gather_16bit_weights_on_
+        # model_save in the generated DeepSpeed config makes that gather
+        # happen). No adapter to merge — the whole model is already trained.
+        model_dir = cfg.output_dir / "model"
+        trainer.save_model(str(model_dir))
+        tokenizer.save_pretrained(str(model_dir))
+        print(f"done -> {model_dir}")
         return 0
 
     adapter_dir = cfg.output_dir / "adapter"

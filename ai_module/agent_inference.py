@@ -52,7 +52,7 @@ from ai_module.structured_inference import (
     openai_response_format,
     parse_discovery,
     parse_payloads,
-    parse_triage,
+    parse_triage_with_status,
 )
 
 Verdict = Literal["TRUE_POSITIVE", "FALSE_POSITIVE", "UNCERTAIN"]
@@ -68,6 +68,7 @@ class TriageResult:
     reasoning: str
     next_step: str = ""
     raw: str = ""
+    error: str = ""
 
     @property
     def is_vulnerable(self) -> bool:
@@ -141,6 +142,11 @@ class AgentClient:
     # quantization is the serving stack's concern (vLLM/llama.cpp flags).
     load_in_4bit: bool = False
     load_in_8bit: bool = False
+    # Opt-in for DeepSeek-style templates whose assistant prompt starts a
+    # reasoning block. This only changes local triage generation.
+    triage_json_prefix: bool = field(
+        default_factory=lambda: os.environ.get("AI_AGENT_TRIAGE_JSON_PREFIX") == "1"
+    )
     # Bounded retry/backoff for the 'openai' backend's HTTP call (Phase 2,
     # Point 3 -- "manejo elegante de reintentos... en caso de fallos del LLM
     # o API externa"). Only a transient failure is retried (connection
@@ -278,7 +284,7 @@ class AgentClient:
                 load_prompt("triage_system"), user,
                 response_format=openai_response_format(TriageOut),
             )
-            parsed = parse_triage(text)
+            parsed, parseable = parse_triage_with_status(text)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
@@ -290,6 +296,7 @@ class AgentClient:
                 reasoning=f"Structured triage unavailable ({type(exc).__name__}); "
                           "held to the safe contingency verdict.",
                 next_step="Investigate the backend's response format.", raw="",
+                error=type(exc).__name__,
             )
         verdict = parsed.verdict.value
         if verdict not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "UNCERTAIN"):
@@ -303,6 +310,7 @@ class AgentClient:
             reasoning=parsed.reasoning,
             next_step=parsed.next_step,
             raw=text,
+            error="" if parseable else "Unparseable model output",
         )
 
     async def synthesize_payloads(
@@ -425,7 +433,8 @@ class AgentClient:
             # a separate opt-in path. Free text still lands in parse_triage /
             # parse_payloads at the call site, which is schema-tolerant.
             await self._ensure_hf_loaded()
-            return await asyncio.to_thread(self._generate_hf, system, user, temperature)
+            triage = bool(response_format and response_format.get("json_schema", {}).get("name") == "TriageOut")
+            return await asyncio.to_thread(self._generate_hf, system, user, temperature, triage)
         return await self._chat_openai(system, user, response_format=response_format,
                                        temperature=temperature)
 
@@ -555,13 +564,18 @@ class AgentClient:
             )
         return BitsAndBytesConfig(load_in_8bit=True)
 
-    def _generate_hf(self, system: str, user: str, temperature: float | None = None) -> str:
+    def _generate_hf(self, system: str, user: str, temperature: float | None = None,
+                     triage: bool = False) -> str:
         temp = temperature if temperature is not None else self.temperature
         prompt = self._hf.tokenizer.apply_chat_template(
             [{"role": "system", "content": system}, {"role": "user", "content": user}],
             tokenize=False,
             add_generation_prompt=True,
         )
+        prefix = ""
+        if triage and self.triage_json_prefix and prompt.endswith("<think>\n"):
+            prefix = '{"verdict": "'
+            prompt += "</think>\n" + prefix
         out = self._hf(
             prompt,
             max_new_tokens=self.max_tokens,
@@ -569,8 +583,9 @@ class AgentClient:
             temperature=max(temp, 1e-3),
             repetition_penalty=self.repetition_penalty,
             return_full_text=False,
+            clean_up_tokenization_spaces=False,
         )
-        return out[0]["generated_text"]
+        return prefix + out[0]["generated_text"]
 
     @staticmethod
     def _echo(system: str, user: str) -> str:

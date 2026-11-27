@@ -46,8 +46,9 @@ in the repo root:
   with the wrong owner) — override with `--allow-root`;
 - verifies the uv environment and, if the ML stack is only *missing*
   (`verify_uv_env.sh` exit 3), **auto-installs** it — `uv pip install torch
-  --index-url $TORCH_INDEX_URL` (default cu128) then `uv pip install -e ".[ai]"`
-  — aborting only if that fails (`--no-install` to opt out);
+  --index-url $TORCH_INDEX_URL` (default cu128) then `uv pip install -e
+  ".[ai,ai-local,training]"` — aborting only if that fails (`--no-install`
+  to opt out);
 - (optionally) regenerates the datasets (`--regen-data`, synthetic ×40);
 - pre-downloads the base model into the HF cache so the trainer never stalls
   mid-run (`ai_module/ensure_base_model.py`; `--skip-model-dl` to opt out).
@@ -56,15 +57,67 @@ in the repo root:
   retry the partial / corrupt blobs are purged from the cache and the Xet
   accelerator is disabled so the retry falls back to plain HTTPS. Tune with
   `--model-retries N`; force plain HTTPS from the start with `--no-xet`;
+- probes the GPU once and derives **both** the base model and the training knobs
+  from it (`ai_module/auto_select_model.py --format recipe`): VRAM picks the
+  model size and the batch/sequence budget, compute capability picks the numeric
+  format. Pre-Ampere cards (sm_75 — GTX 1650/1660, RTX 20xx) have no bf16 unit at
+  all, so they get fp16 + 4-bit NF4 weights instead of aborting inside
+  `TrainingArguments`; `--no-auto-tune` falls back to `train_qlora.py`'s own
+  defaults. On a 32 GB accelerator the derived knobs are exactly the values the
+  script used to hard-code, so nothing changes there;
+- launches one throwaway CUDA kernel before downloading anything, because
+  `torch.cuda.is_available()` does not tell you whether the wheel still ships
+  code for your architecture — a mismatch otherwise surfaces as "no kernel image
+  is available for execution on the device" minutes into the run. Pin an older
+  build with `TORCH_SPEC="torch==2.7.1"` when it does;
 - runs the QLoRA smoke test and then the full fine-tune, aborting in red on any
-  failure and printing the total wall-clock time.
+  failure and printing the total wall-clock time. A CUDA out-of-memory error is
+  retried once with the micro-batch halved and grad-accum doubled (constant
+  tokens per step), then reported with the exact flags to try next.
 
 ```bash
 ./run_pipeline.sh                 # verify/install env → fetch model → smoke → full triage fine-tune
 ./run_pipeline.sh --regen-data    # + regenerate datasets first (synthetic x40)
 ./run_pipeline.sh --task payload --epochs 3
+./run_pipeline.sh --no-auto-tune  # ignore the hardware-derived knobs
 ./run_pipeline.sh --help
 ```
+
+Inspect the plan for the current machine without running anything:
+
+```bash
+uv run python -m ai_module.auto_select_model --format recipe
+# MODEL=unsloth/Qwen2.5-1.5B-Instruct-bnb-4bit
+# PRECISION=fp16          <- sm_75 has no bf16
+# LOAD_IN_4BIT=1
+# BATCH_SIZE=1 GRAD_ACCUM=16 MAX_SEQ_LEN=512 ...
+
+# or simulate another machine
+uv run python -m ai_module.auto_select_model --format recipe \
+    --simulate-vram-gb 4 --simulate-capability 7.5
+```
+
+### Windows
+
+`setup_windows.ps1` is the one file you need on a bare Windows machine: it
+pre-flights the host, installs Git / Python 3.11 / uv, obtains the source, and
+runs the pipeline — through Git Bash, or through an equivalent native PowerShell
+path when Git Bash could not be installed.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup_windows.ps1
+.\check_windows_env.ps1                                  # read-only pre-flight
+.\setup_windows.ps1 -Proxy http://proxy.campus.edu:8080  # filtered network
+.\setup_windows.ps1 -SourceZip D:\repo.zip               # GitHub unreachable
+.\setup_windows.ps1 -TorchSpec "torch==2.7.1"            # older GPU architecture
+```
+
+Every install route has a fallback (uv comes from astral.sh, PyPI *or* winget;
+the source from `git clone`, an HTTPS zip *or* a local zip), every network
+failure is classified — DNS, TLS, proxy, timeout — and paired with the remedy for
+that classification, and the whole run is transcribed to a log file. A campus
+network that filters `github.com` while leaving PyPI and Hugging Face reachable
+is a warning with instructions, not an abort.
 
 The manual steps below are still the reference for what each phase does.
 
@@ -93,9 +146,9 @@ uv run python -c "import torch; print(torch.__version__, torch.cuda.is_available
 ### 2. Project + ML stack
 
 ```bash
-uv pip install -e ".[ai]"              # transformers, peft, trl, bitsandbytes, datasets…
-uv pip install -e ".[ai,ai-unsloth]"   # optional: fused kernels (~2x, lower memory)
-uv pip install -e ".[ai,ai-serve]"     # optional: vLLM for the OpenAI-compatible endpoint
+uv pip install -e ".[ai,ai-local,training]"            # torch, transformers, peft, trl, bitsandbytes, datasets…
+uv pip install -e ".[ai,ai-local,training,ai-unsloth]" # optional: fused kernels (~2x, lower memory)
+uv pip install -e ".[ai-serve]"                        # optional: vLLM for the OpenAI-compatible endpoint
 ```
 
 Then confirm the environment is uv-managed and the critical deps are resolved:
@@ -279,6 +332,54 @@ Output:
 
 Repeat step 3–5 with `--task payload` for the payload-synthesis adapter.
 
+### 5b. Full fine-tune on a small-VRAM card (DeepSpeed ZeRO CPU/RAM offload)
+
+`--full-finetune` trains every base-model weight instead of a LoRA adapter,
+via [DeepSpeed](https://www.deepspeed.ai/) ZeRO-2/3 with the optimiser state
+(and, at stage 3, the parameters themselves) offloaded to **CPU RAM** —
+the escape hatch for a card too small even for bf16 LoRA (a 6 GB RTX 4050
+running a 1.5B base, say). It is **much slower** than the LoRA path: every
+optimiser step round-trips through CPU RAM, so expect an order of magnitude
+less throughput. Prefer LoRA/QLoRA unless the goal specifically requires
+updating every weight.
+
+```bash
+uv pip install -e ".[ai,ai-local,training,ai-offload]"   # adds deepspeed
+
+uv run python -m ai_module.train_qlora \
+    --base-model deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+    --dataset data/sft.triage.train.jsonl --eval data/sft.triage.val.jsonl \
+    --output-dir runs/triage-full \
+    --full-finetune --zero-stage 3 \
+    --epochs 3 --batch-size 1 --grad-accum 16 --max-seq-len 1024
+```
+
+| Flag | Effect |
+|------|--------|
+| `--full-finetune` | Train every weight, no LoRA adapter. Mutually exclusive with `--load-in-4bit` (nothing to quantize a frozen base against) and `--use-unsloth` (always attaches a LoRA adapter). |
+| `--zero-stage {2,3}` | 2: offload only the optimiser state (needs the model to fit in VRAM). **3** (default): also shard + offload the parameters — the mode an 8 GB-or-smaller card needs. |
+| `--no-offload-optimizer` / `--no-offload-params` | Keep that piece on the GPU instead of CPU RAM (more VRAM, less RAM traffic). |
+| `--deepspeed-config PATH` | Use a hand-written DeepSpeed JSON verbatim instead of the generated one. |
+
+Output: `runs/triage-full/model/` — a single consolidated checkpoint (ZeRO-3
+shards are gathered on save), ready for `--merge-adapter`-free serving
+(`--ai-backend transformers` or a plain `vllm` deploy, no `--enable-lora`).
+
+**DeepSpeed CUDA-toolkit / torch mismatch.** `cpu_adam` (the offloaded
+optimiser) JIT-compiles a CUDA extension the first time it runs, and
+DeepSpeed hard-refuses a toolkit whose version doesn't exactly match the one
+`torch` was built against — including a harmless minor-version drift (a
+rolling-release distro's system CUDA is often newer than the wheel `torch`
+shipped with). If `train_qlora.py` aborts with `CUDAMismatchException`, set
+`export CUDA_HOME=/path/to/your/cuda/toolkit` (needed for `nvcc` regardless)
+and, only once you've confirmed the mismatch is cosmetic (same major
+version), `export DS_SKIP_CUDA_CHECK=1` to proceed anyway — this combination
+was verified end-to-end (real ZeRO-2 *and* ZeRO-3, CPU-offloaded optimiser
+*and* parameters, actual forward/backward/optimizer steps) on an RTX 4050
+Laptop GPU with CUDA 13.3 installed against a `torch+cu130` wheel.
+
+Verified only on Linux; DeepSpeed has no supported Windows wheel.
+
 ### 6. Serve the adapter (OpenAI-compatible)
 
 ```bash
@@ -293,7 +394,7 @@ Or run in-process with no server: `--ai-backend transformers` and
 
 ### 7. Run the scanner — the LLM triage agent is opt-in
 
-On `main` the deterministic heuristic engine is the default. The LLM triage
+The deterministic heuristic engine is the default. The LLM triage
 stage is enabled **per run** with `--enable-ai-triaging`, so a scan with and
 without the agent can be compared directly (see `tools/run_experiments.py`
 conditions `baseline` vs `ai-triage`).

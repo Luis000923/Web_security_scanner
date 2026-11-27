@@ -271,6 +271,26 @@ def _build_parser() -> argparse.ArgumentParser:
                           "Payload order stays fixed to the a-priori pipeline "
                           "instead of being re-sorted per injection point as "
                           "anomaly signals accumulate.")
+    exp.add_argument("--no-param-semantics", dest="param_semantics",
+                     action="store_false",
+                     help="Ablation: disable the redirect/flow-control parameter "
+                          "gate (core.param_semantics). Findings on next / "
+                          "redirect_uri / url ... are emitted unchanged, with no "
+                          "severity cap, suppression or param_semantics_verdict "
+                          "audit record. Recorded in the run manifest.")
+    exp.add_argument("--no-sink-gate", dest="sink_gate", action="store_false",
+                     help="Ablation: disable the sink-reachability pre-probe that "
+                          "skips CRLF / open-redirect payloads on points whose "
+                          "benign canary never reaches a response header or "
+                          "redirect target. Recorded in the run manifest.")
+    exp.add_argument("--no-causal-oracle", dest="causal_oracle",
+                     action="store_false",
+                     help="Ablation: disable class-attribution controls "
+                          "(core.causal_oracle): generic special-character "
+                          "control, semantic twin and replay for NoSQL / LDAP / "
+                          "SQLi differential findings. Verdicts fall back to "
+                          "the pre-control behaviour with no extra requests. "
+                          "Recorded in the run manifest.")
     exp.add_argument("--target-list", default=None, metavar="FILE.json",
                      help="JSON file with an array of {url, param, method} objects. "
                           "Populates the Phase 2 target queue directly and skips "
@@ -974,6 +994,12 @@ def _build_config(args) -> dict:
         "runtime_confirm": getattr(args, "runtime_confirm", True),
         # Phase 3 live heuristic ordering (adaptive feedback loop).
         "adaptive_sorting": getattr(args, "adaptive_sorting", True),
+        # Track B ablation: redirect/flow-control parameter gate.
+        "param_semantics": getattr(args, "param_semantics", True),
+        # Efficiency ablation: sink-reachability pre-probe (CRLF / redirect).
+        "sink_gate": getattr(args, "sink_gate", True),
+        # Track B ablation: class-attribution causal controls.
+        "causal_oracle": getattr(args, "causal_oracle", True),
         # LLM triage agent (opt-in via --enable-ai-triaging / --ai-synthesize).
         "ai_enabled": (getattr(args, "enable_ai_triaging", False)
                        or getattr(args, "ai_synthesize", False)),
@@ -1103,6 +1129,7 @@ async def _run_scan(args) -> int:
         print(f"{Fore.GREEN}[*] Loaded {len(target_list)} static target(s); "
               f"recon phase will be skipped.{Style.RESET_ALL}")
 
+    print(f"{Fore.CYAN}[*] WSS: Initializing scanner...{Style.RESET_ALL}", flush=True)
     scanner = WebSecurityScanner(_build_config(args))
     progress = ProgressReporter(enabled=not args.verbose)
     _register_listeners(scanner, args.verbose, progress)
