@@ -354,3 +354,14 @@ def test_hook_bloquea_commit_con_duplicado_staged(
     assert _hook("git add -A && git commit -m x") == dg.EXIT_DUPLICATE
     assert "commit bloqueado" in capsys.readouterr().err
     assert _hook("git -C . commit -qm x") == dg.EXIT_DUPLICATE
+
+
+def test_allowlist_real_apunta_a_simbolos_existentes_con_motivo() -> None:
+    root = Path(__file__).resolve().parents[1]
+    raw = json.loads((root / dg.DEFAULT_ALLOWLIST).read_text(encoding="utf-8"))
+    existing = {r.key for r in dg.collect_records(root, include_tests=False)}
+    for group in raw["groups"]:
+        assert len(group["reason"].strip()) >= 20, group
+        assert len(group["members"]) >= 2, group
+        missing = set(group["members"]) - existing
+        assert not missing, missing

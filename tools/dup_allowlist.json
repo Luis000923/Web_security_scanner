@@ -1,0 +1,33 @@
+{
+  "_doc": "Intentional duplicates skipped by tools/dup_guard.py (--scan / --check-diff). A group is skipped only when all its members are listed in one entry. Every entry needs a reason; see skill reuse-before-write.",
+  "groups": [
+    {
+      "members": [
+        "web_security_scanner/modules/vulnerability_testers/protocol_injection_tester_async.py::ProtocolInjectionTester.run_test",
+        "web_security_scanner/modules/vulnerability_testers/stored_xss_tester_async.py::StoredXSSTester.run_test"
+      ],
+      "reason": "Stable plugin contract (VulnerabilityTester.run_test); the two testers evolve independently by vulnerability class. Intentional decoupling."
+    },
+    {
+      "members": [
+        "web_security_scanner/modules/vulnerability_testers/crlf_async.py::CRLFTester.run_test",
+        "web_security_scanner/modules/vulnerability_testers/open_redirect_async.py::OpenRedirectTester.run_test"
+      ],
+      "reason": "Shared confirmation already extracted in 9cdf7f2 (confirm_double_oracle_no_redirect); what remains is per-class injection logic. Intentional decoupling."
+    },
+    {
+      "members": [
+        "web_security_scanner/core/ieee_metrics.py::MetricResult.f1",
+        "web_security_scanner/core/ieee_metrics.py::MetricResult.f1_class_matched"
+      ],
+      "reason": "Pins the reproducible IEEE paper metrics; any refactor could shift published numbers. Not touched without a human decision."
+    },
+    {
+      "members": [
+        "ai_module/evaluate_golden.py::compute_metrics",
+        "web_security_scanner/core/ieee_metrics.py::compute_metrics"
+      ],
+      "reason": "Different domains sharing a name: LLM golden-set evaluation vs scanner IEEE detection metrics (similarity 0.18)."
+    }
+  ]
+}
