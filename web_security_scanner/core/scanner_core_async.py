@@ -14,6 +14,13 @@ from typing import Any
 import aiohttp
 from aiohttp.abc import AbstractResolver, ResolveResult
 
+from .http_client import (
+    AsyncHTTPClient,
+    HTTPClientConfig,
+    TokenBucket,
+    new_client_session,
+    read_body_capped,
+)
 from .telemetry_engine import AdaptiveConcurrencyController, TelemetryEngine
 
 # Small pool of legitimate, current desktop User-Agents. One is picked at
@@ -42,7 +49,6 @@ _SOCKS_SCHEMES = ("socks5://", "socks5h://", "socks4://")
 # request. Protects against infinite chunked streams and gzip/deflate bombs: the
 # stream is read incrementally and abandoned once this many bytes accumulate.
 MAX_RESPONSE_SIZE = 5 * 1024 * 1024        # 5 MiB
-_READ_CHUNK = 64 * 1024                     # 64 KiB per iter_chunked step
 
 # Caps on the two auxiliary caches that would otherwise grow for the whole scan.
 # A crawl that touches tens of thousands of distinct hosts/endpoints would keep
@@ -200,42 +206,6 @@ class ScanConfig:
     adaptive_concurrency_window: int = 20
     adaptive_concurrency_high_watermark: float = 0.2
     adaptive_concurrency_low_watermark: float = 0.02
-
-
-class TokenBucket:
-    """
-    Async token bucket rate limiter.
-
-    Tokens refill continuously at ``rate`` per second up to ``capacity``.
-    ``acquire`` computes the wait under a short-lived lock but **sleeps
-    outside** it, so waiting for a token never occupies a concurrency slot and
-    several callers can have requests in flight at a pace consistent with the
-    configured rate (instead of the old lock-during-sleep that forced
-    concurrency down to 1).
-    """
-
-    def __init__(self, rate: float, capacity: float = 1.0):
-        self._rate = max(rate, 1e-6)
-        self._capacity = max(float(capacity), 1.0)
-        self._tokens = self._capacity
-        self._updated = time.monotonic()
-        self._lock = asyncio.Lock()
-
-    async def acquire(self, amount: float = 1.0) -> None:
-        amount = min(amount, self._capacity)
-        while True:
-            async with self._lock:
-                now = time.monotonic()
-                self._tokens = min(
-                    self._capacity,
-                    self._tokens + (now - self._updated) * self._rate,
-                )
-                self._updated = now
-                if self._tokens >= amount:
-                    self._tokens -= amount
-                    return
-                wait = (amount - self._tokens) / self._rate
-            await asyncio.sleep(wait)
 
 
 class HostBackoff:
@@ -517,6 +487,28 @@ class AsyncScannerCore:
         # once per scanner, not once per connector rebuild.
         self._ssl_notice_emitted = False
 
+        # Decoupled network client managing pool, semaphore, rate limit, and retries
+        http_config = HTTPClientConfig(
+            max_concurrency=config.max_concurrency,
+            timeout=config.timeout,
+            rate_limit=config.rate_limit,
+            rate_burst=config.rate_burst,
+            max_retries=config.max_retries,
+            retry_backoff_base=config.retry_backoff_base,
+            retry_backoff_max=config.retry_backoff_max,
+            verify_ssl=config.verify_ssl,
+            proxy=config.proxy,
+            user_agent=config.user_agent,
+            headers=config.headers,
+            cookie_jar_unsafe=config.cookie_jar_unsafe,
+            max_response_size=config.max_response_size,
+        )
+        self.http_client = AsyncHTTPClient(
+            http_config,
+            resolver=PinnedResolver(self) if not config.proxy else None,
+            custom_semaphore=self._semaphore,
+        )
+
     def _is_socks_proxy(self) -> bool:
         proxy = (self.config.proxy or "").lower()
         return proxy.startswith(_SOCKS_SCHEMES)
@@ -599,16 +591,15 @@ class AsyncScannerCore:
 
     async def start(self):
         """Initialize the aiohttp session."""
+        # Only ``None`` triggers a rebuild: close() resets it, and a session
+        # closed behind our back must surface as an error, not be replaced
+        # silently (unlike AsyncHTTPClient.start, which also checks .closed).
         if not self.session:
-            connector = self._build_connector()
-            headers = dict(self.config.headers)
-            if self.config.user_agent:
-                headers.setdefault("User-Agent", self.config.user_agent)
-            # Explicit cookie jar so form-login / static session cookies persist
-            # across the whole scan and auto-attach to every probe.
-            self.session = aiohttp.ClientSession(
-                connector=connector, headers=headers,
-                cookie_jar=aiohttp.CookieJar(unsafe=self.config.cookie_jar_unsafe),
+            self.session = new_client_session(
+                self._build_connector(),
+                self.config.headers,
+                self.config.user_agent,
+                cookie_jar_unsafe=self.config.cookie_jar_unsafe,
             )
 
     # ---- authenticated-session hooks --------------------------------
@@ -660,6 +651,8 @@ class AsyncScannerCore:
             self._semaphore = self._concurrency_controller.semaphore
         else:
             self._semaphore = asyncio.Semaphore(value)
+        if hasattr(self, "http_client") and self.http_client is not None:
+            self.http_client.set_concurrency(value)
 
     # ---- worker pool passthrough ---------------------------------------
 
@@ -798,42 +791,11 @@ class AsyncScannerCore:
     async def _safe_read(
         self, response: "aiohttp.ClientResponse"
     ) -> tuple[str, bool, int]:
-        """
-        Read a response body defensively.
-
-        The body is consumed in ``_READ_CHUNK`` steps from the *decoded*
-        (already decompressed by aiohttp) stream. As soon as the accumulated
-        size would exceed ``config.max_response_size`` the read stops, the
-        connection is force-closed so the server can't keep feeding us, and the
-        partial body is returned with ``truncated=True``.
+        """Read a response body defensively (see :func:`read_body_capped`).
 
         Returns ``(text, truncated, raw_len)``.
         """
-        limit = self.config.max_response_size
-        chunks = []
-        total = 0
-        truncated = False
-        async for chunk in response.content.iter_chunked(_READ_CHUNK):
-            if total + len(chunk) > limit:
-                chunks.append(chunk[: limit - total])
-                total = limit
-                truncated = True
-                break
-            chunks.append(chunk)
-            total += len(chunk)
-
-        if truncated:
-            # Abandon the rest of the stream and drop the socket instead of
-            # draining a potentially infinite body.
-            response.close()
-
-        body = b"".join(chunks)
-        try:
-            encoding = response.get_encoding()
-        except (RuntimeError, LookupError):
-            encoding = "utf-8"
-        text = body.decode(encoding or "utf-8", errors="ignore")
-        return text, truncated, total
+        return await read_body_capped(response, self.config.max_response_size)
 
     # ---- warm-up ---------------------------------------------------
 

@@ -1,0 +1,19 @@
+{
+ "sha256": {
+  "ground_truth.json": "36f9cbbc3d6f16208a862c078e882beb1ce55341f9ad5013d9966de055802b93",
+  "owasp_b20_baseline.report.json": "05fc47d0dffb81d25dd234f40c61716d1a22397d8da87c5a174acf4111c29620"
+ },
+ "source_worktree": "~/Documentos/wss-paper (feat/ai-triage-mainline @ 8c23116)",
+ "sources": {
+  "ground_truth.json": {
+   "path": "testbed/ground_truth.json",
+   "sha256": "46ab88b0c6a88811 (prefix)",
+   "transform": "json sort_keys indent=1"
+  },
+  "owasp_b20_baseline.report.json": {
+   "path": "testbed/results/budget20_baseline/report/scan_20261119_004614.json",
+   "sha256": "0ec12e594d1893aa (prefix of the untrimmed file)",
+   "transform": "keep vulnerabilities[*] fields url,parameter,param,param_name,probe_status,type,name,severity,confidence; json sort_keys indent=1"
+  }
+ }
+}

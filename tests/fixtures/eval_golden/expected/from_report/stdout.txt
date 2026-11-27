@@ -1,0 +1,33 @@
+
+==============================================================
+ DETECTION METRICS
+==============================================================
+ ground truth        : ground_truth
+ instances labelled  : 338
+ findings reported   : 456
+--------------------------------------------------------------
+ claims  TP/FP       : 409 / 46   (one per reported finding)
+ instances TP/FN/FP/TN: 182 / 12 / 15 / 129
+ outside ground truth: 1
+--------------------------------------------------------------
+ Precision           : 0.8969
+ Recall              : 0.9381
+ F1                  : 0.9171
+ Specificity         : 0.8958
+ FPR (GT only)       : 0.1042
+ FP rate (findings)  : 0.1031
+ Accuracy            : 0.9201
+ duplicate claims    : 258   (extra findings on an instance already counted)
+--------------------------------------------------------------
+ class agreement (reported class == expected class):
+   Precision         : 0.1820   (vs 0.8969 on any class)
+   Recall            : 0.4278   (vs 0.9381 on any class)
+   F1                : 0.2554   (vs 0.9171 on any class)
+   class-labelled    : 194 vulnerable instances, 83 matched
+   unknown classes   : 60 claim(s) with a reported type outside the shared vocabulary; counted as mismatches
+==============================================================
+ note: 1 finding(s) fell outside the ground truth; FPR (GT only) does not account for them.
+==============================================================
+ results.json  -> <OUT>/golden.json
+ metrics.md    -> <OUT>/golden.md
+ metrics.tex   -> <OUT>/golden.tex

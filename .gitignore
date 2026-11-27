@@ -9,6 +9,9 @@ dist/
 # uv / venv
 .venv/
 
+# Generated agent context (tools/context_packer.py, tools/token_benchmark.py)
+.context/
+
 # Scanner runtime output
 web_security_scanner/scanner.log
 scanner.log
@@ -19,6 +22,19 @@ config.yaml
 # Static-analysis SARIF output (CI artifacts, not committed)
 *.sarif
 coverage.xml
+
+# ---------------------------------------------------------------------------
+# Research artifacts (paper/, testbed/) are intentionally NOT part of main —
+# see AGENTS.md section 1.3. They live on feat/ai-triage-mainline / research /
+# testbed. The rules below only matter if one of those trees is ever checked
+# out or merged locally on top of main; they keep build output and generated
+# results from being re-added by accident, they do not vendor the trees
+# themselves.
+#
+# research/agents/*.md and research/notes/ are the opposite case: small
+# coordination claim-files (see AGENTS.md section 3) meant to be committed on
+# main by design, so nothing here excludes research/.
+# ---------------------------------------------------------------------------
 
 # LaTeX / paper build artifacts (research branch)
 paper/build/
@@ -31,6 +47,7 @@ paper/*.fdb_latexmk
 paper/*.fls
 paper/*.synctex.gz
 paper/*.run.xml
+paper/*.pdf
 submission.zip
 
 # Experiment orchestration output (testbed branch)
@@ -39,15 +56,13 @@ testbed/analysis/
 testbed/.cache/
 metrics/
 
-# QLoRA training checkpoints / adapters / tensorboard logs (ai-agent branch)
+# QLoRA training checkpoints / adapters / tensorboard logs (ai-agent branch).
+# Multi-GB, exceeds GitHub's 100MB per-file limit, and regenerable via
+# run_ai_pipeline.sh -- never commit these regardless of which branch.
 runs/
 
 # Local working context (not part of any branch deliverable)
 docs_context/
-
-# QLoRA training runs (checkpoints/optimizer state/merged weights, multi-GB;
-# exceeds GitHub's 100MB per-file limit and is regenerable via run_ai_pipeline.sh)
-runs/
 
 # OS / editor
 .DS_Store

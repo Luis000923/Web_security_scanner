@@ -41,16 +41,14 @@ from typing import Any
 from .report_generator import (
     SCANNER_NAME,
     SCANNER_VERSION,
+    _timestamp,
     build_structured_report,
+    write_json_report,
 )
 
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
-
-
-def _timestamp() -> str:
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
@@ -323,12 +321,7 @@ def build_sarif_report(scan_data: dict[str, Any]) -> dict[str, Any]:
 
 def generate_sarif_report(scan_data: dict[str, Any], output_dir: str = "reports") -> str:
     """Write the SARIF report and return its path."""
-    out = Path(output_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    path = out / f"scan_{_timestamp()}.sarif.json"
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(build_sarif_report(scan_data), f, indent=2, ensure_ascii=False)
-    return str(path)
+    return write_json_report(build_sarif_report(scan_data), output_dir, ".sarif.json")
 
 
 # ---------------------------------------------------------------------------
@@ -457,12 +450,7 @@ def build_enriched_report(scan_data: dict[str, Any]) -> dict[str, Any]:
 
 def generate_enriched_json_report(scan_data: dict[str, Any], output_dir: str = "reports") -> str:
     """Write the enriched JSON report and return its path."""
-    out = Path(output_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    path = out / f"scan_{_timestamp()}.enriched.json"
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(build_enriched_report(scan_data), f, indent=2, ensure_ascii=False)
-    return str(path)
+    return write_json_report(build_enriched_report(scan_data), output_dir, ".enriched.json")
 
 
 # ---------------------------------------------------------------------------

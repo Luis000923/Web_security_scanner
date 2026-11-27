@@ -1,0 +1,3214 @@
+{
+ "_source": "wss-paper testbed/results/budget20_baseline/report/scan_20261119_004614.json (feat/ai-triage-mainline 8c23116), trimmed to the fields load_findings_from_report reads",
+ "vulnerabilities": [
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest00407",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00407?BenchmarkTest00407=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest00815",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00815?BenchmarkTest00815=%3B+sleep+5"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest00816",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00816?BenchmarkTest00816=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest00824",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00824?BenchmarkTest00824=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest00907",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907?BenchmarkTest00907=%3B+sleep+5"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest01685",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01685?BenchmarkTest01685=%3B+sleep+5"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest01601",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01601?BenchmarkTest01601=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest01673",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01673?BenchmarkTest01673=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest01674",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01674?BenchmarkTest01674=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest02243",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02243?BenchmarkTest02243=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest02412",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02412?BenchmarkTest02412=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest02432",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02432?BenchmarkTest02432=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest02611",
+   "severity": "Critical",
+   "type": "Command Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02611?BenchmarkTest02611=%7C+ping+-c+5+127.0.0.1"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00021",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00021?BenchmarkTest00021=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00026",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00026?BenchmarkTest00026=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00362",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00362?BenchmarkTest00362=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00392",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00392?BenchmarkTest00392=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00407",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00407?BenchmarkTest00407=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00452",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00452?BenchmarkTest00452=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00457",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00457?BenchmarkTest00457=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00512",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00512?BenchmarkTest00512=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00619",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00619?BenchmarkTest00619=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00624",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00624?BenchmarkTest00624=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00629",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00629?BenchmarkTest00629=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00644",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00644?BenchmarkTest00644=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00649",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00649?BenchmarkTest00649=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00679",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00679?BenchmarkTest00679=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00694",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00694?BenchmarkTest00694=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00714",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00714?BenchmarkTest00714=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00764",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00764?BenchmarkTest00764=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00769",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00769?BenchmarkTest00769=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00783",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00783?BenchmarkTest00783=username%5B%24ne%5D%3Dx%26password%5B%24ne%5D%3Dx"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00785",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00785?BenchmarkTest00785=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00787",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00787?BenchmarkTest00787=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00788",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00788?BenchmarkTest00788=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00805",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00805?BenchmarkTest00805=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00807",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00807?BenchmarkTest00807=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00815",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00815?BenchmarkTest00815=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00816",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00816?BenchmarkTest00816=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00824",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00824?BenchmarkTest00824=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00839",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00839?BenchmarkTest00839=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00840",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00840?BenchmarkTest00840=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00841",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00841?BenchmarkTest00841=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00842",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00842?BenchmarkTest00842=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00843",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00843?BenchmarkTest00843=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00845",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00845?BenchmarkTest00845=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00846",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00846?BenchmarkTest00846=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00847",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00847?BenchmarkTest00847=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00848",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00848?BenchmarkTest00848=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00849",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00849?BenchmarkTest00849=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00850",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00850?BenchmarkTest00850=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01238",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01238?BenchmarkTest01238=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01243",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01243?BenchmarkTest01243=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01268",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01268?BenchmarkTest01268=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01308",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01308?BenchmarkTest01308=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01313",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01313?BenchmarkTest01313=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01348",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01348?BenchmarkTest01348=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01383",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01383?BenchmarkTest01383=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01388",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01388?BenchmarkTest01388=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01496",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01496?BenchmarkTest01496=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01501",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01501?BenchmarkTest01501=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01571",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01571?BenchmarkTest01571=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01586",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01586?BenchmarkTest01586=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01596",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01596?BenchmarkTest01596=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01601",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01601?BenchmarkTest01601=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01621",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01621?BenchmarkTest01621=%7B%22username%22%3A+%7B%22%24type%22%3A+%22string%22%7D%2C+%22password%22%3A+%7B%22%24type%22%3A+%22string%22%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01626",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01626?BenchmarkTest01626=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01631",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01631?BenchmarkTest01631=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01642",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01642?BenchmarkTest01642=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01643",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01643?BenchmarkTest01643=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01645",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01645?BenchmarkTest01645=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01647",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01647?BenchmarkTest01647=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01659",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01659?BenchmarkTest01659=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01661",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01661?BenchmarkTest01661=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01664",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01664?BenchmarkTest01664=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01666",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01666?BenchmarkTest01666=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01669",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01669?BenchmarkTest01669=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01671",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01671?BenchmarkTest01671=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01673",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01673?BenchmarkTest01673=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01674",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01674?BenchmarkTest01674=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01685",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01685?BenchmarkTest01685=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01689",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01689?BenchmarkTest01689=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01712",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01712?BenchmarkTest01712=%7B%22username%22%3A+%7B%22%24type%22%3A+%22string%22%7D%2C+%22password%22%3A+%7B%22%24type%22%3A+%22string%22%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01715",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01715?BenchmarkTest01715=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01716",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01716?BenchmarkTest01716=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01718",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01718?BenchmarkTest01718=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01720",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01720?BenchmarkTest01720=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01721",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01721?BenchmarkTest01721=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01723",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01723?BenchmarkTest01723=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01724",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01724?BenchmarkTest01724=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01725",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01725?BenchmarkTest01725=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01726",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01726?BenchmarkTest01726=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01727",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01727?BenchmarkTest01727=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01728",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01728?BenchmarkTest01728=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01730",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01730?BenchmarkTest01730=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01731",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01731?BenchmarkTest01731=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01733",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01733?BenchmarkTest01733=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02113",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02113?BenchmarkTest02113=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02128",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02128?BenchmarkTest02128=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02178",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02178?BenchmarkTest02178=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02198",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02198?BenchmarkTest02198=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02208",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02208?BenchmarkTest02208=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02243",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02243?BenchmarkTest02243=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02273",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02273?BenchmarkTest02273=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02288",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02288?BenchmarkTest02288=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02377",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02377?BenchmarkTest02377=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02397",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02397?BenchmarkTest02397=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02407",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02407?BenchmarkTest02407=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02412",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02412?BenchmarkTest02412=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02432",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02432?BenchmarkTest02432=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02472",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02472?BenchmarkTest02472=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02492",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02492?BenchmarkTest02492=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02532",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02532?BenchmarkTest02532=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02537",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02537?BenchmarkTest02537=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02542",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02542?BenchmarkTest02542=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02555",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02555?BenchmarkTest02555=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02556",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02556?BenchmarkTest02556=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02559",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02559?BenchmarkTest02559=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02560",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02560?BenchmarkTest02560=username%5B%24ne%5D%3Dx%26password%5B%24ne%5D%3Dx"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02561",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02561?BenchmarkTest02561=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02562",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02562?BenchmarkTest02562=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02564",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02564?BenchmarkTest02564=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02565",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02565?BenchmarkTest02565=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02567",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02567?BenchmarkTest02567=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02569",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02569?BenchmarkTest02569=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02579",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02579?BenchmarkTest02579=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02581",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02581?BenchmarkTest02581=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02585",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02585?BenchmarkTest02585=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02587",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02587?BenchmarkTest02587=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02588",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02588?BenchmarkTest02588=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02592",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02592?BenchmarkTest02592=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02596",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02596?BenchmarkTest02596=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02597",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02597?BenchmarkTest02597=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02601",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02601?BenchmarkTest02601=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02609",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02609?BenchmarkTest02609=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02611",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-03/BenchmarkTest02611?BenchmarkTest02611=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02625",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02625?BenchmarkTest02625=%7B%22username%22%3A+%7B%22%24type%22%3A+%22string%22%7D%2C+%22password%22%3A+%7B%22%24type%22%3A+%22string%22%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02627",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02627?BenchmarkTest02627=%7B%22username%22%3A+%7B%22%24type%22%3A+%22string%22%7D%2C+%22password%22%3A+%7B%22%24type%22%3A+%22string%22%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02628",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02628?BenchmarkTest02628=%7B%22username%22%3A+%7B%22%24type%22%3A+%22string%22%7D%2C+%22password%22%3A+%7B%22%24type%22%3A+%22string%22%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02630",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02630?BenchmarkTest02630=%7B%22username%22%3A+%7B%22%24type%22%3A+%22string%22%7D%2C+%22password%22%3A+%7B%22%24type%22%3A+%22string%22%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02632",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02632?BenchmarkTest02632=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02635",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02635?BenchmarkTest02635=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02638",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02638?BenchmarkTest02638=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02641",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02641?BenchmarkTest02641=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02642",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02642?BenchmarkTest02642=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02643",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02643?BenchmarkTest02643=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02644",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02644?BenchmarkTest02644=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02645",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02645?BenchmarkTest02645=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02646",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02646?BenchmarkTest02646=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02647",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02647?BenchmarkTest02647=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02649",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02649?BenchmarkTest02649=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02650",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02650?BenchmarkTest02650=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02651",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02651?BenchmarkTest02651=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02653",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02653?BenchmarkTest02653=%27+%7C%7C+%271%27%3D%3D%271"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02654",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02654?BenchmarkTest02654=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02655",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02655?BenchmarkTest02655=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02656",
+   "severity": "Critical",
+   "type": "NoSQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02656?BenchmarkTest02656=%7B%22username%22%3A+%7B%22%24ne%22%3A+null%7D%2C+%22password%22%3A+%7B%22%24ne%22%3A+null%7D%7D"
+  },
+  {
+   "confidence": "CONFIRMED",
+   "parameter": "BenchmarkTest00907",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907?BenchmarkTest00907=%27+AND+SLEEP%285%29--+-"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00041",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00041?BenchmarkTest00041=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00047",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00047?BenchmarkTest00047=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00048",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00048?BenchmarkTest00048=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00049",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00049?BenchmarkTest00049=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00382",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00382?BenchmarkTest00382=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00387",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00387?BenchmarkTest00387=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00467",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00467?BenchmarkTest00467=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00472",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00472?BenchmarkTest00472=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00477",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00477?BenchmarkTest00477=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00492",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00492?BenchmarkTest00492=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00644",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00644?BenchmarkTest00644=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00719",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00719?BenchmarkTest00719=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00724",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00724?BenchmarkTest00724=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00729",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00729?BenchmarkTest00729=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00800",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00800?BenchmarkTest00800=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00801",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00801?BenchmarkTest00801=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00802",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00802?BenchmarkTest00802=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00803",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00803?BenchmarkTest00803=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00804",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00804?BenchmarkTest00804=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00805",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00805?BenchmarkTest00805=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00806",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00806?BenchmarkTest00806=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00807",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00807?BenchmarkTest00807=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00809",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00809?BenchmarkTest00809=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00810",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00810?BenchmarkTest00810=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00811",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00811?BenchmarkTest00811=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest00822",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00822?BenchmarkTest00822=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01253",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01253?BenchmarkTest01253=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01258",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01258?BenchmarkTest01258=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01263",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01263?BenchmarkTest01263=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01268",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01268?BenchmarkTest01268=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01506",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01506?BenchmarkTest01506=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01511",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01511?BenchmarkTest01511=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01596",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01596?BenchmarkTest01596=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01621",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01621?BenchmarkTest01621=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01657",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01657?BenchmarkTest01657=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01658",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01658?BenchmarkTest01658=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01660",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01660?BenchmarkTest01660=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01662",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01662?BenchmarkTest01662=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01665",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01665?BenchmarkTest01665=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01667",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01667?BenchmarkTest01667=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01670",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01670?BenchmarkTest01670=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest01712",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01712?BenchmarkTest01712=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02123",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02123?BenchmarkTest02123=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02133",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02133?BenchmarkTest02133=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02223",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02223?BenchmarkTest02223=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02228",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02228?BenchmarkTest02228=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02402",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02402?BenchmarkTest02402=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02487",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02487?BenchmarkTest02487=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02578",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02578?BenchmarkTest02578=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02579",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02579?BenchmarkTest02579=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02580",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02580?BenchmarkTest02580=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02581",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02581?BenchmarkTest02581=%24%7Balert%28%27WSSc4n4ry7788%27%29%7D"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02582",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02582?BenchmarkTest02582=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02583",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02583?BenchmarkTest02583=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02584",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02584?BenchmarkTest02584=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02586",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02586?BenchmarkTest02586=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02587",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02587?BenchmarkTest02587=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02588",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02588?BenchmarkTest02588=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02591",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02591?BenchmarkTest02591=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02595",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02595?BenchmarkTest02595=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02598",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02598?BenchmarkTest02598=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02600",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02600?BenchmarkTest02600=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02601",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02601?BenchmarkTest02601=%24%7Balert%28%27WSSc4n4ry7788%27%29%7D"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02608",
+   "severity": "High",
+   "type": "Cross-Site Scripting (XSS)",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02608?BenchmarkTest02608=%3Cscript%3Ealert%28%27WSSc4n4ry7788%27%29%3C%2Fscript%3E"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02625",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02625?BenchmarkTest02625=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02627",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02627?BenchmarkTest02627=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02628",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02628?BenchmarkTest02628=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "HIGH",
+   "parameter": "BenchmarkTest02630",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02630?BenchmarkTest02630=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00021",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00021?BenchmarkTest00021=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00021",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00021?BenchmarkTest00021=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00026",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-00/BenchmarkTest00026?BenchmarkTest00026=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00362",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00362?BenchmarkTest00362=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00362",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00362?BenchmarkTest00362=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00392",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00392?BenchmarkTest00392=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00392",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-00/BenchmarkTest00392?BenchmarkTest00392=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00452",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00452?BenchmarkTest00452=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00452",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00452?BenchmarkTest00452=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00457",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00457?BenchmarkTest00457=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00457",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00457?BenchmarkTest00457=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00512",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00512?BenchmarkTest00512=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00619",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00619?BenchmarkTest00619=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00619",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00619?BenchmarkTest00619=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00624",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00624?BenchmarkTest00624=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00624",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00624?BenchmarkTest00624=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00629",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00629?BenchmarkTest00629=%2A%29%28%26"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00629",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00629?BenchmarkTest00629=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00644",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00644?BenchmarkTest00644=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00649",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00649?BenchmarkTest00649=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00649",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00649?BenchmarkTest00649=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00679",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00679?BenchmarkTest00679=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00679",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00679?BenchmarkTest00679=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00694",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00694?BenchmarkTest00694=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00694",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest00694?BenchmarkTest00694=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00714",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00714?BenchmarkTest00714=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00714",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00714?BenchmarkTest00714=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00764",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00764?BenchmarkTest00764=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00764",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00764?BenchmarkTest00764=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00769",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00769?BenchmarkTest00769=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00769",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00769?BenchmarkTest00769=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00783",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00783?BenchmarkTest00783=%2A%29%28%26"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00783",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00783?BenchmarkTest00783=-1%27+UNION+SELECT+1%2Cconcat%280x7e%2Cversion%28%29%2C0x7e%29%2C3--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00785",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00785?BenchmarkTest00785=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00785",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00785?BenchmarkTest00785=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00787",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00787?BenchmarkTest00787=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00787",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00787?BenchmarkTest00787=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00788",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00788?BenchmarkTest00788=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00788",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-00/BenchmarkTest00788?BenchmarkTest00788=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00805",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00805?BenchmarkTest00805=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00807",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-01/BenchmarkTest00807?BenchmarkTest00807=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00815",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00815?BenchmarkTest00815=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00815",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00815?BenchmarkTest00815=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00816",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00816?BenchmarkTest00816=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00816",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-00/BenchmarkTest00816?BenchmarkTest00816=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00839",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00839?BenchmarkTest00839=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00840",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00840?BenchmarkTest00840=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00840",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00840?BenchmarkTest00840=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00841",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00841?BenchmarkTest00841=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00841",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00841?BenchmarkTest00841=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00842",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00842?BenchmarkTest00842=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00842",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00842?BenchmarkTest00842=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00843",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00843?BenchmarkTest00843=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00843",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00843?BenchmarkTest00843=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00845",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00845?BenchmarkTest00845=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00846",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00846?BenchmarkTest00846=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00846",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00846?BenchmarkTest00846=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00847",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00847?BenchmarkTest00847=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00847",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00847?BenchmarkTest00847=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00848",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00848?BenchmarkTest00848=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00848",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00848?BenchmarkTest00848=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00849",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00849?BenchmarkTest00849=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest00850",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-01/BenchmarkTest00850?BenchmarkTest00850=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01238",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01238?BenchmarkTest01238=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01238",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01238?BenchmarkTest01238=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01243",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01243?BenchmarkTest01243=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01243",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01243?BenchmarkTest01243=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01268",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01268?BenchmarkTest01268=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01308",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01308?BenchmarkTest01308=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01308",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01308?BenchmarkTest01308=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01313",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01313?BenchmarkTest01313=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01313",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01313?BenchmarkTest01313=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01348",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01348?BenchmarkTest01348=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01348",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-02/BenchmarkTest01348?BenchmarkTest01348=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01383",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01383?BenchmarkTest01383=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01388",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01388?BenchmarkTest01388=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01388",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-02/BenchmarkTest01388?BenchmarkTest01388=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01496",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01496?BenchmarkTest01496=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01496",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01496?BenchmarkTest01496=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01501",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01501?BenchmarkTest01501=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01501",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest01501?BenchmarkTest01501=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01571",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01571?BenchmarkTest01571=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01571",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01571?BenchmarkTest01571=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01586",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01586?BenchmarkTest01586=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01586",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01586?BenchmarkTest01586=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01596",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01596?BenchmarkTest01596=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01601",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01601?BenchmarkTest01601=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01601",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01601?BenchmarkTest01601=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01626",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01626?BenchmarkTest01626=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01626",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01626?BenchmarkTest01626=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01631",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01631?BenchmarkTest01631=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01631",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01631?BenchmarkTest01631=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01642",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01642?BenchmarkTest01642=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01642",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01642?BenchmarkTest01642=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01643",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01643?BenchmarkTest01643=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01643",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01643?BenchmarkTest01643=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01645",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01645?BenchmarkTest01645=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01645",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-01/BenchmarkTest01645?BenchmarkTest01645=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01647",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01647?BenchmarkTest01647=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01647",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest01647?BenchmarkTest01647=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01659",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01659?BenchmarkTest01659=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01659",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01659?BenchmarkTest01659=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01661",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01661?BenchmarkTest01661=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01661",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01661?BenchmarkTest01661=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01664",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01664?BenchmarkTest01664=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01664",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01664?BenchmarkTest01664=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01666",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01666?BenchmarkTest01666=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01666",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01666?BenchmarkTest01666=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01669",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01669?BenchmarkTest01669=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01669",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01669?BenchmarkTest01669=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01671",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01671?BenchmarkTest01671=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01671",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-03/BenchmarkTest01671?BenchmarkTest01671=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01673",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01673?BenchmarkTest01673=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01673",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01673?BenchmarkTest01673=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01674",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01674?BenchmarkTest01674=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01674",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01674?BenchmarkTest01674=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01689",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01689?BenchmarkTest01689=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01689",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest01689?BenchmarkTest01689=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01715",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01715?BenchmarkTest01715=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01716",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01716?BenchmarkTest01716=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01718",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01718?BenchmarkTest01718=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01720",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01720?BenchmarkTest01720=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01720",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01720?BenchmarkTest01720=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01721",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01721?BenchmarkTest01721=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01723",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01723?BenchmarkTest01723=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01723",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01723?BenchmarkTest01723=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01724",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01724?BenchmarkTest01724=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01725",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01725?BenchmarkTest01725=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01725",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01725?BenchmarkTest01725=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01726",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01726?BenchmarkTest01726=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01727",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01727?BenchmarkTest01727=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01727",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01727?BenchmarkTest01727=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01728",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01728?BenchmarkTest01728=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01728",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01728?BenchmarkTest01728=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01730",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01730?BenchmarkTest01730=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01731",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01731?BenchmarkTest01731=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01733",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01733?BenchmarkTest01733=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest01733",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-03/BenchmarkTest01733?BenchmarkTest01733=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02113",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02113?BenchmarkTest02113=%2A%29%28%26"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02113",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02113?BenchmarkTest02113=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02128",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02128?BenchmarkTest02128=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02128",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02128?BenchmarkTest02128=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02178",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02178?BenchmarkTest02178=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02198",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02198?BenchmarkTest02198=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02198",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02198?BenchmarkTest02198=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02208",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02208?BenchmarkTest02208=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02208",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02208?BenchmarkTest02208=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02243",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02243?BenchmarkTest02243=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02243",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02243?BenchmarkTest02243=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02273",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02273?BenchmarkTest02273=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02273",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-04/BenchmarkTest02273?BenchmarkTest02273=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02288",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02288?BenchmarkTest02288=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02288",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02288?BenchmarkTest02288=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02377",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02377?BenchmarkTest02377=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02377",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-02/BenchmarkTest02377?BenchmarkTest02377=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02397",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02397?BenchmarkTest02397=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02397",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02397?BenchmarkTest02397=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02407",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02407?BenchmarkTest02407=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02407",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-04/BenchmarkTest02407?BenchmarkTest02407=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02412",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02412?BenchmarkTest02412=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02412",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-02/BenchmarkTest02412?BenchmarkTest02412=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02472",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02472?BenchmarkTest02472=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02472",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/ldapi-00/BenchmarkTest02472?BenchmarkTest02472=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02492",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02492?BenchmarkTest02492=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02492",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02492?BenchmarkTest02492=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02532",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02532?BenchmarkTest02532=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02537",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02537?BenchmarkTest02537=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02537",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02537?BenchmarkTest02537=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02542",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02542?BenchmarkTest02542=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02555",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02555?BenchmarkTest02555=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02555",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02555?BenchmarkTest02555=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02556",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02556?BenchmarkTest02556=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02556",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02556?BenchmarkTest02556=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02559",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02559?BenchmarkTest02559=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02559",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02559?BenchmarkTest02559=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02560",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02560?BenchmarkTest02560=%2A%29%28%26"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02560",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02560?BenchmarkTest02560=-1%27+UNION+SELECT+1%2Cconcat%280x7e%2Cversion%28%29%2C0x7e%29%2C3--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02561",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02561?BenchmarkTest02561=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02561",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02561?BenchmarkTest02561=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02562",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02562?BenchmarkTest02562=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02562",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02562?BenchmarkTest02562=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02564",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02564?BenchmarkTest02564=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02564",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02564?BenchmarkTest02564=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02565",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02565?BenchmarkTest02565=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02565",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02565?BenchmarkTest02565=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02567",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02567?BenchmarkTest02567=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02567",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02567?BenchmarkTest02567=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02569",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02569?BenchmarkTest02569=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02569",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/pathtraver-03/BenchmarkTest02569?BenchmarkTest02569=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02579",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02579?BenchmarkTest02579=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02581",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02581?BenchmarkTest02581=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02581",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02581?BenchmarkTest02581=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02585",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02585?BenchmarkTest02585=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02585",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02585?BenchmarkTest02585=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02587",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02587?BenchmarkTest02587=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02588",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02588?BenchmarkTest02588=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02592",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02592?BenchmarkTest02592=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02592",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02592?BenchmarkTest02592=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02596",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02596?BenchmarkTest02596=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02596",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02596?BenchmarkTest02596=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02597",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02597?BenchmarkTest02597=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02597",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02597?BenchmarkTest02597=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02601",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02601?BenchmarkTest02601=admin%29%28%26%29%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02601",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02601?BenchmarkTest02601=%27+OR+JSON_EXTRACT%28%27%7B%22a%22%3A1%7D%27%2C%27%24.a%27%29%3D1--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02609",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02609?BenchmarkTest02609=%2A%29%28uid%3D%2A"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02609",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/xss-05/BenchmarkTest02609?BenchmarkTest02609=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02632",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02632?BenchmarkTest02632=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02635",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02635?BenchmarkTest02635=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02638",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02638?BenchmarkTest02638=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02638",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02638?BenchmarkTest02638=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02641",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02641?BenchmarkTest02641=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02642",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02642?BenchmarkTest02642=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02643",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02643?BenchmarkTest02643=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02644",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02644?BenchmarkTest02644=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02645",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02645?BenchmarkTest02645=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02646",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02646?BenchmarkTest02646=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02646",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02646?BenchmarkTest02646=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02647",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02647?BenchmarkTest02647=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02647",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-05/BenchmarkTest02647?BenchmarkTest02647=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02649",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02649?BenchmarkTest02649=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02650",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02650?BenchmarkTest02650=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02651",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02651?BenchmarkTest02651=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02653",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02653?BenchmarkTest02653=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02654",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02654?BenchmarkTest02654=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02654",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02654?BenchmarkTest02654=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02655",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02655?BenchmarkTest02655=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02655",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02655?BenchmarkTest02655=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02656",
+   "severity": "High",
+   "type": "LDAP Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02656?BenchmarkTest02656=%2A%29%28employeeNumber%3D%2A%29"
+  },
+  {
+   "confidence": "MEDIUM",
+   "parameter": "BenchmarkTest02656",
+   "severity": "High",
+   "type": "SQL Injection",
+   "url": "https://127.0.0.1:8443/benchmark/sqli-06/BenchmarkTest02656?BenchmarkTest02656=%27+AND+1%3DDBMS_PIPE.RECEIVE_MESSAGE%28%27a%27%2C5%29--+-"
+  },
+  {
+   "confidence": "MEDIUM",
+   "severity": "Low",
+   "type": "Missing Security Header",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907?BenchmarkTest00907=1"
+  },
+  {
+   "confidence": "MEDIUM",
+   "severity": "Low",
+   "type": "Missing Security Header",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907?BenchmarkTest00907=1"
+  },
+  {
+   "confidence": "MEDIUM",
+   "severity": "Low",
+   "type": "Missing Security Header",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907?BenchmarkTest00907=1"
+  },
+  {
+   "confidence": "MEDIUM",
+   "severity": "Low",
+   "type": "Missing Security Header",
+   "url": "https://127.0.0.1:8443/benchmark/cmdi-01/BenchmarkTest00907?BenchmarkTest00907=1"
+  }
+ ]
+}
